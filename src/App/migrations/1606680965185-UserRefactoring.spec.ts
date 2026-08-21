@@ -1,121 +1,112 @@
+typescript
 import { Test } from '@nestjs/testing';
+import { Table } from 'typeorm';
+import type { QueryRunner } from 'typeorm';
 import { UserRefactoring1606680965185 } from './1606680965185-UserRefactoring';
-import { QueryRunner, Table } from 'typeorm';
+
+jest.mock('typeorm', () => ({
+  MigrationInterface: class MigrationInterface {},
+  QueryRunner: class QueryRunner {},
+  Table: jest.fn().mockImplementation((options: any) => ({ ...options })),
+}));
 
 describe('UserRefactoring1606680965185', () => {
   let migration: UserRefactoring1606680965185;
-  let mockQueryRunner: {
-    createTable: jest.Mock;
-    dropTable: jest.Mock;
-  };
+  let queryRunner: { createTable: jest.Mock; dropTable: jest.Mock };
+  let tableMock: jest.Mock;
 
-  beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [UserRefactoring1606680965185],
-    }).compile();
-
-    migration = moduleRef.get(UserRefactoring1606680965185);
-
-    mockQueryRunner = {
-      createTable: jest.fn().mockResolvedValue(undefined),
-      dropTable: jest.fn().mockResolvedValue(undefined),
-    };
-  });
-
-  it('should be defined', () => {
-    expect(migration).toBeDefined();
-  });
-
-  describe('up', () => {
-    it('should create the users table with the expected schema', async () => {
-      await migration.up(mockQueryRunner as unknown as QueryRunner);
-
-      expect(mockQueryRunner.createTable).toHaveBeenCalledTimes(1);
-      expect(mockQueryRunner.createTable).toHaveBeenCalledWith(
-        expect.any(Table),
-        true,
-      );
-
-      const table = mockQueryRunner.createTable.mock.calls[0][0] as Table;
-      expect(table.name).toBe('users');
-      expect(table.columns).toHaveLength(6);
-
-      expect(table.columns[0]).toMatchObject({
+  const expectedTable = {
+    name: 'users',
+    columns: [
+      {
         name: 'id',
         type: 'int',
         isPrimary: true,
         isGenerated: true,
         generationStrategy: 'increment',
-      });
-      expect(table.columns[1]).toMatchObject({
+      },
+      {
         name: 'first_name',
         type: 'varchar',
-      });
-      expect(table.columns[2]).toMatchObject({
+      },
+      {
         name: 'last_name',
         type: 'varchar',
-      });
-      expect(table.columns[3]).toMatchObject({
+      },
+      {
         name: 'email',
         type: 'varchar',
-      });
-      expect(table.columns[4]).toMatchObject({
+      },
+      {
         name: 'password',
         type: 'varchar',
-      });
-      expect(table.columns[5]).toMatchObject({
+      },
+      {
         name: 'status',
         type: 'enum',
         enum: ['active', 'inactive', 'block'],
         enumName: 'statusEnum',
         default: '"active"',
-      });
+      },
+    ],
+  };
+
+  beforeEach(async () => {
+    tableMock = Table as unknown as jest.Mock;
+    tableMock.mockClear();
+
+    queryRunner = {
+      createTable: jest.fn().mockResolvedValue(undefined),
+      dropTable: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [UserRefactoring1606680965185],
+    }).compile();
+
+    migration = moduleRef.get(UserRefactoring1606680965185);
+  });
+
+  describe('up', () => {
+    it('should create the users table with expected options and pass true for ifNotExists', async () => {
+      await migration.up(queryRunner as unknown as QueryRunner);
+
+      expect(tableMock).toHaveBeenCalledTimes(1);
+      expect(tableMock).toHaveBeenCalledWith(expectedTable);
+
+      expect(queryRunner.createTable).toHaveBeenCalledTimes(1);
+      expect(queryRunner.createTable).toHaveBeenCalledWith(expectedTable, true);
     });
 
-    it('should include the ifNotExist flag as true', async () => {
-      await migration.up(mockQueryRunner as unknown as QueryRunner);
-
-      expect(mockQueryRunner.createTable).toHaveBeenCalledWith(
-        expect.any(Table),
-        true,
-      );
-    });
-
-    it('should return a Promise', () => {
-      const result = migration.up(mockQueryRunner as unknown as QueryRunner);
-      expect(result).toBeInstanceOf(Promise);
-    });
-
-    it('should propagate errors from queryRunner.createTable', async () => {
+    it('should propagate errors when createTable fails', async () => {
       const error = new Error('createTable failed');
-      mockQueryRunner.createTable.mockRejectedValueOnce(error);
+      queryRunner.createTable.mockRejectedValueOnce(error);
 
       await expect(
-        migration.up(mockQueryRunner as unknown as QueryRunner),
-      ).rejects.toThrow('createTable failed');
+        migration.up(queryRunner as unknown as QueryRunner),
+      ).rejects.toThrow(error);
+
+      expect(queryRunner.createTable).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('down', () => {
     it('should drop the users table', async () => {
-      await migration.down(mockQueryRunner as unknown as QueryRunner);
+      await migration.down(queryRunner as unknown as QueryRunner);
 
-      expect(mockQueryRunner.dropTable).toHaveBeenCalledTimes(1);
-      expect(mockQueryRunner.dropTable).toHaveBeenCalledWith('users');
+      expect(queryRunner.dropTable).toHaveBeenCalledTimes(1);
+      expect(queryRunner.dropTable).toHaveBeenCalledWith('users');
     });
 
-    it('should return a Promise', () => {
-      const result = migration.down(mockQueryRunner as unknown as QueryRunner);
-      expect(result).toBeInstanceOf(Promise);
-    });
-
-    it('should propagate errors from queryRunner.dropTable', async () => {
+    it('should propagate errors when dropTable fails', async () => {
       const error = new Error('dropTable failed');
-      mockQueryRunner.dropTable.mockRejectedValueOnce(error);
+      queryRunner.dropTable.mockRejectedValueOnce(error);
 
       await expect(
-        migration.down(mockQueryRunner as unknown as QueryRunner),
-      ).rejects.toThrow('dropTable failed');
+        migration.down(queryRunner as unknown as QueryRunner),
+      ).rejects.toThrow(error);
+
+      expect(queryRunner.dropTable).toHaveBeenCalledTimes(1);
     });
   });
 });

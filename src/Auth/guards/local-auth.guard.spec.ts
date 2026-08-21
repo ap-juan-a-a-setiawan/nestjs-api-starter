@@ -1,54 +1,89 @@
 typescript
+import { Test } from '@nestjs/testing';
+import { LocalAuthGuard } from './local-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
+
 jest.mock('@nestjs/passport', () => ({
-  AuthGuard: jest.fn().mockImplementation((type: string) => {
+  AuthGuard: jest.fn().mockImplementation(() => {
     return class MockAuthGuard {
-      canActivate(context: any): boolean {
-        return context && context.type === type;
-      }
+      canActivate = jest.fn();
     };
   }),
 }));
 
-import { AuthGuard } from '@nestjs/passport';
-import { Test } from '@nestjs/testing';
-import { LocalAuthGuard } from './local-auth.guard';
-
 describe('LocalAuthGuard', () => {
-  it('should call AuthGuard with "local"', () => {
-    expect(AuthGuard).toHaveBeenCalledWith('local');
-  });
+  let guard: LocalAuthGuard;
 
-  it('should be instantiated via Nest testing module', async () => {
+  beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [LocalAuthGuard],
     }).compile();
 
-    const guard = moduleRef.get<LocalAuthGuard>(LocalAuthGuard);
+    guard = moduleRef.get(LocalAuthGuard);
+    (guard.canActivate as jest.Mock).mockReset();
+  });
 
+  afterAll(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should be defined', () => {
     expect(guard).toBeDefined();
-    expect(guard).toBeInstanceOf(LocalAuthGuard);
   });
 
-  it('should expose canActivate method from AuthGuard', () => {
-    const guard = new LocalAuthGuard();
-
-    expect(guard.canActivate).toBeDefined();
-    expect(typeof guard.canActivate).toBe('function');
+  it('should call AuthGuard with "local" strategy name', () => {
+    expect(AuthGuard).toHaveBeenCalledWith('local');
   });
 
-  it('should delegate canActivate to AuthGuard implementation', () => {
-    const guard = new LocalAuthGuard();
-    const localContext = { type: 'local' };
-    const jwtContext = { type: 'jwt' };
+  it('should delegate canActivate to the inherited AuthGuard and return true', () => {
+    const context = { user: {} };
+    (guard.canActivate as jest.Mock).mockReturnValue(true);
 
-    expect(guard.canActivate(localContext)).toBe(true);
-    expect(guard.canActivate(jwtContext)).toBe(false);
+    const result = guard.canActivate(context);
+
+    expect(guard.canActivate).toHaveBeenCalledWith(context);
+    expect(result).toBe(true);
   });
 
-  it('should return false for null or undefined context', () => {
-    const guard = new LocalAuthGuard();
+  it('should return false when the AuthGuard canActivate returns false', () => {
+    (guard.canActivate as jest.Mock).mockReturnValue(false);
 
-    expect(guard.canActivate(null)).toBe(false);
-    expect(guard.canActivate(undefined)).toBe(false);
+    expect(guard.canActivate({})).toBe(false);
+  });
+
+  it('should resolve true when canActivate returns a resolved promise', async () => {
+    (guard.canActivate as jest.Mock).mockResolvedValue(true);
+
+    await expect(guard.canActivate({})).resolves.toBe(true);
+  });
+
+  it('should resolve false when canActivate returns a resolved promise with false', async () => {
+    (guard.canActivate as jest.Mock).mockResolvedValue(false);
+
+    await expect(guard.canActivate({})).resolves.toBe(false);
+  });
+
+  it('should reject when canActivate returns a rejected promise', async () => {
+    (guard.canActivate as jest.Mock).mockRejectedValue(new Error('Unauthorized'));
+
+    await expect(guard.canActivate({})).rejects.toThrow('Unauthorized');
+  });
+
+  it('should throw if the underlying canActivate throws', () => {
+    (guard.canActivate as jest.Mock).mockImplementation(() => {
+      throw new Error('Unauthorized');
+    });
+
+    expect(() => guard.canActivate({})).toThrow('Unauthorized');
+  });
+
+  it('should pass the execution context through to the strategy', () => {
+    const context = { request: { headers: {} } };
+    (guard.canActivate as jest.Mock).mockReturnValue(true);
+
+    guard.canActivate(context);
+
+    expect(guard.canActivate).toHaveBeenCalledTimes(1);
+    expect(guard.canActivate).toHaveBeenCalledWith(context);
   });
 });

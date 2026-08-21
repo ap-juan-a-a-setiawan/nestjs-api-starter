@@ -1,4 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
+typescript
+import { Test } from '@nestjs/testing';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthModule } from './auth.module';
@@ -7,113 +9,83 @@ import { AuthService } from './services/auth.service';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../Users/users.module';
+import { jwtContanst } from './contants/jwt';
+
+@Module({})
+class MockUsersModule {}
 
 describe('AuthModule', () => {
-  let moduleRef: TestingModule;
+  describe('module metadata', () => {
+    it('should be defined', () => {
+      expect(AuthModule).toBeDefined();
+    });
 
-  const mockAuthService = {
-    validateUser: jest.fn(),
-    login: jest.fn(),
-    register: jest.fn(),
-  };
+    it('should be marked as @Global', () => {
+      const isGlobal = Reflect.getMetadata('isGlobal', AuthModule);
+      expect(isGlobal).toBe(true);
+    });
 
-  const mockLocalStrategy = {
-    validate: jest.fn(),
-  };
+    it('should list AuthController as a controller', () => {
+      const controllers = Reflect.getMetadata('controllers', AuthModule);
+      expect(controllers).toEqual([AuthController]);
+    });
 
-  const mockJwtStrategy = {
-    validate: jest.fn(),
-  };
+    it('should import UsersModule, PassportModule, and JwtModule', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      expect(imports).toHaveLength(3);
+      expect(imports[0]).toBe(UsersModule);
+      expect(imports[1]).toBe(PassportModule);
+      expect(imports[2]).toMatchObject({ module: JwtModule });
+    });
 
-  beforeAll(async () => {
-    moduleRef = await Test.createTestingModule({
-      imports: [AuthModule],
-    })
-      .overrideModule(UsersModule).useModule({
-        module: class MockUsersModule {},
+    it('should register JwtModule with the correct options', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      const jwtModule = imports[2] as any;
+      const optionsProvider = jwtModule.providers.find(
+        (provider: any) => provider.provide === 'JWT_MODULE_OPTIONS',
+      );
+      expect(optionsProvider).toBeDefined();
+      expect(optionsProvider.useValue).toEqual({
+        secret: jwtContanst.secret,
+        signOptions: { expiresIn: jwtContanst.expiresIn },
+      });
+    });
+
+    it('should have AuthService, LocalStrategy, and JwtStrategy as providers', () => {
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      expect(providers).toEqual([AuthService, LocalStrategy, JwtStrategy]);
+    });
+
+    it('should export AuthService', () => {
+      const exports = Reflect.getMetadata('exports', AuthModule);
+      expect(exports).toEqual([AuthService]);
+    });
+  });
+
+  describe('module initialization', () => {
+    it('should compile with mocked dependencies', async () => {
+      const mockAuthService = { login: jest.fn(), validateUser: jest.fn() };
+      const mockLocalStrategy = { validate: jest.fn() };
+      const mockJwtStrategy = { validate: jest.fn() };
+
+      const moduleRef = await Test.createTestingModule({
+        imports: [AuthModule],
       })
-      .overrideProvider(AuthService)
-      .useValue(mockAuthService)
-      .overrideProvider(LocalStrategy)
-      .useValue(mockLocalStrategy)
-      .overrideProvider(JwtStrategy)
-      .useValue(mockJwtStrategy)
-      .compile();
-  });
+        .overrideModule(UsersModule)
+        .useModule(MockUsersModule)
+        .overrideProvider(AuthService)
+        .useValue(mockAuthService)
+        .overrideProvider(LocalStrategy)
+        .useValue(mockLocalStrategy)
+        .overrideProvider(JwtStrategy)
+        .useValue(mockJwtStrategy)
+        .compile();
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should compile the module', () => {
-    expect(moduleRef).toBeDefined();
-  });
-
-  it('should be marked as @Global', () => {
-    const isGlobal = Reflect.getMetadata('__globalModule', AuthModule);
-    expect(isGlobal).toBe(true);
-  });
-
-  it('should declare AuthController as a controller', () => {
-    const controllers = Reflect.getMetadata('controllers', AuthModule);
-    expect(controllers).toContain(AuthController);
-  });
-
-  it('should import UsersModule', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    expect(imports).toContain(UsersModule);
-  });
-
-  it('should import PassportModule', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    expect(imports).toContain(PassportModule);
-  });
-
-  it('should import JwtModule via JwtModule.register()', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    expect(imports).toContain(
-      expect.objectContaining({
-        module: JwtModule,
-      }),
-    );
-  });
-
-  it('should provide AuthService, LocalStrategy, and JwtStrategy', () => {
-    const providers = Reflect.getMetadata('providers', AuthModule);
-    expect(providers).toContain(AuthService);
-    expect(providers).toContain(LocalStrategy);
-    expect(providers).toContain(JwtStrategy);
-  });
-
-  it('should export AuthService', () => {
-    const exports = Reflect.getMetadata('exports', AuthModule);
-    expect(exports).toContain(AuthService);
-  });
-
-  it('should use mocked AuthService', () => {
-    expect(moduleRef.get(AuthService)).toEqual(mockAuthService);
-  });
-
-  it('should use mocked LocalStrategy', () => {
-    expect(moduleRef.get(LocalStrategy)).toEqual(mockLocalStrategy);
-  });
-
-  it('should use mocked JwtStrategy', () => {
-    expect(moduleRef.get(JwtStrategy)).toEqual(mockJwtStrategy);
-  });
-
-  it('should instantiate AuthController with mocked dependencies', () => {
-    const controller = moduleRef.get(AuthController);
-    expect(controller).toBeDefined();
-  });
-
-  it('should have AuthService methods defined as jest.fn()', () => {
-    const authService = moduleRef.get(AuthService);
-    expect(authService.validateUser).toBeDefined();
-    expect(typeof authService.validateUser).toBe('function');
-    expect(authService.login).toBeDefined();
-    expect(typeof authService.login).toBe('function');
-    expect(authService.register).toBeDefined();
-    expect(typeof authService.register).toBe('function');
+      expect(moduleRef).toBeDefined();
+      expect(moduleRef.get(AuthService)).toBe(mockAuthService);
+      expect(moduleRef.get(LocalStrategy)).toBe(mockLocalStrategy);
+      expect(moduleRef.get(JwtStrategy)).toBe(mockJwtStrategy);
+      expect(moduleRef.get(AuthController)).toBeInstanceOf(AuthController);
+    });
   });
 });

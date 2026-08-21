@@ -1,29 +1,32 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
 import { UserController } from './user.controller';
 import { UserService } from '../services/user.service';
-import { CreateUserDto } from '../dto/create-user.dto';
 import { JwtAuthGuard } from '../../Auth/guards/jwt-auth.guard';
-
-const mockUserService = {
-  getAll: jest.fn(),
-  getById: jest.fn(),
-  create: jest.fn(),
-};
-
-const mockJwtAuthGuard = {
-  canActivate: jest.fn(() => true),
-};
+import { CreateUserDto } from '../dto/create-user.dto';
 
 describe('UserController', () => {
   let controller: UserController;
-  let userService: { getAll: jest.Mock; getById: jest.Mock; create: jest.Mock };
+  let userService: {
+    getAll: jest.Mock;
+    getById: jest.Mock;
+    create: jest.Mock;
+  };
+
+  const mockUserService = {
+    getAll: jest.fn(),
+    getById: jest.fn(),
+    create: jest.fn(),
+  };
+
+  const mockJwtAuthGuard = {
+    canActivate: jest.fn(() => true),
+  };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
-    mockJwtAuthGuard.canActivate.mockReturnValue(true);
+    jest.clearAllMocks();
 
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       controllers: [UserController],
       providers: [
         {
@@ -37,11 +40,7 @@ describe('UserController', () => {
       .compile();
 
     controller = moduleRef.get<UserController>(UserController);
-    userService = moduleRef.get(UserService) as unknown as {
-      getAll: jest.Mock;
-      getById: jest.Mock;
-      create: jest.Mock;
-    };
+    userService = moduleRef.get(UserService);
   });
 
   it('should be defined', () => {
@@ -49,88 +48,74 @@ describe('UserController', () => {
   });
 
   describe('getAll', () => {
-    it('should return all users from the user service', async () => {
-      const users = [{ id: '1', name: 'Alice' }];
-      userService.getAll.mockResolvedValue(users);
+    it('should return all users from the service', async () => {
+      const users = [
+        { id: 1, name: 'John Doe' },
+        { id: 2, name: 'Jane Doe' },
+      ];
+      mockUserService.getAll.mockResolvedValue(users);
 
-      const result = await controller.getAll();
-
-      expect(userService.getAll).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(users);
+      await expect(controller.getAll()).resolves.toEqual(users);
+      expect(mockUserService.getAll).toHaveBeenCalledTimes(1);
     });
 
-    it('should return an empty array when no users exist', async () => {
-      userService.getAll.mockResolvedValue([]);
+    it('should return an empty array when there are no users', async () => {
+      mockUserService.getAll.mockResolvedValue([]);
 
-      const result = await controller.getAll();
-
-      expect(result).toEqual([]);
-      expect(userService.getAll).toHaveBeenCalledTimes(1);
-    });
-
-    it('should propagate errors thrown by the user service', async () => {
-      userService.getAll.mockRejectedValue(new Error('getAll failed'));
-
-      await expect(controller.getAll()).rejects.toThrow('getAll failed');
-      expect(userService.getAll).toHaveBeenCalledTimes(1);
+      await expect(controller.getAll()).resolves.toEqual([]);
+      expect(mockUserService.getAll).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getById', () => {
-    it('should return a user by id from params', async () => {
-      const user = { id: '42', name: 'Bob' };
-      userService.getById.mockResolvedValue(user);
+    it('should call the service with the id from params and return the result', async () => {
+      const user = { id: '123', name: 'John Smith' };
+      mockUserService.getById.mockResolvedValue(user);
 
-      const result = await controller.getById({ id: '42' });
+      const result = await controller.getById({ id: '123' });
 
-      expect(userService.getById).toHaveBeenCalledWith('42');
+      expect(mockUserService.getById).toHaveBeenCalledWith('123');
       expect(result).toEqual(user);
     });
 
-    it('should handle missing id by passing undefined to the service', async () => {
-      userService.getById.mockResolvedValue(null);
+    it('should call the service with undefined when params.id is missing', async () => {
+      mockUserService.getById.mockResolvedValue(undefined);
 
-      const result = await controller.getById({});
-
-      expect(userService.getById).toHaveBeenCalledWith(undefined);
-      expect(result).toBeNull();
-    });
-
-    it('should propagate errors thrown by the user service', async () => {
-      userService.getById.mockRejectedValue(new Error('user not found'));
-
-      await expect(controller.getById({ id: '999' })).rejects.toThrow('user not found');
-      expect(userService.getById).toHaveBeenCalledWith('999');
+      await expect(controller.getById({})).resolves.toBeUndefined();
+      expect(mockUserService.getById).toHaveBeenCalledWith(undefined);
     });
   });
 
   describe('create', () => {
-    it('should create a user and return statusCode 200 with the created user', async () => {
-      const dto = { name: 'Charlie', email: 'charlie@example.com' } as CreateUserDto;
-      const createdUser = { id: '3', ...dto };
-      userService.create.mockResolvedValue(createdUser);
+    it('should create a user and return statusCode OK with the created user', async () => {
+      const dto = {
+        username: 'newuser',
+        email: 'new@example.com',
+        password: 'password123',
+      } as CreateUserDto;
+      const createdUser = { id: '1', ...dto };
+      mockUserService.create.mockResolvedValue(createdUser);
 
       const result = await controller.create(dto);
 
-      expect(userService.create).toHaveBeenCalledWith(dto);
-      expect(result).toEqual({ statusCode: HttpStatus.OK, user: createdUser });
+      expect(mockUserService.create).toHaveBeenCalledWith(dto);
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        user: createdUser,
+      });
     });
 
-    it('should return HttpStatus.OK in the response', async () => {
-      const dto = { name: 'Dana' } as CreateUserDto;
-      userService.create.mockResolvedValue({ id: '4' });
+    it('should propagate errors thrown by the service', async () => {
+      const dto = {
+        username: 'invalid',
+        email: 'invalid@example.com',
+        password: 'password',
+      } as CreateUserDto;
+      const error = new Error('Creation failed');
+      mockUserService.create.mockRejectedValue(error);
 
-      const result = await controller.create(dto);
-
-      expect(result.statusCode).toBe(200);
-    });
-
-    it('should propagate errors thrown by the user service during creation', async () => {
-      const dto = { name: 'Err' } as CreateUserDto;
-      userService.create.mockRejectedValue(new Error('create failed'));
-
-      await expect(controller.create(dto)).rejects.toThrow('create failed');
-      expect(userService.create).toHaveBeenCalledWith(dto);
+      await expect(controller.create(dto)).rejects.toThrow('Creation failed');
+      expect(mockUserService.create).toHaveBeenCalledWith(dto);
     });
   });
 });

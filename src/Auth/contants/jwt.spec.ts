@@ -1,50 +1,65 @@
+import { Test } from '@nestjs/testing';
 import { jwtContanst } from './jwt';
 
-describe('jwtContanst', () => {
+describe('JwtContanst', () => {
+  const JWT_TOKEN = 'JWT_CONSTANT';
+  let jwt: { secret: string; expiresIn: string };
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        {
+          provide: JWT_TOKEN,
+          useValue: jwtContanst,
+        },
+      ],
+    }).compile();
+
+    jwt = moduleRef.get(JWT_TOKEN);
+  });
+
   it('should be defined', () => {
-    expect(jwtContanst).toBeDefined();
+    expect(jwt).toBeDefined();
   });
 
-  it('should be an object', () => {
-    expect(typeof jwtContanst).toBe('object');
+  it('should have secret and expiresIn properties', () => {
+    expect(jwt).toHaveProperty('secret');
+    expect(jwt).toHaveProperty('expiresIn');
   });
 
-  it('should have a secret property with the expected value', () => {
-    expect(jwtContanst.secret).toBe('ZUazAIQYqljDxpPX');
+  it('should have a non-empty secret string', () => {
+    expect(typeof jwt.secret).toBe('string');
+    expect(jwt.secret.length).toBeGreaterThan(0);
   });
 
-  it('should have an expiresIn property with the expected value', () => {
-    expect(jwtContanst.expiresIn).toBe('24h');
+  it('should have a non-empty expiresIn string', () => {
+    expect(typeof jwt.expiresIn).toBe('string');
+    expect(jwt.expiresIn.length).toBeGreaterThan(0);
   });
 
-  it('should match the exact expected object structure', () => {
-    expect(jwtContanst).toEqual({
-      secret: 'ZUazAIQYqljDxpPX',
-      expiresIn: '24h'
-    });
+  it('should have a valid expiration format', () => {
+    expect(jwt.expiresIn).toMatch(/^\d+[smhd]$/);
   });
 
-  it('should not have additional properties', () => {
-    const allowedKeys = ['secret', 'expiresIn'];
-    const actualKeys = Object.keys(jwtContanst);
-    expect(actualKeys).toEqual(allowedKeys);
+  it('should match the expected secret value', () => {
+    expect(jwt.secret).toBe('ZUazAIQYqljDxpPX');
   });
 
-  it('should have a string secret', () => {
-    expect(typeof jwtContanst.secret).toBe('string');
+  it('should match the expected expiration value', () => {
+    expect(jwt.expiresIn).toBe('24h');
   });
 
-  it('should have a string expiresIn', () => {
-    expect(typeof jwtContanst.expiresIn).toBe('string');
+  it('should not be null or undefined', () => {
+    expect(jwt).not.toBeNull();
+    expect(jwt).not.toBeUndefined();
+    expect(jwt.secret).not.toBeNull();
+    expect(jwt.secret).not.toBeUndefined();
+    expect(jwt.expiresIn).not.toBeNull();
+    expect(jwt.expiresIn).not.toBeUndefined();
   });
 
-  it('should not be empty', () => {
-    expect(jwtContanst.secret.length).toBeGreaterThan(0);
-    expect(jwtContanst.expiresIn.length).toBeGreaterThan(0);
-  });
-
-  it('should support read-only access', () => {
-    expect(jwtContanst.secret).toBeDefined();
-    expect(jwtContanst.expiresIn).toBeDefined();
+  it('should not have empty secret or expiresIn', () => {
+    expect(jwt.secret.trim()).not.toBe('');
+    expect(jwt.expiresIn.trim()).not.toBe('');
   });
 });

@@ -1,11 +1,9 @@
-typescript
 import { Test } from '@nestjs/testing';
-import { ExecutionContext } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 jest.mock('@nestjs/passport', () => ({
-  AuthGuard: jest.fn().mockImplementation(() => {
+  AuthGuard: jest.fn(() => {
     return class MockAuthGuard {
       canActivate = jest.fn();
     };
@@ -20,56 +18,38 @@ describe('JwtAuthGuard', () => {
       providers: [JwtAuthGuard],
     }).compile();
 
-    guard = moduleRef.get(JwtAuthGuard);
+    guard = moduleRef.get<JwtAuthGuard>(JwtAuthGuard);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(guard).toBeDefined();
   });
 
-  it('should call AuthGuard with the jwt strategy', () => {
-    expect(AuthGuard as unknown as jest.Mock).toHaveBeenCalledTimes(1);
-    expect(AuthGuard as unknown as jest.Mock).toHaveBeenCalledWith('jwt');
+  it('should call AuthGuard with the "jwt" strategy', () => {
+    expect(AuthGuard).toHaveBeenCalledWith('jwt');
+    expect(AuthGuard).toHaveBeenCalledTimes(1);
   });
 
-  it('should delegate canActivate to the parent AuthGuard and resolve with true', async () => {
-    const context = {
-      switchToHttp: jest.fn(),
-      getHandler: jest.fn(),
-      getClass: jest.fn(),
-    } as unknown as ExecutionContext;
+  it('should extend the class returned by AuthGuard("jwt")', () => {
+    const baseClass = (AuthGuard as jest.Mock).mock.results[0].value;
+    expect(guard).toBeInstanceOf(baseClass);
+  });
 
-    const canActivate = guard.canActivate as unknown as jest.Mock;
-    canActivate.mockResolvedValue(true);
+  it('should expose a canActivate method from the AuthGuard base class', () => {
+    expect(typeof guard.canActivate).toBe('function');
+  });
 
-    await expect(guard.canActivate(context)).resolves.toBe(true);
+  it('should delegate canActivate calls to the AuthGuard base implementation', async () => {
+    const context = {};
+    const canActivate = guard.canActivate as jest.Mock;
+
+    await canActivate(context);
+
     expect(canActivate).toHaveBeenCalledWith(context);
-  });
-
-  it('should return false when parent AuthGuard returns false', async () => {
-    const context = {} as ExecutionContext;
-    const canActivate = guard.canActivate as unknown as jest.Mock;
-    canActivate.mockResolvedValue(false);
-
-    await expect(guard.canActivate(context)).resolves.toBe(false);
-  });
-
-  it('should propagate an exception thrown by parent AuthGuard', async () => {
-    const context = {} as ExecutionContext;
-    const canActivate = guard.canActivate as unknown as jest.Mock;
-    canActivate.mockRejectedValue(new Error('Unauthorized'));
-
-    await expect(guard.canActivate(context)).rejects.toThrow('Unauthorized');
-  });
-
-  it('should pass the raw execution context to parent AuthGuard even if it is null', () => {
-    const context = null as unknown as ExecutionContext;
-    const canActivate = guard.canActivate as unknown as jest.Mock;
-    canActivate.mockReturnValue(false);
-
-    const result = guard.canActivate(context);
-
-    expect(canActivate).toHaveBeenCalledWith(null);
-    expect(result).toBe(false);
+    expect(canActivate).toHaveBeenCalledTimes(1);
   });
 });

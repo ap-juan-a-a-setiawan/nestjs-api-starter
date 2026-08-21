@@ -1,76 +1,91 @@
-import { Test } from '@nestjs/testing';
-import { User } from './user.entity';
-import * as bcrypt from 'bcrypt';
+ts
+jest.mock('../../App/abstracts/entity.base', () => ({
+  EntityBase: class EntityBase {},
+}));
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
 }));
 
 jest.mock('typeorm', () => ({
-  Entity: jest.fn(() => jest.fn()),
-  Column: jest.fn(() => jest.fn()),
-  PrimaryGeneratedColumn: jest.fn(() => jest.fn()),
+  Entity: jest.fn(),
+  Column: jest.fn(),
+  PrimaryGeneratedColumn: jest.fn(),
 }));
 
-jest.mock('../../App/abstracts/entity.base', () => ({
-  EntityBase: class EntityBase {},
-}));
+import { Test } from '@nestjs/testing';
+import * as bcrypt from 'bcrypt';
+import { User } from './user.entity';
 
 describe('User Entity', () => {
   let user: User;
-  let bcryptCompareMock: jest.Mock;
+  let mockCompare: jest.Mock;
 
-  beforeAll(() => {
-    bcryptCompareMock = bcrypt.compare as jest.Mock;
-  });
-
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
+  beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [User],
     }).compile();
 
     user = moduleRef.get(User);
+    mockCompare = bcrypt.compare as jest.Mock;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(user).toBeDefined();
   });
 
-  it('should have undefined id initially', () => {
-    expect(user.id).toBeUndefined();
-  });
-
   describe('validatePassword', () => {
-    it('should return true when the password matches', async () => {
-      user.password = 'hashed_password';
-      bcryptCompareMock.mockResolvedValue(true);
+    it('should return true when bcrypt.compare resolves to true', async () => {
+      mockCompare.mockResolvedValue(true);
+      user.password = 'hashedPassword';
 
-      await expect(user.validatePassword('plain_password')).resolves.toBe(true);
+      const result = await user.validatePassword('plainPassword');
 
-      expect(bcryptCompareMock).toHaveBeenCalledWith('plain_password', 'hashed_password');
-      expect(bcryptCompareMock).toHaveBeenCalledTimes(1);
+      expect(mockCompare).toHaveBeenCalledWith('plainPassword', 'hashedPassword');
+      expect(result).toBe(true);
     });
 
-    it('should return false when the password does not match', async () => {
-      user.password = 'hashed_password';
-      bcryptCompareMock.mockResolvedValue(false);
+    it('should return false when bcrypt.compare resolves to false', async () => {
+      mockCompare.mockResolvedValue(false);
+      user.password = 'hashedPassword';
 
-      await expect(user.validatePassword('wrong_password')).resolves.toBe(false);
+      const result = await user.validatePassword('wrongPassword');
 
-      expect(bcryptCompareMock).toHaveBeenCalledWith('wrong_password', 'hashed_password');
-      expect(bcryptCompareMock).toHaveBeenCalledTimes(1);
+      expect(mockCompare).toHaveBeenCalledWith('wrongPassword', 'hashedPassword');
+      expect(result).toBe(false);
     });
 
-    it('should propagate an error when bcrypt.compare throws', async () => {
-      user.password = 'hashed_password';
+    it('should propagate errors thrown by bcrypt.compare', async () => {
       const error = new Error('bcrypt comparison failed');
-      bcryptCompareMock.mockRejectedValue(error);
+      mockCompare.mockRejectedValue(error);
+      user.password = 'hashedPassword';
 
-      await expect(user.validatePassword('plain_password')).rejects.toThrow('bcrypt comparison failed');
-      expect(bcryptCompareMock).toHaveBeenCalledWith('plain_password', 'hashed_password');
-      expect(bcryptCompareMock).toHaveBeenCalledTimes(1);
+      await expect(user.validatePassword('plainPassword')).rejects.toThrow('bcrypt comparison failed');
+      expect(mockCompare).toHaveBeenCalledWith('plainPassword', 'hashedPassword');
+    });
+
+    it('should handle empty plain password', async () => {
+      mockCompare.mockResolvedValue(false);
+      user.password = 'hashedPassword';
+
+      const result = await user.validatePassword('');
+
+      expect(mockCompare).toHaveBeenCalledWith('', 'hashedPassword');
+      expect(result).toBe(false);
+    });
+
+    it('should handle empty stored password', async () => {
+      mockCompare.mockResolvedValue(false);
+      user.password = '';
+
+      const result = await user.validatePassword('plainPassword');
+
+      expect(mockCompare).toHaveBeenCalledWith('plainPassword', '');
+      expect(result).toBe(false);
     });
   });
 });

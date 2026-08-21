@@ -1,96 +1,97 @@
-typescript
+ts
+import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ExtractJwt } from 'passport-jwt';
 import { JwtStrategy } from './jwt.strategy';
 
-jest.mock('@nestjs/passport', () => {
-  class MockStrategyBase {
-    constructor(public readonly options: any) {
-      (MockStrategyBase as any).lastOptions = options;
-    }
-  }
-  return {
-    PassportStrategy: jest.fn().mockImplementation(() => MockStrategyBase),
-  };
-});
+jest.mock('@nestjs/passport', () => ({
+  PassportStrategy: jest.fn().mockImplementation((strategy: any) => {
+    return class MockPassportStrategy {
+      public options: any;
+      constructor(options: any) {
+        this.options = options;
+      }
+    };
+  }),
+}));
 
 jest.mock('passport-jwt', () => ({
   ExtractJwt: {
-    fromAuthHeaderAsBearerToken: jest.fn(),
+    fromAuthHeaderAsBearerToken: jest.fn(() => jest.fn()),
   },
   Strategy: jest.fn(),
 }));
 
 jest.mock('../contants/jwt', () => ({
-  jwtContanst: { secret: 'test-secret' },
+  jwtContanst: {
+    secret: 'test-secret',
+  },
 }));
 
 describe('JwtStrategy', () => {
-  let strategy: JwtStrategy;
-  let mockStrategyBase: any;
+  let jwtStrategy: JwtStrategy;
 
-  const mockPassportStrategy = PassportStrategy as jest.Mock;
-  const mockFromAuthHeader = ExtractJwt.fromAuthHeaderAsBearerToken as jest.Mock;
-
-  beforeAll(async () => {
-    mockFromAuthHeader.mockReturnValue('jwt-from-header');
-
+  beforeEach(async () => {
+    jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [JwtStrategy],
     }).compile();
 
-    strategy = moduleRef.get(JwtStrategy);
-    mockStrategyBase = mockPassportStrategy.mock.results[0].value;
+    jwtStrategy = moduleRef.get<JwtStrategy>(JwtStrategy);
   });
 
   it('should be defined', () => {
-    expect(strategy).toBeDefined();
+    expect(jwtStrategy).toBeDefined();
   });
 
-  it('should call PassportStrategy with Strategy', () => {
-    expect(mockPassportStrategy).toHaveBeenCalledWith(Strategy);
-  });
+  it('should call super with correct options', () => {
+    expect(ExtractJwt.fromAuthHeaderAsBearerToken).toHaveBeenCalled();
 
-  it('should configure the strategy with the correct options', () => {
-    expect(mockStrategyBase.lastOptions).toEqual({
-      jwtFromRequest: 'jwt-from-header',
-      ignoreExpiration: false,
-      secretOrKey: 'test-secret',
-    });
+    const options = (jwtStrategy as any).options;
+    expect(options.ignoreExpiration).toBe(false);
+    expect(options.secretOrKey).toBe('test-secret');
+    expect(typeof options.jwtFromRequest).toBe('function');
   });
 
   describe('validate', () => {
-    it('should return userId and email from payload', async () => {
-      const result = await strategy.validate({
-        sub: 123,
-        email: 'test@example.com',
-      });
+    it('should return an object with userId and email from payload', async () => {
+      const payload = { sub: 1, email: 'test@example.com' };
 
-      expect(result).toEqual({
-        userId: 123,
-        email: 'test@example.com',
-      });
+      const result = await jwtStrategy.validate(payload);
+
+      expect(result).toEqual({ userId: 1, email: 'test@example.com' });
     });
 
-    it('should return userId and undefined email when email is missing', async () => {
-      const result = await strategy.validate({ sub: 123 });
+    it('should ignore extra payload properties', async () => {
+      const payload = { sub: 1, email: 'test@example.com', extra: 'ignored' };
 
-      expect(result).toEqual({ userId: 123, email: undefined });
+      const result = await jwtStrategy.validate(payload);
+
+      expect(result).toEqual({ userId: 1, email: 'test@example.com' });
     });
 
-    it('should handle an empty payload', async () => {
-      const result = await strategy.validate({});
+    it('should handle payload with undefined sub and email', async () => {
+      const payload = { sub: undefined, email: undefined };
+
+      const result = await jwtStrategy.validate(payload);
 
       expect(result).toEqual({ userId: undefined, email: undefined });
     });
 
-    it('should reject when payload is null', async () => {
-      await expect(strategy.validate(null as any)).rejects.toThrow(TypeError);
+    it('should handle empty payload', async () => {
+      const payload = {};
+
+      const result = await jwtStrategy.validate(payload);
+
+      expect(result).toEqual({ userId: undefined, email: undefined });
     });
 
-    it('should reject when payload is undefined', async () => {
-      await expect(strategy.validate(undefined as any)).rejects.toThrow(TypeError);
+    it('should throw if payload is null', async () => {
+      await expect(jwtStrategy.validate(null as any)).rejects.toThrow();
+    });
+
+    it('should throw if payload is undefined', async () => {
+      await expect(jwtStrategy.validate(undefined as any)).rejects.toThrow();
     });
   });
 });

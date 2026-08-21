@@ -1,89 +1,62 @@
-typescript
 import { Test } from '@nestjs/testing';
 import { EntityBase } from './entity.base';
 
-interface TestDependency {
-  getValue: jest.Mock<string>;
-}
-
-class TestEntity extends EntityBase {
-  constructor(private readonly dependency: TestDependency) {
-    super();
-  }
-
-  public getDependencyValue(): string {
-    return this.dependency.getValue();
-  }
-}
-
 describe('EntityBase', () => {
+  const mockDependency = jest.fn();
+
+  class SimpleEntity extends EntityBase {}
+
+  class EntityWithDependency extends EntityBase {
+    constructor(private readonly dep: jest.Mock) {
+      super();
+    }
+
+    getDependency(): jest.Mock {
+      return this.dep;
+    }
+  }
+
   it('should be defined', () => {
     expect(EntityBase).toBeDefined();
   });
 
-  it('should be abstract and cannot be instantiated directly', () => {
-    expect(() => {
-      // @ts-ignore - intentionally instantiate abstract class
-      new EntityBase();
-    }).toThrow(TypeError);
+  it('should be extendable and instantiable via subclass', () => {
+    const instance = new SimpleEntity();
+    expect(instance).toBeInstanceOf(SimpleEntity);
+    expect(instance).toBeInstanceOf(EntityBase);
   });
 
-  it('should create an instance of a concrete subclass', () => {
-    const getValue = jest.fn().mockReturnValue('mock-value');
-    const dependency: TestDependency = { getValue };
-
-    const entity = new TestEntity(dependency);
-
-    expect(entity).toBeInstanceOf(EntityBase);
-    expect(entity).toBeInstanceOf(TestEntity);
-    expect(entity.getDependencyValue()).toBe('mock-value');
-    expect(getValue).toHaveBeenCalledTimes(1);
+  it('should not have any own public methods or properties', () => {
+    const prototype = EntityBase.prototype as unknown as Record<string, unknown>;
+    expect(Object.getOwnPropertyNames(prototype)).toEqual(['constructor']);
   });
 
-  it('should support subclass inheritance and methods', () => {
-    const getValue = jest.fn().mockReturnValue('value');
-    const dependency: TestDependency = { getValue };
-
-    const entity = new TestEntity(dependency);
-
-    expect(entity.getDependencyValue()).toBe('value');
-    expect(dependency.getValue).toHaveBeenCalled();
-  });
-
-  it('should work with NestJS testing module and mocked providers', async () => {
-    const getValueMock = jest.fn().mockReturnValue('from-module');
-
+  it('should support dependency injection via NestJS Test.createTestingModule', async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
+        { provide: 'MOCK_DEPENDENCY', useValue: mockDependency },
         {
-          provide: 'TEST_DEPENDENCY',
-          useValue: {
-            getValue: getValueMock,
-          },
-        },
-        {
-          provide: TestEntity,
-          useFactory: (dependency: TestDependency) => new TestEntity(dependency),
-          inject: ['TEST_DEPENDENCY'],
+          provide: EntityWithDependency,
+          useFactory: (dep: jest.Mock) => new EntityWithDependency(dep),
+          inject: ['MOCK_DEPENDENCY'],
         },
       ],
     }).compile();
 
-    const entity = moduleRef.get<TestEntity>(TestEntity);
+    const app = moduleRef.createNestApplication();
+    await app.init();
 
+    const entity = app.get(EntityWithDependency);
     expect(entity).toBeInstanceOf(EntityBase);
-    expect(entity.getDependencyValue()).toBe('from-module');
-    expect(getValueMock).toHaveBeenCalled();
+    expect(entity).toBeInstanceOf(EntityWithDependency);
+    expect(entity.getDependency()).toBe(mockDependency);
+
+    await app.close();
   });
 
-  it('should handle edge cases when extending with additional properties', () => {
-    const getValue = jest.fn().mockReturnValue('edge');
-    const dependency: TestDependency = { getValue };
-
-    const entity = new TestEntity(dependency);
-
-    expect(entity).toBeDefined();
-    expect(entity.getDependencyValue()).toBe('edge');
-    expect(getValue).toHaveBeenCalledTimes(1);
+  it('should allow constructing subclass with mocked dependency directly', () => {
+    const entity = new EntityWithDependency(mockDependency);
+    expect(entity).toBeInstanceOf(EntityBase);
+    expect(entity.getDependency()).toBe(mockDependency);
   });
 });

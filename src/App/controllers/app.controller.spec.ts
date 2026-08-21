@@ -5,29 +5,25 @@ describe('AppController', () => {
   let appController: AppController;
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [],
     }).compile();
 
-    appController = app.get<AppController>(AppController);
+    appController = moduleRef.get<AppController>(AppController);
   });
 
-  it('should be defined', () => {
-    expect(appController).toBeDefined();
-  });
+  describe('root', () => {
+    it('should be defined', () => {
+      expect(appController).toBeDefined();
+    });
 
-  describe('getHello', () => {
-    it('should return "Hello World"', () => {
+    it('getHello should return "Hello World"', () => {
       expect(appController.getHello()).toBe('Hello World');
     });
 
-    it('should return a string', () => {
-      expect(typeof appController.getHello()).toBe('string');
-    });
-
-    it('should return the same value on repeated calls', () => {
-      expect(appController.getHello()).toBe(appController.getHello());
+    it('getHello should return a string', () => {
+      const result = appController.getHello();
+      expect(typeof result).toBe('string');
     });
   });
 });

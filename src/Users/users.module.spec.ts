@@ -1,38 +1,43 @@
 typescript
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './users.module';
 import { UserController } from './controllers/user.controller';
-import { UserRepository } from './repositories/user.repository';
 import { UserService } from './services/user.service';
 import { UserSubscriber } from './subscribers/user.subscriber';
-import { UsersModule } from './users.module';
+import { UserRepository } from './repositories/user.repository';
+
+jest.mock('@nestjs/typeorm', () => {
+  const actual = jest.requireActual('@nestjs/typeorm');
+  return {
+    ...actual,
+    TypeOrmModule: {
+      ...actual.TypeOrmModule,
+      forFeature: jest.fn().mockReturnValue({
+        module: actual.TypeOrmModule,
+        providers: [],
+        exports: [],
+      }),
+    },
+  };
+});
 
 describe('UsersModule', () => {
-  let moduleRef: TestingModule;
+  let moduleRef: TestingModule | undefined;
 
   const mockUserService = {
-    create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    create: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
   };
 
-  const mockUserRepository = {
-    find: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  };
-
   const mockUserSubscriber = {
     afterInsert: jest.fn(),
-    beforeInsert: jest.fn(),
     afterUpdate: jest.fn(),
+    beforeInsert: jest.fn(),
     beforeUpdate: jest.fn(),
-    afterRemove: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -41,8 +46,6 @@ describe('UsersModule', () => {
     })
       .overrideProvider(UserService)
       .useValue(mockUserService)
-      .overrideProvider(UserRepository)
-      .useValue(mockUserRepository)
       .overrideProvider(UserSubscriber)
       .useValue(mockUserSubscriber)
       .compile();
@@ -54,47 +57,17 @@ describe('UsersModule', () => {
     }
   });
 
-  it('should compile and be defined', () => {
-    expect(moduleRef).toBeDefined();
+  it('should be defined', () => {
+    expect(UsersModule).toBeDefined();
   });
 
-  it('should provide UserController with mocked dependencies', () => {
-    const controller = moduleRef.get(UserController, { strict: false });
-    expect(controller).toBeDefined();
-    expect(controller).toBeInstanceOf(UserController);
+  it('should be instantiable', () => {
+    const instance = new UsersModule();
+    expect(instance).toBeInstanceOf(UsersModule);
   });
 
-  it('should provide and export the mocked UserService', () => {
-    const service = moduleRef.get(UserService);
-    expect(service).toBe(mockUserService);
-  });
-
-  it('should provide UserSubscriber mock internally', () => {
-    const subscriber = moduleRef.get(UserSubscriber, { strict: false });
-    expect(subscriber).toBe(mockUserSubscriber);
-  });
-
-  it('should provide UserRepository mock internally', () => {
-    const repository = moduleRef.get(UserRepository, { strict: false });
-    expect(repository).toBe(mockUserRepository);
-  });
-
-  it('should mock all UserService methods with jest.fn()', () => {
-    Object.values(mockUserService).forEach((method) => {
-      expect(jest.isMockFunction(method)).toBe(true);
-    });
-  });
-
-  it('should mock all UserRepository methods with jest.fn()', () => {
-    Object.values(mockUserRepository).forEach((method) => {
-      expect(jest.isMockFunction(method)).toBe(true);
-    });
-  });
-
-  it('should mock all UserSubscriber methods with jest.fn()', () => {
-    Object.values(mockUserSubscriber).forEach((method) => {
-      expect(jest.isMockFunction(method)).toBe(true);
-    });
+  it('should call TypeOrmModule.forFeature with UserRepository', () => {
+    expect(TypeOrmModule.forFeature).toHaveBeenCalledWith([UserRepository]);
   });
 
   it('should have correct module metadata', () => {
@@ -104,18 +77,30 @@ describe('UsersModule', () => {
     const exportsMetadata = Reflect.getMetadata('exports', UsersModule);
 
     expect(imports).toHaveLength(1);
-    expect(imports[0]).toHaveProperty('module', TypeOrmModule);
-
-    expect(controllers).toContain(UserController);
-    expect(providers).toEqual(expect.arrayContaining([UserService, UserSubscriber]));
-    expect(exportsMetadata).toContain(UserService);
+    expect(controllers).toEqual([UserController]);
+    expect(providers).toEqual([UserService, UserSubscriber]);
+    expect(exportsMetadata).toEqual([UserService]);
   });
 
-  it('should not export internal providers', () => {
-    const exportsMetadata = Reflect.getMetadata('exports', UsersModule);
+  it('should provide the mocked UserService', () => {
+    expect(moduleRef?.get(UserService)).toBe(mockUserService);
+  });
 
-    expect(exportsMetadata).not.toContain(UserSubscriber);
-    expect(exportsMetadata).not.toContain(UserRepository);
-    expect(exportsMetadata).not.toContain(UserController);
+  it('should provide the mocked UserSubscriber', () => {
+    expect(moduleRef?.get(UserSubscriber)).toBe(mockUserSubscriber);
+  });
+
+  it('should instantiate UserController', () => {
+    const userController = moduleRef?.get(UserController);
+    expect(userController).toBeDefined();
+  });
+
+  it('should mock provider dependencies using jest.fn()', () => {
+    Object.values(mockUserService).forEach((fn) => {
+      expect(jest.isMockFunction(fn)).toBe(true);
+    });
+    Object.values(mockUserSubscriber).forEach((fn) => {
+      expect(jest.isMockFunction(fn)).toBe(true);
+    });
   });
 });

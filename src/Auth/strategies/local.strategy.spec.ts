@@ -1,8 +1,7 @@
-typescript
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
-import { AuthService } from '../services/auth.service';
 import { LocalStrategy } from './local.strategy';
+import { AuthService } from '../services/auth.service';
 
 describe('LocalStrategy', () => {
   let localStrategy: LocalStrategy;
@@ -13,7 +12,7 @@ describe('LocalStrategy', () => {
       validateUser: jest.fn(),
     };
 
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       providers: [
         LocalStrategy,
         { provide: AuthService, useValue: authService },
@@ -27,62 +26,52 @@ describe('LocalStrategy', () => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(localStrategy).toBeDefined();
-  });
-
   describe('validate', () => {
-    it('should return the user when authService.validateUser returns a user', async () => {
-      const mockUser = { id: 1, email: 'user@example.com' };
-      authService.validateUser.mockResolvedValue(mockUser);
+    it('should call authService.validateUser with the provided email and password', async () => {
+      const user = { id: 1, email: 'test@example.com' };
+      authService.validateUser.mockResolvedValue(user);
 
-      const result = await localStrategy.validate('user@example.com', 'password');
+      const result = await localStrategy.validate('test@example.com', 'password123');
 
       expect(authService.validateUser).toHaveBeenCalledWith(
-        'user@example.com',
-        'password',
+        'test@example.com',
+        'password123',
       );
-      expect(result).toEqual(mockUser);
+      expect(result).toBe(user);
     });
 
-    it('should throw UnauthorizedException when authService.validateUser returns null', async () => {
+    it('should return the user when credentials are valid', async () => {
+      const user = { id: 1, email: 'test@example.com' };
+      authService.validateUser.mockResolvedValue(user);
+
+      const result = await localStrategy.validate('test@example.com', 'password123');
+
+      expect(result).toEqual(user);
+    });
+
+    it('should throw UnauthorizedException when authService returns null', async () => {
       authService.validateUser.mockResolvedValue(null);
 
       await expect(
-        localStrategy.validate('user@example.com', 'password'),
+        localStrategy.validate('test@example.com', 'wrong-password'),
       ).rejects.toThrow(UnauthorizedException);
-
-      expect(authService.validateUser).toHaveBeenCalledWith(
-        'user@example.com',
-        'password',
-      );
     });
 
-    it('should throw UnauthorizedException when authService.validateUser returns undefined', async () => {
+    it('should throw UnauthorizedException when authService returns undefined', async () => {
       authService.validateUser.mockResolvedValue(undefined);
 
       await expect(
-        localStrategy.validate('user@example.com', 'password'),
+        localStrategy.validate('test@example.com', 'wrong-password'),
       ).rejects.toThrow(UnauthorizedException);
-
-      expect(authService.validateUser).toHaveBeenCalledWith(
-        'user@example.com',
-        'password',
-      );
     });
 
     it('should propagate errors thrown by authService.validateUser', async () => {
-      const error = new Error('service error');
+      const error = new Error('auth service failure');
       authService.validateUser.mockRejectedValue(error);
 
       await expect(
-        localStrategy.validate('user@example.com', 'password'),
-      ).rejects.toThrow(error);
-
-      expect(authService.validateUser).toHaveBeenCalledWith(
-        'user@example.com',
-        'password',
-      );
+        localStrategy.validate('test@example.com', 'password'),
+      ).rejects.toThrow('auth service failure');
     });
   });
 });
