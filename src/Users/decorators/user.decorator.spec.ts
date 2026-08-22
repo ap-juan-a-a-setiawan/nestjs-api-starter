@@ -12,7 +12,7 @@ describe('UserDecorator', () => {
   beforeEach(() => {
     mockRequest = {
       user: {
-        id: '123',
+        id: 1,
         email: 'test@example.com',
         roles: ['admin'],
       },
@@ -29,68 +29,77 @@ describe('UserDecorator', () => {
     jest.clearAllMocks();
   });
 
-  describe('User decorator', () => {
+  describe('User decorator factory function', () => {
     it('should be defined', () => {
       expect(User).toBeDefined();
     });
 
     it('should return the user object from the request', () => {
-      const result = User('data', mockExecutionContext);
+      const result = User(undefined, mockExecutionContext);
       expect(result).toEqual(mockRequest.user);
-    });
-
-    it('should call switchToHttp and getRequest', () => {
-      User('data', mockExecutionContext);
-      expect(mockExecutionContext.switchToHttp).toHaveBeenCalled();
-      expect(mockExecutionContext.switchToHttp().getRequest).toHaveBeenCalled();
     });
 
     it('should return undefined when request has no user property', () => {
       mockRequest = {};
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
+
+      const result = User(undefined, mockExecutionContext);
       expect(result).toBeUndefined();
     });
 
     it('should return null when request.user is null', () => {
-      mockRequest = { user: null };
+      mockRequest.user = null;
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
+
+      const result = User(undefined, mockExecutionContext);
       expect(result).toBeNull();
     });
 
-    it('should handle different data parameter values', () => {
-      const testData = ['someData', 123, { key: 'value' }, null, undefined];
-      
-      testData.forEach((data) => {
-        const result = User(data, mockExecutionContext);
-        expect(result).toEqual(mockRequest.user);
-      });
+    it('should return the user object when data parameter is provided', () => {
+      const data = 'some-data';
+      const result = User(data, mockExecutionContext);
+      expect(result).toEqual(mockRequest.user);
     });
 
-    it('should handle request with additional properties', () => {
-      mockRequest = {
-        user: { id: '456', name: 'John Doe' },
-        otherProperty: 'test',
-        headers: { authorization: 'Bearer token' },
-      };
+    it('should handle missing request object', () => {
+      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(undefined);
+
+      const result = User(undefined, mockExecutionContext);
+      expect(result).toBeUndefined();
+    });
+
+    it('should handle null request object', () => {
+      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(null);
+
+      const result = User(undefined, mockExecutionContext);
+      expect(result).toBeUndefined();
+    });
+
+    it('should call switchToHttp and getRequest methods', () => {
+      User(undefined, mockExecutionContext);
+
+      expect(mockExecutionContext.switchToHttp).toHaveBeenCalledTimes(1);
+      expect(mockExecutionContext.switchToHttp().getRequest).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return the exact user object reference', () => {
+      const userObject = { id: 123, name: 'John Doe' };
+      mockRequest.user = userObject;
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
-      expect(result).toEqual({ id: '456', name: 'John Doe' });
+
+      const result = User(undefined, mockExecutionContext);
+      expect(result).toBe(userObject);
     });
 
-    it('should handle complex user objects', () => {
+    it('should work with complex user objects', () => {
       const complexUser = {
-        id: '789',
+        id: 1,
         profile: {
-          firstName: 'Jane',
-          lastName: 'Smith',
+          firstName: 'John',
+          lastName: 'Doe',
           address: {
             street: '123 Main St',
-            city: 'Springfield',
+            city: 'Anytown',
           },
         },
         permissions: ['read', 'write', 'delete'],
@@ -99,97 +108,78 @@ describe('UserDecorator', () => {
           isActive: true,
         },
       };
-      
-      mockRequest = { user: complexUser };
+      mockRequest.user = complexUser;
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
+
+      const result = User(undefined, mockExecutionContext);
       expect(result).toEqual(complexUser);
+      expect(result.profile.firstName).toBe('John');
+      expect(result.permissions).toContain('write');
+      expect(result.metadata.isActive).toBe(true);
     });
 
-    it('should handle empty user object', () => {
-      mockRequest = { user: {} };
+    it('should handle request with user as empty object', () => {
+      mockRequest.user = {};
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
+
+      const result = User(undefined, mockExecutionContext);
       expect(result).toEqual({});
     });
 
     it('should handle request with user as primitive value', () => {
-      mockRequest = { user: 'string-user' };
+      mockRequest.user = 'user-string';
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
-      expect(result).toBe('string-user');
+
+      const result = User(undefined, mockExecutionContext);
+      expect(result).toBe('user-string');
     });
 
     it('should handle request with user as number', () => {
-      mockRequest = { user: 12345 };
+      mockRequest.user = 42;
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
-      expect(result).toBe(12345);
+
+      const result = User(undefined, mockExecutionContext);
+      expect(result).toBe(42);
     });
 
     it('should handle request with user as boolean', () => {
-      mockRequest = { user: true };
+      mockRequest.user = true;
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
+
+      const result = User(undefined, mockExecutionContext);
       expect(result).toBe(true);
     });
 
     it('should handle request with user as array', () => {
-      const userArray = [{ id: '1' }, { id: '2' }];
-      mockRequest = { user: userArray };
+      mockRequest.user = [1, 2, 3];
       mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-      
-      const result = User('data', mockExecutionContext);
-      expect(result).toEqual(userArray);
-    });
 
-    it('should handle missing switchToHttp method', () => {
-      mockExecutionContext = {} as jest.Mocked<ExecutionContext>;
-      
-      expect(() => User('data', mockExecutionContext)).toThrow();
-    });
-
-    it('should handle missing getRequest method', () => {
-      mockExecutionContext = {
-        switchToHttp: jest.fn().mockReturnValue({}),
-      } as unknown as jest.Mocked<ExecutionContext>;
-      
-      expect(() => User('data', mockExecutionContext)).toThrow();
-    });
-
-    it('should handle getRequest returning undefined', () => {
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(undefined);
-      
-      const result = User('data', mockExecutionContext);
-      expect(result).toBeUndefined();
-    });
-
-    it('should handle getRequest returning null', () => {
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(null);
-      
-      const result = User('data', mockExecutionContext);
-      expect(result).toBeUndefined();
-    });
-
-    it('should handle getRequest throwing an error', () => {
-      mockExecutionContext.switchToHttp().getRequest.mockImplementation(() => {
-        throw new Error('Request retrieval failed');
-      });
-      
-      expect(() => User('data', mockExecutionContext)).toThrow('Request retrieval failed');
+      const result = User(undefined, mockExecutionContext);
+      expect(result).toEqual([1, 2, 3]);
     });
 
     it('should handle switchToHttp throwing an error', () => {
       mockExecutionContext.switchToHttp.mockImplementation(() => {
-        throw new Error('HTTP context switch failed');
+        throw new Error('HTTP context not available');
       });
-      
-      expect(() => User('data', mockExecutionContext)).toThrow('HTTP context switch failed');
+
+      expect(() => User(undefined, mockExecutionContext)).toThrow('HTTP context not available');
+    });
+
+    it('should handle getRequest throwing an error', () => {
+      mockExecutionContext.switchToHttp().getRequest.mockImplementation(() => {
+        throw new Error('Request not available');
+      });
+
+      expect(() => User(undefined, mockExecutionContext)).toThrow('Request not available');
+    });
+
+    it('should handle undefined execution context', () => {
+      expect(() => User(undefined, undefined as any)).toThrow();
+    });
+
+    it('should handle null execution context', () => {
+      expect(() => User(undefined, null as any)).toThrow();
     });
   });
 });

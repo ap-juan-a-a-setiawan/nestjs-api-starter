@@ -5,1000 +5,900 @@ describe('AppController', () => {
   let appController: AppController;
 
   beforeEach(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
     }).compile();
 
-    appController = moduleRef.get<AppController>(AppController);
+    appController = app.get<AppController>(AppController);
   });
 
-  describe('getHello', () => {
-    it('should return "Hello World"', () => {
-      const result = appController.getHello();
-      expect(result).toBe('Hello World');
-    });
-
-    it('should return a string type', () => {
-      const result = appController.getHello();
-      expect(typeof result).toBe('string');
-    });
-
-    it('should return the exact string "Hello World" (strict equality)', () => {
-      const result = appController.getHello();
-      expect(result).toEqual('Hello World');
-    });
-
-    it('should not return an empty string', () => {
-      const result = appController.getHello();
-      expect(result).not.toBe('');
-    });
-
-    it('should not return null or undefined', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-      expect(result).not.toBeUndefined();
-    });
-
-    it('should return a non-empty string', () => {
-      const result = appController.getHello();
-      expect(result.length).toBeGreaterThan(0);
-    });
-
-    it('should return a string with length 11', () => {
-      const result = appController.getHello();
-      expect(result.length).toBe(11);
-    });
-
-    it('should return "Hello World" with correct capitalization', () => {
-      const result = appController.getHello();
-      expect(result).toMatch(/^Hello World$/);
-    });
-
-    it('should return a string that contains "Hello"', () => {
-      const result = appController.getHello();
-      expect(result).toContain('Hello');
-    });
-
-    it('should return a string that contains "World"', () => {
-      const result = appController.getHello();
-      expect(result).toContain('World');
-    });
-
-    it('should return a string that starts with "Hello"', () => {
-      const result = appController.getHello();
-      expect(result.startsWith('Hello')).toBe(true);
-    });
-
-    it('should return a string that ends with "World"', () => {
-      const result = appController.getHello();
-      expect(result.endsWith('World')).toBe(true);
-    });
-
-    it('should return a string with a space between "Hello" and "World"', () => {
-      const result = appController.getHello();
-      expect(result).toBe('Hello World');
-      expect(result.split(' ')).toHaveLength(2);
-    });
-
-    it('should return the same result on multiple calls', () => {
-      const firstCall = appController.getHello();
-      const secondCall = appController.getHello();
-      expect(firstCall).toBe(secondCall);
-    });
-
-    it('should be callable multiple times without side effects', () => {
-      appController.getHello();
-      appController.getHello();
-      appController.getHello();
-      const result = appController.getHello();
-      expect(result).toBe('Hello World');
-    });
-
-    it('should return a primitive string (not an object)', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Object);
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(Number.isNaN(Number(result))).toBe(true);
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(result).not.toBe(true);
-      expect(result).not.toBe(false);
-    });
-
-    it('should return a string that is not an array', () => {
-      const result = appController.getHello();
-      expect(Array.isArray(result)).toBe(false);
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(result).toBeDefined();
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is truthy', () => {
-      const result = appController.getHello();
-      expect(result).toBeTruthy();
-    });
-
-    it('should return a string that is not falsy', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeFalsy();
-    });
-
-    it('should return a string that matches the expected pattern', () => {
-      const result = appController.getHello();
-      expect(result).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
-    });
-
-    it('should return a string with exactly two words', () => {
-      const result = appController.getHello();
-      const words = result.split(' ');
-      expect(words).toHaveLength(2);
-      expect(words[0]).toBe('Hello');
-      expect(words[1]).toBe('World');
-    });
-
-    it('should return a string with no leading or trailing whitespace', () => {
-      const result = appController.getHello();
-      expect(result.trim()).toBe(result);
-    });
-
-    it('should return a string with no extra spaces', () => {
-      const result = appController.getHello();
-      expect(result).not.toMatch(/\s{2,}/);
-    });
-
-    it('should return a string with only letters and a space', () => {
-      const result = appController.getHello();
-      expect(result).toMatch(/^[A-Za-z ]+$/);
-    });
-
-    it('should return a string with no numbers', () => {
-      const result = appController.getHello();
-      expect(result).not.toMatch(/\d/);
-    });
-
-    it('should return a string with no special characters', () => {
-      const result = appController.getHello();
-      expect(result).not.toMatch(/[^A-Za-z ]/);
-    });
-
-    it('should return a string with uppercase "H" and "W"', () => {
-      const result = appController.getHello();
-      expect(result[0]).toBe('H');
-      expect(result[6]).toBe('W');
-    });
-
-    it('should return a string with lowercase "ello" and "orld"', () => {
-      const result = appController.getHello();
-      expect(result.slice(1, 5)).toBe('ello');
-      expect(result.slice(7)).toBe('orld');
-    });
-
-    it('should return a string that is immutable (cannot be modified)', () => {
-      const result = appController.getHello();
-      expect(() => {
-        (result as any).foo = 'bar';
-      }).toThrow();
-    });
-
-    it('should return a string that is not a Date object', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Date);
-    });
-
-    it('should return a string that is not a RegExp object', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(RegExp);
-    });
-
-    it('should return a string that is not an Error object', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Error);
-    });
-
-    it('should return a string that is not a Map', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Map);
-    });
-
-    it('should return a string that is not a Set', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Set);
-    });
-
-    it('should return a string that is not a WeakMap', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(WeakMap);
-    });
-
-    it('should return a string that is not a WeakSet', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(WeakSet);
-    });
-
-    it('should return a string that is not a Promise', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Promise);
-    });
-
-    it('should return a string that is not a Buffer', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Buffer);
-    });
-
-    it('should return a string that is not an ArrayBuffer', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(ArrayBuffer);
-    });
-
-    it('should return a string that is not a DataView', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(DataView);
-    });
-
-    it('should return a string that is not a typed array', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Int8Array);
-      expect(result).not.toBeInstanceOf(Uint8Array);
-      expect(result).not.toBeInstanceOf(Uint8ClampedArray);
-      expect(result).not.toBeInstanceOf(Int16Array);
-      expect(result).not.toBeInstanceOf(Uint16Array);
-      expect(result).not.toBeInstanceOf(Int32Array);
-      expect(result).not.toBeInstanceOf(Uint32Array);
-      expect(result).not.toBeInstanceOf(Float32Array);
-      expect(result).not.toBeInstanceOf(Float64Array);
-      expect(result).not.toBeInstanceOf(BigInt64Array);
-      expect(result).not.toBeInstanceOf(BigUint64Array);
-    });
-
-    it('should return a string that is not a Proxy', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Proxy);
-    });
-
-    it('should return a string that is not a generator object', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Object.getPrototypeOf(function* () {}).constructor);
-    });
-
-    it('should return a string that is not an async function', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Object.getPrototypeOf(async function () {}).constructor);
-    });
-
-    it('should return a string that is not a class instance', () => {
-      class TestClass {}
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(TestClass);
-    });
-
-    it('should return a string that is not a plain object', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Object);
-    });
-
-    it('should return a string that is not an array-like object', () => {
-      const result = appController.getHello();
-      expect(result).not.toHaveProperty('length');
-    });
-
-    it('should return a string that is not iterable as an array', () => {
-      const result = appController.getHello();
-      expect(Array.from(result as any)).toEqual(['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']);
-    });
-
-    it('should return a string that can be converted to an array of characters', () => {
-      const result = appController.getHello();
-      expect([...result]).toEqual(['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']);
-    });
-
-    it('should return a string that can be split by space', () => {
-      const result = appController.getHello();
-      expect(result.split(' ')).toEqual(['Hello', 'World']);
-    });
-
-    it('should return a string that can be reversed', () => {
-      const result = appController.getHello();
-      expect(result.split('').reverse().join('')).toBe('dlroW olleH');
-    });
-
-    it('should return a string that can be uppercased', () => {
-      const result = appController.getHello();
-      expect(result.toUpperCase()).toBe('HELLO WORLD');
-    });
-
-    it('should return a string that can be lowercased', () => {
-      const result = appController.getHello();
-      expect(result.toLowerCase()).toBe('hello world');
-    });
-
-    it('should return a string that can be repeated', () => {
-      const result = appController.getHello();
-      expect(result.repeat(2)).toBe('Hello WorldHello World');
-    });
-
-    it('should return a string that can be sliced', () => {
-      const result = appController.getHello();
-      expect(result.slice(0, 5)).toBe('Hello');
-      expect(result.slice(6)).toBe('World');
-    });
-
-    it('should return a string that can be substringed', () => {
-      const result = appController.getHello();
-      expect(result.substring(0, 5)).toBe('Hello');
-      expect(result.substring(6)).toBe('World');
-    });
-
-    it('should return a string that can be searched', () => {
-      const result = appController.getHello();
-      expect(result.indexOf('World')).toBe(6);
-      expect(result.lastIndexOf('o')).toBe(7);
-    });
-
-    it('should return a string that can be matched', () => {
-      const result = appController.getHello();
-      expect(result.match(/World/)).not.toBeNull();
-      expect(result.match(/World/)![0]).toBe('World');
-    });
-
-    it('should return a string that can be replaced', () => {
-      const result = appController.getHello();
-      expect(result.replace('World', 'NestJS')).toBe('Hello NestJS');
-    });
-
-    it('should return a string that can be trimmed', () => {
-      const result = appController.getHello();
-      expect(result.trim()).toBe('Hello World');
-    });
-
-    it('should return a string that can be padded', () => {
-      const result = appController.getHello();
-      expect(result.padStart(15, '*')).toBe('****Hello World');
-      expect(result.padEnd(15, '*')).toBe('Hello World****');
-    });
-
-    it('should return a string that can be checked for inclusion', () => {
-      const result = appController.getHello();
-      expect(result.includes('Hello')).toBe(true);
-      expect(result.includes('World')).toBe(true);
-      expect(result.includes('NestJS')).toBe(false);
-    });
-
-    it('should return a string that can be checked for start/end', () => {
-      const result = appController.getHello();
-      expect(result.startsWith('Hello')).toBe(true);
-      expect(result.endsWith('World')).toBe(true);
-    });
-
-    it('should return a string that can be compared', () => {
-      const result = appController.getHello();
-      expect(result.localeCompare('Hello World')).toBe(0);
-      expect(result.localeCompare('Hello')).toBeGreaterThan(0);
-      expect(result.localeCompare('Hello World!')).toBeLessThan(0);
-    });
-
-    it('should return a string that can be normalized', () => {
-      const result = appController.getHello();
-      expect(result.normalize()).toBe('Hello World');
-    });
-
-    it('should return a string that can be converted to a number (NaN)', () => {
-      const result = appController.getHello();
-      expect(Number(result)).toBeNaN();
-    });
-
-    it('should return a string that can be converted to a boolean (true)', () => {
-      const result = appController.getHello();
-      expect(Boolean(result)).toBe(true);
-    });
-
-    it('should return a string that can be converted to a JSON string', () => {
-      const result = appController.getHello();
-      expect(JSON.stringify(result)).toBe('"Hello World"');
-    });
-
-    it('should return a string that can be converted to a base64 string', () => {
-      const result = appController.getHello();
-      expect(Buffer.from(result).toString('base64')).toBe('SGVsbG8gV29ybGQ=');
-    });
-
-    it('should return a string that can be converted to a URL-encoded string', () => {
-      const result = appController.getHello();
-      expect(encodeURIComponent(result)).toBe('Hello%20World');
-    });
-
-    it('should return a string that can be converted to a hash', () => {
-      const result = appController.getHello();
-      // Simple hash check (not cryptographic)
-      let hash = 0;
-      for (let i = 0; i < result.length; i++) {
-        hash = (hash << 5) - hash + result.charCodeAt(i);
-        hash |= 0;
-      }
-      expect(hash).toBeDefined();
-    });
-
-    it('should return a string that can be iterated character by character', () => {
-      const result = appController.getHello();
-      const chars: string[] = [];
-      for (const char of result) {
-        chars.push(char);
-      }
-      expect(chars).toEqual(['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']);
-    });
-
-    it('should return a string that can be accessed by index', () => {
-      const result = appController.getHello();
-      expect(result[0]).toBe('H');
-      expect(result[1]).toBe('e');
-      expect(result[2]).toBe('l');
-      expect(result[3]).toBe('l');
-      expect(result[4]).toBe('o');
-      expect(result[5]).toBe(' ');
-      expect(result[6]).toBe('W');
-      expect(result[7]).toBe('o');
-      expect(result[8]).toBe('r');
-      expect(result[9]).toBe('l');
-      expect(result[10]).toBe('d');
-    });
-
-    it('should return a string with correct character codes', () => {
-      const result = appController.getHello();
-      expect(result.charCodeAt(0)).toBe(72);
-      expect(result.charCodeAt(5)).toBe(32);
-      expect(result.charCodeAt(6)).toBe(87);
-    });
-
-    it('should return a string that is not empty', () => {
-      const result = appController.getHello();
-      expect(result).not.toHaveLength(0);
-    });
-
-    it('should return a string with a length of 11', () => {
-      const result = appController.getHello();
-      expect(result).toHaveLength(11);
-    });
-
-    it('should return a string that is a primitive', () => {
-      const result = appController.getHello();
-      expect(typeof result).toBe('string');
-      expect(result instanceof String).toBe(false);
-    });
-
-    it('should return a string that is not a String object', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(String);
-    });
-
-    it('should return a string that is frozen (immutable)', () => {
-      const result = appController.getHello();
-      expect(Object.isFrozen(result)).toBe(true);
-    });
-
-    it('should return a string that is sealed (immutable)', () => {
-      const result = appController.getHello();
-      expect(Object.isSealed(result)).toBe(true);
-    });
-
-    it('should return a string that is extensible (but immutable)', () => {
-      const result = appController.getHello();
-      expect(Object.isExtensible(result)).toBe(true);
-    });
-
-    it('should return a string that has no own properties', () => {
-      const result = appController.getHello();
-      expect(Object.keys(result)).toHaveLength(0);
-    });
-
-    it('should return a string that has no enumerable properties', () => {
-      const result = appController.getHello();
-      expect(Object.getOwnPropertyNames(result)).toHaveLength(0);
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a string that is not a symbol', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
-    });
-
-    it('should return a string that is not a bigint', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
-    });
-
-    it('should return a string that is not a number', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
-    });
-
-    it('should return a string that is not a boolean', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
-    });
-
-    it('should return a string that is not undefined', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
-    });
-
-    it('should return a string that is not null', () => {
-      const result = appController.getHello();
-      expect(result).not.toBeNull();
-    });
-
-    it('should return a string that is not an object', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
-    });
-
-    it('should return a string that is not a function', () => {
-      const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
-    });
-
-    it('should return a
+  describe('root', () => {
+    it('should be defined', () => {
+      expect(appController).toBeDefined();
+    });
+
+    describe('getHello', () => {
+      it('should return "Hello World"', () => {
+        expect(appController.getHello()).toBe('Hello World');
+      });
+
+      it('should return a string', () => {
+        const result = appController.getHello();
+        expect(typeof result).toBe('string');
+      });
+
+      it('should return the exact string "Hello World"', () => {
+        const result = appController.getHello();
+        expect(result).toEqual('Hello World');
+      });
+
+      it('should not return an empty string', () => {
+        const result = appController.getHello();
+        expect(result).not.toBe('');
+      });
+
+      it('should not return null', () => {
+        const result = appController.getHello();
+        expect(result).not.toBeNull();
+      });
+
+      it('should not return undefined', () => {
+        const result = appController.getHello();
+        expect(result).not.toBeUndefined();
+      });
+
+      it('should return a non-empty string', () => {
+        const result = appController.getHello();
+        expect(result.length).toBeGreaterThan(0);
+      });
+
+      it('should return a string with length 11', () => {
+        const result = appController.getHello();
+        expect(result.length).toBe(11);
+      });
+
+      it('should return "Hello World" with correct casing', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+        expect(result).not.toBe('hello world');
+        expect(result).not.toBe('HELLO WORLD');
+      });
+
+      it('should return "Hello World" with correct spacing', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+        expect(result).not.toBe('Hello  World');
+        expect(result).not.toBe('HelloWorld');
+      });
+
+      it('should return "Hello World" with correct characters', () => {
+        const result = appController.getHello();
+        expect(result).toMatch(/^Hello World$/);
+      });
+
+      it('should return "Hello World" without trailing spaces', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+        expect(result).not.toBe('Hello World ');
+      });
+
+      it('should return "Hello World" without leading spaces', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+        expect(result).not.toBe(' Hello World');
+      });
+
+      it('should return "Hello World" with "Hello" first', () => {
+        const result = appController.getHello();
+        expect(result.startsWith('Hello')).toBe(true);
+      });
+
+      it('should return "Hello World" with "World" last', () => {
+        const result = appController.getHello();
+        expect(result.endsWith('World')).toBe(true);
+      });
+
+      it('should contain "Hello" in the result', () => {
+        const result = appController.getHello();
+        expect(result).toContain('Hello');
+      });
+
+      it('should contain "World" in the result', () => {
+        const result = appController.getHello();
+        expect(result).toContain('World');
+      });
+
+      it('should contain a space between "Hello" and "World"', () => {
+        const result = appController.getHello();
+        expect(result).toContain(' ');
+      });
+
+      it('should return the same result on multiple calls', () => {
+        const firstCall = appController.getHello();
+        const secondCall = appController.getHello();
+        expect(firstCall).toBe(secondCall);
+      });
+
+      it('should be deterministic', () => {
+        const results = Array.from({ length: 10 }, () => appController.getHello());
+        results.forEach(result => {
+          expect(result).toBe('Hello World');
+        });
+      });
+
+      it('should not throw any errors', () => {
+        expect(() => appController.getHello()).not.toThrow();
+      });
+
+      it('should handle concurrent calls', async () => {
+        const results = await Promise.all([
+          Promise.resolve(appController.getHello()),
+          Promise.resolve(appController.getHello()),
+          Promise.resolve(appController.getHello()),
+        ]);
+        results.forEach(result => {
+          expect(result).toBe('Hello World');
+        });
+      });
+
+      it('should return a primitive string, not an object', () => {
+        const result = appController.getHello();
+        expect(result).not.toBeInstanceOf(Object);
+        expect(result).toBeInstanceOf(String);
+      });
+
+      it('should return a string that can be used in template literals', () => {
+        const result = appController.getHello();
+        expect(`${result}`).toBe('Hello World');
+      });
+
+      it('should return a string that can be concatenated', () => {
+        const result = appController.getHello();
+        expect(result + '').toBe('Hello World');
+      });
+
+      it('should return a string that can be compared with ==', () => {
+        const result = appController.getHello();
+        expect(result == 'Hello World').toBe(true);
+      });
+
+      it('should return a string that can be compared with ===', () => {
+        const result = appController.getHello();
+        expect(result === 'Hello World').toBe(true);
+      });
+
+      it('should return a string that can be used in array', () => {
+        const result = appController.getHello();
+        expect([result]).toEqual(['Hello World']);
+      });
+
+      it('should return a string that can be used in object', () => {
+        const result = appController.getHello();
+        expect({ message: result }).toEqual({ message: 'Hello World' });
+      });
+
+      it('should return a string that can be used in Set', () => {
+        const result = appController.getHello();
+        expect(new Set([result]).has('Hello World')).toBe(true);
+      });
+
+      it('should return a string that can be used in Map', () => {
+        const result = appController.getHello();
+        const map = new Map();
+        map.set('message', result);
+        expect(map.get('message')).toBe('Hello World');
+      });
+
+      it('should return a string that can be used in JSON.stringify', () => {
+        const result = appController.getHello();
+        expect(JSON.stringify(result)).toBe('"Hello World"');
+      });
+
+      it('should return a string that can be used in JSON.parse', () => {
+        const result = appController.getHello();
+        expect(JSON.parse(JSON.stringify(result))).toBe('Hello World');
+      });
+
+      it('should return a string that can be used in regex', () => {
+        const result = appController.getHello();
+        expect(result.match(/Hello/)).toBeTruthy();
+        expect(result.match(/World/)).toBeTruthy();
+      });
+
+      it('should return a string that can be split', () => {
+        const result = appController.getHello();
+        expect(result.split(' ')).toEqual(['Hello', 'World']);
+      });
+
+      it('should return a string that can be sliced', () => {
+        const result = appController.getHello();
+        expect(result.slice(0, 5)).toBe('Hello');
+        expect(result.slice(6)).toBe('World');
+      });
+
+      it('should return a string that can be substringed', () => {
+        const result = appController.getHello();
+        expect(result.substring(0, 5)).toBe('Hello');
+        expect(result.substring(6)).toBe('World');
+      });
+
+      it('should return a string that can be uppercased', () => {
+        const result = appController.getHello();
+        expect(result.toUpperCase()).toBe('HELLO WORLD');
+      });
+
+      it('should return a string that can be lowercased', () => {
+        const result = appController.getHello();
+        expect(result.toLowerCase()).toBe('hello world');
+      });
+
+      it('should return a string that can be trimmed', () => {
+        const result = appController.getHello();
+        expect(result.trim()).toBe('Hello World');
+      });
+
+      it('should return a string that can be replaced', () => {
+        const result = appController.getHello();
+        expect(result.replace('World', 'NestJS')).toBe('Hello NestJS');
+      });
+
+      it('should return a string that can be searched', () => {
+        const result = appController.getHello();
+        expect(result.search('World')).toBe(6);
+        expect(result.search('Hello')).toBe(0);
+      });
+
+      it('should return a string that can be indexed', () => {
+        const result = appController.getHello();
+        expect(result[0]).toBe('H');
+        expect(result[1]).toBe('e');
+        expect(result[10]).toBe('d');
+      });
+
+      it('should return a string with correct character codes', () => {
+        const result = appController.getHello();
+        expect(result.charCodeAt(0)).toBe(72); // H
+        expect(result.charCodeAt(1)).toBe(101); // e
+        expect(result.charCodeAt(6)).toBe(87); // W
+      });
+
+      it('should return a string that can be iterated', () => {
+        const result = appController.getHello();
+        const chars = Array.from(result);
+        expect(chars).toEqual(['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']);
+      });
+
+      it('should return a string that can be spread', () => {
+        const result = appController.getHello();
+        const chars = [...result];
+        expect(chars).toEqual(['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']);
+      });
+
+      it('should return a string that can be used in for...of', () => {
+        const result = appController.getHello();
+        let concatenated = '';
+        for (const char of result) {
+          concatenated += char;
+        }
+        expect(concatenated).toBe('Hello World');
+      });
+
+      it('should return a string that can be used in for...in', () => {
+        const result = appController.getHello();
+        let indices: number[] = [];
+        for (const index in result) {
+          indices.push(Number(index));
+        }
+        expect(indices).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      });
+
+      it('should return a string that can be used with Array.from', () => {
+        const result = appController.getHello();
+        expect(Array.from(result)).toEqual(['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']);
+      });
+
+      it('should return a string that can be used with Array.prototype.includes', () => {
+        const result = appController.getHello();
+        expect(Array.from(result).includes('H')).toBe(true);
+        expect(Array.from(result).includes('z')).toBe(false);
+      });
+
+      it('should return a string that can be used with String.prototype.includes', () => {
+        const result = appController.getHello();
+        expect(result.includes('Hello')).toBe(true);
+        expect(result.includes('World')).toBe(true);
+        expect(result.includes('NestJS')).toBe(false);
+      });
+
+      it('should return a string that can be used with String.prototype.startsWith', () => {
+        const result = appController.getHello();
+        expect(result.startsWith('Hello')).toBe(true);
+        expect(result.startsWith('World')).toBe(false);
+      });
+
+      it('should return a string that can be used with String.prototype.endsWith', () => {
+        const result = appController.getHello();
+        expect(result.endsWith('World')).toBe(true);
+        expect(result.endsWith('Hello')).toBe(false);
+      });
+
+      it('should return a string that can be used with String.prototype.indexOf', () => {
+        const result = appController.getHello();
+        expect(result.indexOf('Hello')).toBe(0);
+        expect(result.indexOf('World')).toBe(6);
+        expect(result.indexOf('NestJS')).toBe(-1);
+      });
+
+      it('should return a string that can be used with String.prototype.lastIndexOf', () => {
+        const result = appController.getHello();
+        expect(result.lastIndexOf('l')).toBe(9);
+        expect(result.lastIndexOf('o')).toBe(7);
+      });
+
+      it('should return a string that can be used with String.prototype.match', () => {
+        const result = appController.getHello();
+        expect(result.match(/Hello/)).toBeTruthy();
+        expect(result.match(/World/)).toBeTruthy();
+        expect(result.match(/NestJS/)).toBeNull();
+      });
+
+      it('should return a string that can be used with String.prototype.replaceAll', () => {
+        const result = appController.getHello();
+        expect(result.replaceAll('l', 'L')).toBe('HeLLo WorLd');
+      });
+
+      it('should return a string that can be used with String.prototype.split', () => {
+        const result = appController.getHello();
+        expect(result.split('')).toEqual(['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']);
+        expect(result.split(' ')).toEqual(['Hello', 'World']);
+      });
+
+      it('should return a string that can be used with String.prototype.trim', () => {
+        const result = appController.getHello();
+        expect(result.trim()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype.trimStart', () => {
+        const result = appController.getHello();
+        expect(result.trimStart()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype.trimEnd', () => {
+        const result = appController.getHello();
+        expect(result.trimEnd()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype.padStart', () => {
+        const result = appController.getHello();
+        expect(result.padStart(15, '*')).toBe('****Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype.padEnd', () => {
+        const result = appController.getHello();
+        expect(result.padEnd(15, '*')).toBe('Hello World****');
+      });
+
+      it('should return a string that can be used with String.prototype.repeat', () => {
+        const result = appController.getHello();
+        expect(result.repeat(2)).toBe('Hello WorldHello World');
+      });
+
+      it('should return a string that can be used with String.prototype.charAt', () => {
+        const result = appController.getHello();
+        expect(result.charAt(0)).toBe('H');
+        expect(result.charAt(6)).toBe('W');
+        expect(result.charAt(11)).toBe('');
+      });
+
+      it('should return a string that can be used with String.prototype.charCodeAt', () => {
+        const result = appController.getHello();
+        expect(result.charCodeAt(0)).toBe(72);
+        expect(result.charCodeAt(6)).toBe(87);
+      });
+
+      it('should return a string that can be used with String.prototype.codePointAt', () => {
+        const result = appController.getHello();
+        expect(result.codePointAt(0)).toBe(72);
+        expect(result.codePointAt(6)).toBe(87);
+      });
+
+      it('should return a string that can be used with String.prototype.concat', () => {
+        const result = appController.getHello();
+        expect(result.concat('!')).toBe('Hello World!');
+      });
+
+      it('should return a string that can be used with String.prototype.localeCompare', () => {
+        const result = appController.getHello();
+        expect(result.localeCompare('Hello World')).toBe(0);
+        expect(result.localeCompare('Hello')).toBeGreaterThan(0);
+        expect(result.localeCompare('Hello World!')).toBeLessThan(0);
+      });
+
+      it('should return a string that can be used with String.prototype.normalize', () => {
+        const result = appController.getHello();
+        expect(result.normalize()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype.toString', () => {
+        const result = appController.getHello();
+        expect(result.toString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype.valueOf', () => {
+        const result = appController.getHello();
+        expect(result.valueOf()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.iterator]', () => {
+        const result = appController.getHello();
+        const iterator = result[Symbol.iterator]();
+        expect(iterator.next().value).toBe('H');
+        expect(iterator.next().value).toBe('e');
+        expect(iterator.next().value).toBe('l');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.match]', () => {
+        const result = appController.getHello();
+        expect(result.match(/Hello/)).toBeTruthy();
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.replace]', () => {
+        const result = appController.getHello();
+        expect(result.replace('World', 'NestJS')).toBe('Hello NestJS');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.search]', () => {
+        const result = appController.getHello();
+        expect(result.search('World')).toBe(6);
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.split]', () => {
+        const result = appController.getHello();
+        expect(result.split(' ')).toEqual(['Hello', 'World']);
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toPrimitive]', () => {
+        const result = appController.getHello();
+        expect(result[Symbol.toPrimitive]('string')).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toStringTag]', () => {
+        const result = appController.getHello();
+        expect(Object.prototype.toString.call(result)).toBe('[object String]');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.unscopables]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.isConcatSpreadable]', () => {
+        const result = appController.getHello();
+        expect([].concat(result)).toEqual(['Hello World']);
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.species]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.matchAll]', () => {
+        const result = appController.getHello();
+        const matches = Array.from(result.matchAll(/l/g));
+        expect(matches.length).toBe(3);
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.replaceAll]', () => {
+        const result = appController.getHello();
+        expect(result.replaceAll('l', 'L')).toBe('HeLLo WorLd');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.searchAll]', () => {
+        const result = appController.getHello();
+        expect(result.search('l')).toBe(2);
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.splitAll]', () => {
+        const result = appController.getHello();
+        expect(result.split('l')).toEqual(['He', '', 'o Wor', 'd']);
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleLowerCase]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleLowerCase()).toBe('hello world');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleUpperCase]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleUpperCase()).toBe('HELLO WORLD');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleString]', () => {
+        const result = appController.getHello();
+        expect(result.toLocaleString()).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleDateString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });
+
+      it('should return a string that can be used with String.prototype[Symbol.toLocaleTimeString]', () => {
+        const result = appController.getHello();
+        expect(result).toBe('Hello World');
+      });

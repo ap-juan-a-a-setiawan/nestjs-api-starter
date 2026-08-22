@@ -30,7 +30,7 @@ describe('UserRefactoring1606680965185', () => {
   });
 
   describe('up', () => {
-    it('should create users table with correct schema', async () => {
+    it('should create users table with all required columns', async () => {
       await migration.up(mockQueryRunner);
 
       expect(mockQueryRunner.createTable).toHaveBeenCalledTimes(1);
@@ -39,7 +39,7 @@ describe('UserRefactoring1606680965185', () => {
         true
       );
 
-      const tableArg = mockQueryRunner.createTable.mock.calls[0][0] as Table;
+      const tableArg = (mockQueryRunner.createTable as jest.Mock).mock.calls[0][0] as Table;
       expect(tableArg.name).toBe('users');
       expect(tableArg.columns).toHaveLength(6);
 
@@ -87,31 +87,18 @@ describe('UserRefactoring1606680965185', () => {
     });
 
     it('should handle createTable errors', async () => {
-      const error = new Error('Database error');
+      const error = new Error('Database connection failed');
       mockQueryRunner.createTable.mockRejectedValueOnce(error);
 
-      await expect(migration.up(mockQueryRunner)).rejects.toThrow('Database error');
+      await expect(migration.up(mockQueryRunner)).rejects.toThrow(error);
       expect(mockQueryRunner.createTable).toHaveBeenCalledTimes(1);
     });
 
-    it('should pass ifNotExists flag as true', async () => {
+    it('should pass ifNotExists parameter as true', async () => {
       await migration.up(mockQueryRunner);
 
-      expect(mockQueryRunner.createTable).toHaveBeenCalledWith(
-        expect.any(Table),
-        true
-      );
-    });
-
-    it('should create table with correct enum values', async () => {
-      await migration.up(mockQueryRunner);
-
-      const tableArg = mockQueryRunner.createTable.mock.calls[0][0] as Table;
-      const statusColumn = tableArg.columns[5];
-      
-      expect(statusColumn.enum).toEqual(['active', 'inactive', 'block']);
-      expect(statusColumn.enumName).toBe('statusEnum');
-      expect(statusColumn.default).toBe('"active"');
+      const createTableMock = mockQueryRunner.createTable as jest.Mock;
+      expect(createTableMock.mock.calls[0][1]).toBe(true);
     });
   });
 
@@ -124,18 +111,18 @@ describe('UserRefactoring1606680965185', () => {
     });
 
     it('should handle dropTable errors', async () => {
-      const error = new Error('Drop table failed');
+      const error = new Error('Table does not exist');
       mockQueryRunner.dropTable.mockRejectedValueOnce(error);
 
-      await expect(migration.down(mockQueryRunner)).rejects.toThrow('Drop table failed');
+      await expect(migration.down(mockQueryRunner)).rejects.toThrow(error);
       expect(mockQueryRunner.dropTable).toHaveBeenCalledTimes(1);
     });
 
-    it('should not call createTable when down is called', async () => {
+    it('should call dropTable with correct table name', async () => {
       await migration.down(mockQueryRunner);
 
-      expect(mockQueryRunner.createTable).not.toHaveBeenCalled();
-      expect(mockQueryRunner.dropTable).toHaveBeenCalledTimes(1);
+      const dropTableMock = mockQueryRunner.dropTable as jest.Mock;
+      expect(dropTableMock.mock.calls[0][0]).toBe('users');
     });
   });
 

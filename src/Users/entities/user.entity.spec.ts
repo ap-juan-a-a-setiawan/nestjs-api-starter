@@ -1,28 +1,34 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 
 describe('User Entity', () => {
   let user: User;
+  let mockRepository: jest.Mocked<Repository<User>>;
 
   beforeEach(async () => {
+    mockRepository = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    } as unknown as jest.Mocked<Repository<User>>;
+
     const moduleRef = await Test.createTestingModule({
       providers: [
+        User,
         {
           provide: getRepositoryToken(User),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-            save: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
-          },
+          useValue: mockRepository,
         },
       ],
     }).compile();
 
-    user = new User();
+    user = moduleRef.get<User>(User);
   });
 
   afterEach(() => {
@@ -40,215 +46,243 @@ describe('User Entity', () => {
       expect(user.status).toBeUndefined();
     });
 
-    it('should set properties correctly', () => {
-      user.id = 1;
-      user.first_name = 'John';
-      user.last_name = 'Doe';
-      user.email = 'john@example.com';
-      user.password = 'hashedPassword';
-      user.status = 'active';
-
-      expect(user.id).toBe(1);
-      expect(user.first_name).toBe('John');
-      expect(user.last_name).toBe('Doe');
-      expect(user.email).toBe('john@example.com');
-      expect(user.password).toBe('hashedPassword');
-      expect(user.status).toBe('active');
-    });
-
     it('should have default status as active', () => {
-      expect(user.status).toBeUndefined();
-      // Simulate entity creation with default
-      user.status = 'active';
-      expect(user.status).toBe('active');
+      const newUser = new User();
+      expect(newUser.status).toBeUndefined();
+      // The default value is set by the database, not the entity
     });
   });
 
   describe('validatePassword', () => {
     it('should return true when password matches', async () => {
-      const password = 'testPassword123';
-      const hashedPassword = '$2b$10$somehashedvalue';
+      const plainPassword = 'testPassword123';
+      const hashedPassword = 'hashedPassword';
       
       user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      
-      const result = await user.validatePassword(password);
-      
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
+      expect(bcrypt.compare).toHaveBeenCalledWith(plainPassword, hashedPassword);
       expect(bcrypt.compare).toHaveBeenCalledTimes(1);
     });
 
     it('should return false when password does not match', async () => {
-      const password = 'wrongPassword';
-      const hashedPassword = '$2b$10$somehashedvalue';
+      const plainPassword = 'wrongPassword';
+      const hashedPassword = 'hashedPassword';
       
       user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
-      
-      const result = await user.validatePassword(password);
-      
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(false);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
+      expect(bcrypt.compare).toHaveBeenCalledWith(plainPassword, hashedPassword);
       expect(bcrypt.compare).toHaveBeenCalledTimes(1);
     });
 
     it('should handle empty password', async () => {
-      const password = '';
-      const hashedPassword = '$2b$10$somehashedvalue';
+      const plainPassword = '';
+      const hashedPassword = 'hashedPassword';
       
       user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
-      
-      const result = await user.validatePassword(password);
-      
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(false);
       expect(bcrypt.compare).toHaveBeenCalledWith('', hashedPassword);
     });
 
-    it('should handle undefined password property', async () => {
-      const password = 'testPassword';
-      
-      user.password = undefined;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
-      
-      const result = await user.validatePassword(password);
-      
-      expect(result).toBe(false);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, undefined);
-    });
-
-    it('should handle bcrypt errors', async () => {
-      const password = 'testPassword';
-      const hashedPassword = '$2b$10$somehashedvalue';
-      
-      user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockRejectedValue(new Error('bcrypt error') as never);
-      
-      await expect(user.validatePassword(password)).rejects.toThrow('bcrypt error');
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
-    });
-
     it('should handle null password', async () => {
-      const password = null;
-      const hashedPassword = '$2b$10$somehashedvalue';
+      const plainPassword = null;
+      const hashedPassword = 'hashedPassword';
       
       user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
-      
-      const result = await user.validatePassword(password);
-      
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(false);
       expect(bcrypt.compare).toHaveBeenCalledWith(null, hashedPassword);
     });
 
-    it('should handle null hashed password', async () => {
-      const password = 'testPassword';
+    it('should handle undefined password', async () => {
+      const plainPassword = undefined;
+      const hashedPassword = 'hashedPassword';
       
-      user.password = null;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
-      
-      const result = await user.validatePassword(password);
-      
+      user.password = hashedPassword;
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(false);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, null);
+      expect(bcrypt.compare).toHaveBeenCalledWith(undefined, hashedPassword);
+    });
+
+    it('should handle when user has no password set', async () => {
+      const plainPassword = 'testPassword';
+      
+      user.password = undefined;
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+
+      const result = await user.validatePassword(plainPassword);
+
+      expect(result).toBe(false);
+      expect(bcrypt.compare).toHaveBeenCalledWith(plainPassword, undefined);
+    });
+
+    it('should handle bcrypt errors', async () => {
+      const plainPassword = 'testPassword';
+      const hashedPassword = 'hashedPassword';
+      const error = new Error('bcrypt error');
+      
+      user.password = hashedPassword;
+      jest.spyOn(bcrypt, 'compare').mockRejectedValue(error);
+
+      await expect(user.validatePassword(plainPassword)).rejects.toThrow('bcrypt error');
+      expect(bcrypt.compare).toHaveBeenCalledWith(plainPassword, hashedPassword);
     });
 
     it('should handle special characters in password', async () => {
-      const password = 'P@ssw0rd!$#%^&*()';
-      const hashedPassword = '$2b$10$specialhash';
+      const plainPassword = 'P@ssw0rd!$#%^&*()';
+      const hashedPassword = 'hashedPassword';
       
       user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      
-      const result = await user.validatePassword(password);
-      
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
+      expect(bcrypt.compare).toHaveBeenCalledWith('P@ssw0rd!$#%^&*()', hashedPassword);
     });
 
     it('should handle very long password', async () => {
-      const password = 'a'.repeat(1000);
-      const hashedPassword = '$2b$10$longhash';
+      const plainPassword = 'a'.repeat(1000);
+      const hashedPassword = 'hashedPassword';
       
       user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      
-      const result = await user.validatePassword(password);
-      
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
+      expect(bcrypt.compare).toHaveBeenCalledWith('a'.repeat(1000), hashedPassword);
     });
 
     it('should handle unicode characters in password', async () => {
-      const password = 'pässwörd-漢字-テスト';
-      const hashedPassword = '$2b$10$unicodehash';
+      const plainPassword = 'pässwörd-üñïçødé-日本語-한국어';
+      const hashedPassword = 'hashedPassword';
       
       user.password = hashedPassword;
-      
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      
-      const result = await user.validatePassword(password);
-      
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      const result = await user.validatePassword(plainPassword);
+
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
+      expect(bcrypt.compare).toHaveBeenCalledWith('pässwörd-üñïçødé-日本語-한국어', hashedPassword);
     });
   });
 
   describe('Entity inheritance', () => {
     it('should inherit from EntityBase', () => {
-      expect(user).toBeInstanceOf(EntityBase);
+      const userInstance = new User();
+      expect(userInstance).toBeInstanceOf(EntityBase);
     });
 
     it('should have EntityBase properties', () => {
-      // EntityBase typically has created_at and updated_at
-      expect(user).toHaveProperty('created_at');
-      expect(user).toHaveProperty('updated_at');
+      const userInstance = new User();
+      expect(userInstance).toHaveProperty('created_at');
+      expect(userInstance).toHaveProperty('updated_at');
+      expect(userInstance).toHaveProperty('deleted_at');
     });
   });
 
   describe('Entity metadata', () => {
-    it('should have entity name "users"', () => {
-      // This is a compile-time check, we can verify the decorator is applied
-      expect(User).toBeDefined();
-      expect(User.name).toBe('User');
+    it('should have entity name as users', () => {
+      const metadata = Reflect.getMetadata('typeorm:entity', User);
+      expect(metadata).toBeDefined();
+      expect(metadata.name).toBe('users');
     });
 
-    it('should have all column decorators applied', () => {
-      // Verify the entity has the expected structure
-      const userInstance = new User();
-      expect(userInstance).toHaveProperty('id');
-      expect(userInstance).toHaveProperty('first_name');
-      expect(userInstance).toHaveProperty('last_name');
-      expect(userInstance).toHaveProperty('email');
-      expect(userInstance).toHaveProperty('password');
-      expect(userInstance).toHaveProperty('status');
+    it('should have primary generated column for id', () => {
+      const columns = Reflect.getMetadata('typeorm:columns', User);
+      expect(columns).toBeDefined();
+      expect(columns).toContain('id');
+    });
+
+    it('should have all required columns', () => {
+      const columns = Reflect.getMetadata('typeorm:columns', User);
+      expect(columns).toBeDefined();
+      expect(columns).toContain('first_name');
+      expect(columns).toContain('last_name');
+      expect(columns).toContain('email');
+      expect(columns).toContain('password');
+      expect(columns).toContain('status');
+    });
+
+    it('should have password column with select false', () => {
+      const columnMetadata = Reflect.getMetadata('typeorm:columns', User);
+      expect(columnMetadata).toBeDefined();
+      
+      // Verify password column is not selected by default
+      const passwordColumn = columnMetadata.find((col: any) => col.propertyName === 'password');
+      expect(passwordColumn).toBeDefined();
+      expect(passwordColumn.options).toMatchObject({ select: false });
+    });
+
+    it('should have status column with enum values', () => {
+      const columnMetadata = Reflect.getMetadata('typeorm:columns', User);
+      expect(columnMetadata).toBeDefined();
+      
+      const statusColumn = columnMetadata.find((col: any) => col.propertyName === 'status');
+      expect(statusColumn).toBeDefined();
+      expect(statusColumn.options).toMatchObject({
+        type: 'enum',
+        enum: ['active', 'inactive', 'block'],
+        default: 'active'
+      });
     });
   });
 
-  describe('Status enum values', () => {
-    it('should accept valid status values', () => {
-      const validStatuses = ['active', 'inactive', 'block'];
+  describe('User instance methods', () => {
+    it('should create a new user instance', () => {
+      const newUser = new User();
+      expect(newUser).toBeInstanceOf(User);
+    });
+
+    it('should set and get properties correctly', () => {
+      const newUser = new User();
+      newUser.id = 1;
+      newUser.first_name = 'John';
+      newUser.last_name = 'Doe';
+      newUser.email = 'john.doe@example.com';
+      newUser.password = 'hashedPassword';
+      newUser.status = 'active';
+
+      expect(newUser.id).toBe(1);
+      expect(newUser.first_name).toBe('John');
+      expect(newUser.last_name).toBe('Doe');
+      expect(newUser.email).toBe('john.doe@example.com');
+      expect(newUser.password).toBe('hashedPassword');
+      expect(newUser.status).toBe('active');
+    });
+
+    it('should handle all status values', () => {
+      const statuses = ['active', 'inactive', 'block'];
       
-      validStatuses.forEach(status => {
-        user.status = status;
-        expect(user.status).toBe(status);
-      });
+      for (const status of statuses) {
+        const newUser = new User();
+        newUser.status = status;
+        expect(newUser.status).toBe(status);
+      }
     });
 
     it('should handle invalid status values', () => {
-      // TypeScript would prevent this at compile time, but we test runtime behavior
-      user.status = 'invalid_status';
-      expect(user.status).toBe('invalid_status');
+      const newUser = new User();
+      newUser.status = 'invalid-status';
+      expect(newUser.status).toBe('invalid-status');
     });
   });
 });

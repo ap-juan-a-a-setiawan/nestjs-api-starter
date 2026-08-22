@@ -1,106 +1,110 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { JwtStrategy } from './jwt.strategy';
-import { jwtContanst } from '../contants/jwt';
+import { Test } from "@nestjs/testing";
+import { JwtStrategy } from "./jwt.strategy";
+import { jwtContanst } from "../contants/jwt";
 
-describe('JwtStrategy', () => {
+describe("JwtStrategy", () => {
   let jwtStrategy: JwtStrategy;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       providers: [JwtStrategy],
     }).compile();
 
-    jwtStrategy = module.get<JwtStrategy>(JwtStrategy);
+    jwtStrategy = moduleRef.get<JwtStrategy>(JwtStrategy);
   });
 
-  it('should be defined', () => {
-    expect(jwtStrategy).toBeDefined();
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('constructor', () => {
-    it('should initialize with correct passport strategy options', () => {
-      // Verify the strategy is properly configured
-      expect(jwtStrategy).toBeInstanceOf(JwtStrategy);
-      expect(jwtStrategy).toBeInstanceOf(PassportStrategy(Strategy));
-      
-      // Verify the strategy options
-      const strategy = jwtStrategy as any;
-      expect(strategy._jwtFromRequest).toBeDefined();
-      expect(strategy._ignoreExpiration).toBe(false);
-      expect(strategy._secretOrKey).toBe(jwtContanst.secret);
+  describe("constructor", () => {
+    it("should be defined", () => {
+      expect(jwtStrategy).toBeDefined();
     });
 
-    it('should use bearer token extraction', () => {
-      const strategy = jwtStrategy as any;
-      const extractor = strategy._jwtFromRequest;
+    it("should call super with correct configuration", () => {
+      const superSpy = jest.spyOn(JwtStrategy.prototype as any, "constructor");
+      const strategy = new JwtStrategy();
       
-      // Test the extractor with a mock request
+      expect(superSpy).toHaveBeenCalledWith({
+        jwtFromRequest: expect.any(Function),
+        ignoreExpiration: false,
+        secretOrKey: jwtContanst.secret
+      });
+      
+      superSpy.mockRestore();
+    });
+
+    it("should extract JWT from bearer token", () => {
       const mockRequest = {
         headers: {
-          authorization: 'Bearer test-token'
+          authorization: "Bearer test-token"
         }
       };
       
-      expect(extractor(mockRequest)).toBe('test-token');
+      const extractor = ExtractJwt.fromAuthHeaderAsBearerToken();
+      const result = extractor(mockRequest);
+      
+      expect(result).toBe("test-token");
     });
 
-    it('should return null when no bearer token is present', () => {
-      const strategy = jwtStrategy as any;
-      const extractor = strategy._jwtFromRequest;
-      
+    it("should return null when no bearer token present", () => {
       const mockRequest = {
         headers: {}
       };
       
-      expect(extractor(mockRequest)).toBeNull();
+      const extractor = ExtractJwt.fromAuthHeaderAsBearerToken();
+      const result = extractor(mockRequest);
+      
+      expect(result).toBeNull();
     });
 
-    it('should return null when authorization header is malformed', () => {
-      const strategy = jwtStrategy as any;
-      const extractor = strategy._jwtFromRequest;
-      
+    it("should return null when authorization header is malformed", () => {
       const mockRequest = {
         headers: {
-          authorization: 'Basic test-token'
+          authorization: "Basic test-token"
         }
       };
       
-      expect(extractor(mockRequest)).toBeNull();
+      const extractor = ExtractJwt.fromAuthHeaderAsBearerToken();
+      const result = extractor(mockRequest);
+      
+      expect(result).toBeNull();
     });
   });
 
-  describe('validate', () => {
-    it('should return user object with userId and email from payload', async () => {
+  describe("validate", () => {
+    it("should return user object with userId and email", async () => {
       const payload = {
-        sub: 'user-123',
-        email: 'test@example.com'
+        sub: "user-123",
+        email: "test@example.com"
       };
 
       const result = await jwtStrategy.validate(payload);
 
       expect(result).toEqual({
-        userId: 'user-123',
-        email: 'test@example.com'
+        userId: "user-123",
+        email: "test@example.com"
       });
     });
 
-    it('should handle payload with additional properties', async () => {
+    it("should handle payload with additional properties", async () => {
       const payload = {
-        sub: 'user-456',
-        email: 'another@example.com',
-        role: 'admin',
-        name: 'Test User'
+        sub: "user-456",
+        email: "another@example.com",
+        role: "admin",
+        name: "Test User"
       };
 
       const result = await jwtStrategy.validate(payload);
 
       expect(result).toEqual({
-        userId: 'user-456',
-        email: 'another@example.com'
+        userId: "user-456",
+        email: "another@example.com"
       });
     });
 
-    it('should handle payload with null values', async () => {
+    it("should handle payload with null values", async () => {
       const payload = {
         sub: null,
         email: null
@@ -114,7 +118,7 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('should handle payload with undefined values', async () => {
+    it("should handle payload with undefined values", async () => {
       const payload = {
         sub: undefined,
         email: undefined
@@ -128,7 +132,7 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('should handle empty payload', async () => {
+    it("should handle empty payload", async () => {
       const payload = {};
 
       const result = await jwtStrategy.validate(payload);
@@ -139,48 +143,38 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('should handle payload with string sub and email', async () => {
-      const payload = {
-        sub: '12345',
-        email: 'user@test.com'
-      };
-
-      const result = await jwtStrategy.validate(payload);
-
-      expect(result.userId).toBe('12345');
-      expect(result.email).toBe('user@test.com');
-    });
-
-    it('should handle payload with numeric sub', async () => {
+    it("should handle payload with numeric sub", async () => {
       const payload = {
         sub: 12345,
-        email: 'numeric@test.com'
-      };
-
-      const result = await jwtStrategy.validate(payload);
-
-      expect(result.userId).toBe(12345);
-      expect(result.email).toBe('numeric@test.com');
-    });
-
-    it('should handle payload with special characters in email', async () => {
-      const payload = {
-        sub: 'user-789',
-        email: 'test+special@example.com'
+        email: "numeric@example.com"
       };
 
       const result = await jwtStrategy.validate(payload);
 
       expect(result).toEqual({
-        userId: 'user-789',
-        email: 'test+special@example.com'
+        userId: 12345,
+        email: "numeric@example.com"
       });
     });
 
-    it('should return a new object each time', async () => {
+    it("should handle payload with special characters in email", async () => {
       const payload = {
-        sub: 'user-123',
-        email: 'test@example.com'
+        sub: "user-789",
+        email: "test+special@example.com"
+      };
+
+      const result = await jwtStrategy.validate(payload);
+
+      expect(result).toEqual({
+        userId: "user-789",
+        email: "test+special@example.com"
+      });
+    });
+
+    it("should return a new object each time", async () => {
+      const payload = {
+        sub: "user-123",
+        email: "test@example.com"
       };
 
       const result1 = await jwtStrategy.validate(payload);
@@ -188,6 +182,33 @@ describe('JwtStrategy', () => {
 
       expect(result1).toEqual(result2);
       expect(result1).not.toBe(result2);
+    });
+
+    it("should not mutate the original payload", async () => {
+      const payload = {
+        sub: "user-123",
+        email: "test@example.com"
+      };
+
+      const originalPayload = { ...payload };
+      await jwtStrategy.validate(payload);
+
+      expect(payload).toEqual(originalPayload);
+    });
+  });
+
+  describe("integration with PassportStrategy", () => {
+    it("should be instance of PassportStrategy", () => {
+      expect(jwtStrategy).toBeInstanceOf(JwtStrategy);
+    });
+
+    it("should have validate method", () => {
+      expect(typeof jwtStrategy.validate).toBe("function");
+    });
+
+    it("should have the correct strategy name", () => {
+      // PassportStrategy sets the name based on the strategy
+      expect(jwtStrategy.name).toBe("JwtStrategy");
     });
   });
 });

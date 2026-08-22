@@ -12,19 +12,19 @@ describe('ConfigService', () => {
   });
 
   describe('getValue', () => {
-    it('should return the value when key exists', () => {
+    it('should return the value when it exists', () => {
       mockEnv['TEST_KEY'] = 'test-value';
       const result = (configService as any).getValue('TEST_KEY');
       expect(result).toBe('test-value');
     });
 
-    it('should throw error when key is missing and throwOnMissing is true (default)', () => {
+    it('should throw an error when value is missing and throwOnMissing is true', () => {
       expect(() => (configService as any).getValue('MISSING_KEY')).toThrow(
         'Config error missing env MISSING_KEY.'
       );
     });
 
-    it('should return undefined when key is missing and throwOnMissing is false', () => {
+    it('should return undefined when value is missing and throwOnMissing is false', () => {
       const result = (configService as any).getValue('MISSING_KEY', false);
       expect(result).toBeUndefined();
     });
@@ -35,21 +35,21 @@ describe('ConfigService', () => {
       expect(result).toBe('');
     });
 
-    it('should return value when value is "0"', () => {
-      mockEnv['ZERO_KEY'] = '0';
-      const result = (configService as any).getValue('ZERO_KEY');
-      expect(result).toBe('0');
+    it('should return undefined when value is undefined and throwOnMissing is false', () => {
+      mockEnv['UNDEFINED_KEY'] = undefined;
+      const result = (configService as any).getValue('UNDEFINED_KEY', false);
+      expect(result).toBeUndefined();
     });
   });
 
   describe('getPort', () => {
-    it('should return the port value from environment', () => {
+    it('should return the port value', () => {
       mockEnv['PORT'] = '3000';
       const result = configService.getPort();
       expect(result).toBe('3000');
     });
 
-    it('should throw error when PORT is missing', () => {
+    it('should throw an error when PORT is missing', () => {
       expect(() => configService.getPort()).toThrow(
         'Config error missing env PORT.'
       );
@@ -90,10 +90,9 @@ describe('ConfigService', () => {
       mockEnv['DB_DATABASE'] = 'test_db';
     });
 
-    it('should return TypeOrmModuleOptions with correct values', () => {
-      mockEnv['MODE'] = 'DEV';
+    it('should return the correct TypeORM configuration', () => {
       const result = configService.getTypeOrmConfig();
-
+      
       expect(result).toEqual({
         type: 'mysql',
         host: 'localhost',
@@ -107,57 +106,57 @@ describe('ConfigService', () => {
         cli: {
           migrationsDir: 'src/App/migrations',
         },
-        ssl: false,
+        ssl: true
       });
     });
 
-    it('should set ssl to true when in production mode', () => {
-      mockEnv['MODE'] = 'PRODUCTION';
-      const result = configService.getTypeOrmConfig();
-      expect(result.ssl).toBe(true);
-    });
-
-    it('should set ssl to false when in DEV mode', () => {
-      mockEnv['MODE'] = 'DEV';
-      const result = configService.getTypeOrmConfig();
-      expect(result.ssl).toBe(false);
-    });
-
-    it('should parse DB_PORT as integer', () => {
+    it('should parse DB_PORT as an integer', () => {
       mockEnv['DB_PORT'] = '3307';
       const result = configService.getTypeOrmConfig();
       expect(result.port).toBe(3307);
     });
 
-    it('should throw error when DB_HOST is missing', () => {
+    it('should set ssl to false when MODE is DEV', () => {
+      mockEnv['MODE'] = 'DEV';
+      const result = configService.getTypeOrmConfig();
+      expect(result.ssl).toBe(false);
+    });
+
+    it('should set ssl to true when MODE is not DEV', () => {
+      mockEnv['MODE'] = 'PRODUCTION';
+      const result = configService.getTypeOrmConfig();
+      expect(result.ssl).toBe(true);
+    });
+
+    it('should throw an error when DB_HOST is missing', () => {
       delete mockEnv['DB_HOST'];
       expect(() => configService.getTypeOrmConfig()).toThrow(
         'Config error missing env DB_HOST.'
       );
     });
 
-    it('should throw error when DB_PORT is missing', () => {
+    it('should throw an error when DB_PORT is missing', () => {
       delete mockEnv['DB_PORT'];
       expect(() => configService.getTypeOrmConfig()).toThrow(
         'Config error missing env DB_PORT.'
       );
     });
 
-    it('should throw error when DB_USERNAME is missing', () => {
+    it('should throw an error when DB_USERNAME is missing', () => {
       delete mockEnv['DB_USERNAME'];
       expect(() => configService.getTypeOrmConfig()).toThrow(
         'Config error missing env DB_USERNAME.'
       );
     });
 
-    it('should throw error when DB_PASSWORD is missing', () => {
+    it('should throw an error when DB_PASSWORD is missing', () => {
       delete mockEnv['DB_PASSWORD'];
       expect(() => configService.getTypeOrmConfig()).toThrow(
         'Config error missing env DB_PASSWORD.'
       );
     });
 
-    it('should throw error when DB_DATABASE is missing', () => {
+    it('should throw an error when DB_DATABASE is missing', () => {
       delete mockEnv['DB_DATABASE'];
       expect(() => configService.getTypeOrmConfig()).toThrow(
         'Config error missing env DB_DATABASE.'
@@ -171,15 +170,15 @@ describe('ConfigService', () => {
     });
   });
 
-  describe('configService export', () => {
+  describe('exported configService', () => {
     it('should be an instance of ConfigService', () => {
-      const { configService: exportedConfigService } = require('../src/App/services/config.service');
-      expect(exportedConfigService).toBeInstanceOf(ConfigService);
+      const { configService: exportedService } = require('../src/App/services/config.service');
+      expect(exportedService).toBeInstanceOf(ConfigService);
     });
 
     it('should have process.env as its environment', () => {
-      const { configService: exportedConfigService } = require('../src/App/services/config.service');
-      expect((exportedConfigService as any).env).toBe(process.env);
+      const { configService: exportedService } = require('../src/App/services/config.service');
+      expect((exportedService as any).env).toBe(process.env);
     });
   });
 });

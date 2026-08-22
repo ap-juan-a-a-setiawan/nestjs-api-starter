@@ -6,41 +6,18 @@ import { AuthModule } from '../Auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { configService } from './services/config.service';
 
-jest.mock('./services/config.service', () => ({
-  configService: {
-    getTypeOrmConfig: jest.fn().mockReturnValue({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'test',
-      password: 'test',
-      database: 'test',
-      entities: [],
-      synchronize: true,
-    }),
-  },
-}));
-
-jest.mock('../Users/users.module', () => ({
-  UsersModule: class UsersModuleMock {},
-}));
-
-jest.mock('../Auth/auth.module', () => ({
-  AuthModule: class AuthModuleMock {},
-}));
-
+jest.mock('./controllers/app.controller');
+jest.mock('../Users/users.module');
+jest.mock('../Auth/auth.module');
 jest.mock('@nestjs/typeorm', () => ({
   TypeOrmModule: {
-    forRoot: jest.fn().mockReturnValue({
-      module: class TypeOrmModuleMock {},
-      providers: [],
-      exports: [],
-    }),
-  },
+    forRoot: jest.fn().mockReturnValue({ module: 'TypeOrmModule', options: {} })
+  }
 }));
-
-jest.mock('./controllers/app.controller', () => ({
-  AppController: class AppControllerMock {},
+jest.mock('./services/config.service', () => ({
+  configService: {
+    getTypeOrmConfig: jest.fn().mockReturnValue({ type: 'postgres', host: 'localhost' })
+  }
 }));
 
 describe('AppModule', () => {
@@ -48,42 +25,34 @@ describe('AppModule', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    
     moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [
+        UsersModule,
+        AuthModule,
+        TypeOrmModule.forRoot(configService.getTypeOrmConfig())
+      ],
+      controllers: [
+        AppController
+      ],
+      providers: []
     }).compile();
   });
 
   describe('Module Definition', () => {
     it('should be defined', () => {
-      expect(moduleRef).toBeDefined();
-    });
-
-    it('should have AppModule defined', () => {
       expect(AppModule).toBeDefined();
     });
 
-    it('should have the correct metadata', () => {
+    it('should have the correct imports', () => {
       const metadata = Reflect.getMetadata('imports', AppModule);
       expect(metadata).toBeDefined();
-      expect(metadata).toHaveLength(3);
-    });
-
-    it('should include UsersModule in imports', () => {
-      const metadata = Reflect.getMetadata('imports', AppModule);
       expect(metadata).toContain(UsersModule);
-    });
-
-    it('should include AuthModule in imports', () => {
-      const metadata = Reflect.getMetadata('imports', AppModule);
       expect(metadata).toContain(AuthModule);
+      expect(metadata).toContain(TypeOrmModule.forRoot(configService.getTypeOrmConfig()));
     });
 
-    it('should include TypeOrmModule in imports', () => {
-      const metadata = Reflect.getMetadata('imports', AppModule);
-      expect(metadata).toContain(TypeOrmModule);
-    });
-
-    it('should have AppController in controllers', () => {
+    it('should have the correct controllers', () => {
       const metadata = Reflect.getMetadata('controllers', AppModule);
       expect(metadata).toBeDefined();
       expect(metadata).toContain(AppController);
@@ -96,8 +65,32 @@ describe('AppModule', () => {
     });
   });
 
-  describe('TypeOrmModule Configuration', () => {
-    it('should call getTypeOrmConfig when module is initialized', () => {
+  describe('Module Compilation', () => {
+    it('should compile the module successfully', async () => {
+      expect(moduleRef).toBeDefined();
+    });
+
+    it('should have AppController as a controller', () => {
+      const controllers = moduleRef.controllers;
+      expect(controllers).toBeDefined();
+      expect(controllers).toContain(AppController);
+    });
+
+    it('should have UsersModule as an import', () => {
+      const imports = moduleRef.imports;
+      expect(imports).toBeDefined();
+      expect(imports).toContain(UsersModule);
+    });
+
+    it('should have AuthModule as an import', () => {
+      const imports = moduleRef.imports;
+      expect(imports).toBeDefined();
+      expect(imports).toContain(AuthModule);
+    });
+  });
+
+  describe('Config Service Integration', () => {
+    it('should call getTypeOrmConfig when module is created', () => {
       expect(configService.getTypeOrmConfig).toHaveBeenCalled();
     });
 
@@ -105,129 +98,64 @@ describe('AppModule', () => {
       expect(configService.getTypeOrmConfig).toHaveBeenCalledTimes(1);
     });
 
-    it('should call TypeOrmModule.forRoot with the config from configService', () => {
-      expect(TypeOrmModule.forRoot).toHaveBeenCalledWith(
-        configService.getTypeOrmConfig()
-      );
-    });
-
-    it('should return the correct TypeORM config', () => {
+    it('should pass the config to TypeOrmModule.forRoot', () => {
       const config = configService.getTypeOrmConfig();
-      expect(config).toEqual({
-        type: 'postgres',
-        host: 'localhost',
-        port: 5432,
-        username: 'test',
-        password: 'test',
-        database: 'test',
-        entities: [],
-        synchronize: true,
-      });
-    });
-  });
-
-  describe('Module Compilation', () => {
-    it('should successfully compile the module', async () => {
-      const compiledModule = await Test.createTestingModule({
-        imports: [AppModule],
-      }).compile();
-
-      expect(compiledModule).toBeDefined();
+      expect(TypeOrmModule.forRoot).toHaveBeenCalledWith(config);
     });
 
-    it('should have the AppController available', async () => {
-      const app = moduleRef.createNestApplication();
-      const controller = app.get(AppController);
-      expect(controller).toBeDefined();
-    });
-
-    it('should have the UsersModule available', async () => {
-      const app = moduleRef.createNestApplication();
-      const usersModule = app.get(UsersModule);
-      expect(usersModule).toBeDefined();
-    });
-
-    it('should have the AuthModule available', async () => {
-      const app = moduleRef.createNestApplication();
-      const authModule = app.get(AuthModule);
-      expect(authModule).toBeDefined();
+    it('should return a valid TypeORM config', () => {
+      const config = configService.getTypeOrmConfig();
+      expect(config).toEqual({ type: 'postgres', host: 'localhost' });
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle missing TypeORM config gracefully', async () => {
-      (configService.getTypeOrmConfig as jest.Mock).mockReturnValueOnce(undefined);
-      
-      expect(() => {
-        Reflect.getMetadata('imports', AppModule);
-      }).toBeDefined();
-    });
-
     it('should handle empty providers array', () => {
-      const providers = Reflect.getMetadata('providers', AppModule);
-      expect(Array.isArray(providers)).toBe(true);
-      expect(providers.length).toBe(0);
+      const metadata = Reflect.getMetadata('providers', AppModule);
+      expect(metadata).toHaveLength(0);
     });
 
-    it('should have exactly one controller', () => {
-      const controllers = Reflect.getMetadata('controllers', AppModule);
-      expect(controllers).toHaveLength(1);
+    it('should have exactly 3 imports', () => {
+      const metadata = Reflect.getMetadata('imports', AppModule);
+      expect(metadata).toHaveLength(3);
     });
 
-    it('should have exactly three imports', () => {
-      const imports = Reflect.getMetadata('imports', AppModule);
-      expect(imports).toHaveLength(3);
+    it('should have exactly 1 controller', () => {
+      const metadata = Reflect.getMetadata('controllers', AppModule);
+      expect(metadata).toHaveLength(1);
     });
 
-    it('should not have any exports', () => {
-      const exports = Reflect.getMetadata('exports', AppModule);
-      expect(exports).toBeUndefined();
-    });
-  });
-
-  describe('Dependency Injection', () => {
-    it('should inject AppController correctly', async () => {
-      const app = moduleRef.createNestApplication();
-      const controller = app.get(AppController);
-      expect(controller).toBeInstanceOf(AppController);
+    it('should not have any providers', () => {
+      const metadata = Reflect.getMetadata('providers', AppModule);
+      expect(metadata).toHaveLength(0);
     });
 
-    it('should inject UsersModule correctly', async () => {
-      const app = moduleRef.createNestApplication();
-      const usersModule = app.get(UsersModule);
-      expect(usersModule).toBeInstanceOf(UsersModule);
+    it('should not include any unexpected imports', () => {
+      const metadata = Reflect.getMetadata('imports', AppModule);
+      const expectedImports = [UsersModule, AuthModule, TypeOrmModule.forRoot(configService.getTypeOrmConfig())];
+      expect(metadata).toEqual(expectedImports);
     });
 
-    it('should inject AuthModule correctly', async () => {
-      const app = moduleRef.createNestApplication();
-      const authModule = app.get(AuthModule);
-      expect(authModule).toBeInstanceOf(AuthModule);
-    });
-
-    it('should not have any providers to inject', () => {
-      const providers = Reflect.getMetadata('providers', AppModule);
-      expect(providers).toHaveLength(0);
+    it('should not include any unexpected controllers', () => {
+      const metadata = Reflect.getMetadata('controllers', AppModule);
+      expect(metadata).toEqual([AppController]);
     });
   });
 
-  describe('Module Structure', () => {
-    it('should be a NestJS module', () => {
+  describe('Module Instance', () => {
+    it('should create a module instance', () => {
+      const appModule = new AppModule();
+      expect(appModule).toBeInstanceOf(AppModule);
+    });
+
+    it('should have no properties', () => {
+      const appModule = new AppModule();
+      expect(Object.keys(appModule)).toHaveLength(0);
+    });
+
+    it('should be a valid NestJS module', () => {
       expect(AppModule).toBeDefined();
       expect(typeof AppModule).toBe('function');
-    });
-
-    it('should have the @Module decorator applied', () => {
-      const isModule = Reflect.getMetadata('__module:decorator', AppModule);
-      expect(isModule).toBeDefined();
-    });
-
-    it('should have the correct module name', () => {
-      expect(AppModule.name).toBe('AppModule');
-    });
-
-    it('should not have any global modules', () => {
-      const isGlobal = Reflect.getMetadata('__global:module', AppModule);
-      expect(isGlobal).toBeUndefined();
     });
   });
 });

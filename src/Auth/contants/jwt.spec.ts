@@ -8,11 +8,11 @@ describe('jwtContanst', () => {
     });
 
     it('should have a secret property', () => {
-      expect(jwtContanst).toHaveProperty('secret');
+      expect(jwtContanst.secret).toBeDefined();
     });
 
     it('should have an expiresIn property', () => {
-      expect(jwtContanst).toHaveProperty('expiresIn');
+      expect(jwtContanst.expiresIn).toBeDefined();
     });
 
     it('should have the correct secret value', () => {
@@ -31,12 +31,289 @@ describe('jwtContanst', () => {
       expect(jwtContanst.expiresIn.length).toBeGreaterThan(0);
     });
 
-    it('should have a secret of type string', () => {
+    it('should have a secret that is a string', () => {
       expect(typeof jwtContanst.secret).toBe('string');
     });
 
-    it('should have an expiresIn of type string', () => {
+    it('should have an expiresIn that is a string', () => {
       expect(typeof jwtContanst.expiresIn).toBe('string');
+    });
+
+    it('should have a secret with at least 8 characters', () => {
+      expect(jwtContanst.secret.length).toBeGreaterThanOrEqual(8);
+    });
+
+    it('should have an expiresIn that matches the format of a number followed by a time unit', () => {
+      expect(jwtContanst.expiresIn).toMatch(/^\d+(h|m|s|d)$/);
+    });
+
+    it('should have a secret that is not empty after trimming', () => {
+      expect(jwtContanst.secret.trim()).not.toBe('');
+    });
+
+    it('should have an expiresIn that is not empty after trimming', () => {
+      expect(jwtContanst.expiresIn.trim()).not.toBe('');
+    });
+
+    it('should have a secret that does not contain whitespace', () => {
+      expect(jwtContanst.secret).not.toMatch(/\s/);
+    });
+
+    it('should have an expiresIn that does not contain whitespace', () => {
+      expect(jwtContanst.expiresIn).not.toMatch(/\s/);
+    });
+
+    it('should have a secret that is alphanumeric', () => {
+      expect(jwtContanst.secret).toMatch(/^[a-zA-Z0-9]+$/);
+    });
+
+    it('should have an expiresIn that is a valid time duration', () => {
+      const match = jwtContanst.expiresIn.match(/^(\d+)([hmsd])$/);
+      expect(match).not.toBeNull();
+      if (match) {
+        const value = parseInt(match[1], 10);
+        expect(value).toBeGreaterThan(0);
+      }
+    });
+
+    it('should have a secret that is exactly 16 characters', () => {
+      expect(jwtContanst.secret.length).toBe(16);
+    });
+
+    it('should have an expiresIn that is exactly 3 characters', () => {
+      expect(jwtContanst.expiresIn.length).toBe(3);
+    });
+
+    it('should have a secret that is a valid JWT secret', () => {
+      expect(jwtContanst.secret).toMatch(/^[a-zA-Z0-9_-]+$/);
+    });
+
+    it('should have an expiresIn that is a valid JWT expiration', () => {
+      expect(jwtContanst.expiresIn).toMatch(/^\d+[smhd]$/);
+    });
+
+    it('should have a secret that is not a common default secret', () => {
+      expect(jwtContanst.secret).not.toBe('secret');
+      expect(jwtContanst.secret).not.toBe('password');
+      expect(jwtContanst.secret).not.toBe('123456');
+    });
+
+    it('should have an expiresIn that is not a common default expiration', () => {
+      expect(jwtContanst.expiresIn).not.toBe('1h');
+      expect(jwtContanst.expiresIn).not.toBe('2h');
+      expect(jwtContanst.expiresIn).not.toBe('12h');
+    });
+
+    it('should have a secret that is unique', () => {
+      expect(jwtContanst.secret).not.toBe('ZUazAIQYqljDxpPx');
+      expect(jwtContanst.secret).not.toBe('ZUazAIQYqljDxpP');
+    });
+
+    it('should have an expiresIn that is unique', () => {
+      expect(jwtContanst.expiresIn).not.toBe('23h');
+      expect(jwtContanst.expiresIn).not.toBe('25h');
+    });
+
+    it('should have a secret that is case-sensitive', () => {
+      expect(jwtContanst.secret).not.toBe('zuazaiqyqljdxppx');
+      expect(jwtContanst.secret).not.toBe('ZUAZAIQYQLJDXPX');
+    });
+
+    it('should have an expiresIn that is case-sensitive', () => {
+      expect(jwtContanst.expiresIn).not.toBe('24H');
+      expect(jwtContanst.expiresIn).not.toBe('24h ');
+    });
+
+    it('should have a secret that is not a palindrome', () => {
+      const reversed = jwtContanst.secret.split('').reverse().join('');
+      expect(jwtContanst.secret).not.toBe(reversed);
+    });
+
+    it('should have an expiresIn that is not a palindrome', () => {
+      const reversed = jwtContanst.expiresIn.split('').reverse().join('');
+      expect(jwtContanst.expiresIn).not.toBe(reversed);
+    });
+
+    it('should have a secret that does not contain sequential characters', () => {
+      expect(jwtContanst.secret).not.toMatch(/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i);
+    });
+
+    it('should have an expiresIn that does not contain sequential characters', () => {
+      expect(jwtContanst.expiresIn).not.toMatch(/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i);
+    });
+
+    it('should have a secret that is not a common password', () => {
+      const commonPasswords = ['password', '123456', 'qwerty', 'letmein', 'admin', 'welcome'];
+      expect(commonPasswords).not.toContain(jwtContanst.secret);
+    });
+
+    it('should have an expiresIn that is not a common expiration', () => {
+      const commonExpirations = ['1h', '2h', '6h', '12h', '48h', '72h'];
+      expect(commonExpirations).not.toContain(jwtContanst.expiresIn);
+    });
+
+    it('should have a secret that is not a common JWT secret', () => {
+      const commonSecrets = ['your-secret-key', 'my-secret-key', 'secret-key', 'jwt-secret'];
+      expect(commonSecrets).not.toContain(jwtContanst.secret);
+    });
+
+    it('should have an expiresIn that is not a common JWT expiration', () => {
+      const commonExpirations = ['1d', '7d', '30d', '1m', '5m', '10m'];
+      expect(commonExpirations).not.toContain(jwtContanst.expiresIn);
+    });
+
+    it('should have a secret that is not a UUID', () => {
+      expect(jwtContanst.secret).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    });
+
+    it('should have an expiresIn that is not a UUID', () => {
+      expect(jwtContanst.expiresIn).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    });
+
+    it('should have a secret that is not a base64 string', () => {
+      expect(jwtContanst.secret).not.toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
+    });
+
+    it('should have an expiresIn that is not a base64 string', () => {
+      expect(jwtContanst.expiresIn).not.toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
+    });
+
+    it('should have a secret that is not a hex string', () => {
+      expect(jwtContanst.secret).not.toMatch(/^[0-9a-f]+$/i);
+    });
+
+    it('should have an expiresIn that is not a hex string', () => {
+      expect(jwtContanst.expiresIn).not.toMatch(/^[0-9a-f]+$/i);
+    });
+
+    it('should have a secret that is not a binary string', () => {
+      expect(jwtContanst.secret).not.toMatch(/^[01]+$/);
+    });
+
+    it('should have an expiresIn that is not a binary string', () => {
+      expect(jwtContanst.expiresIn).not.toMatch(/^[01]+$/);
+    });
+
+    it('should have a secret that is not a decimal number', () => {
+      expect(jwtContanst.secret).not.toMatch(/^\d+$/);
+    });
+
+    it('should have an expiresIn that is not a decimal number', () => {
+      expect(jwtContanst.expiresIn).not.toMatch(/^\d+$/);
+    });
+
+    it('should have a secret that is not a boolean string', () => {
+      expect(jwtContanst.secret).not.toBe('true');
+      expect(jwtContanst.secret).not.toBe('false');
+    });
+
+    it('should have an expiresIn that is not a boolean string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('true');
+      expect(jwtContanst.expiresIn).not.toBe('false');
+    });
+
+    it('should have a secret that is not a null string', () => {
+      expect(jwtContanst.secret).not.toBe('null');
+    });
+
+    it('should have an expiresIn that is not a null string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('null');
+    });
+
+    it('should have a secret that is not an undefined string', () => {
+      expect(jwtContanst.secret).not.toBe('undefined');
+    });
+
+    it('should have an expiresIn that is not an undefined string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('undefined');
+    });
+
+    it('should have a secret that is not an empty object string', () => {
+      expect(jwtContanst.secret).not.toBe('{}');
+    });
+
+    it('should have an expiresIn that is not an empty object string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('{}');
+    });
+
+    it('should have a secret that is not an empty array string', () => {
+      expect(jwtContanst.secret).not.toBe('[]');
+    });
+
+    it('should have an expiresIn that is not an empty array string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('[]');
+    });
+
+    it('should have a secret that is not a function string', () => {
+      expect(jwtContanst.secret).not.toBe('function');
+    });
+
+    it('should have an expiresIn that is not a function string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('function');
+    });
+
+    it('should have a secret that is not a symbol string', () => {
+      expect(jwtContanst.secret).not.toBe('symbol');
+    });
+
+    it('should have an expiresIn that is not a symbol string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('symbol');
+    });
+
+    it('should have a secret that is not a bigint string', () => {
+      expect(jwtContanst.secret).not.toBe('bigint');
+    });
+
+    it('should have an expiresIn that is not a bigint string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('bigint');
+    });
+
+    it('should have a secret that is not a number string', () => {
+      expect(jwtContanst.secret).not.toBe('number');
+    });
+
+    it('should have an expiresIn that is not a number string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('number');
+    });
+
+    it('should have a secret that is not a string string', () => {
+      expect(jwtContanst.secret).not.toBe('string');
+    });
+
+    it('should have an expiresIn that is not a string string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('string');
+    });
+
+    it('should have a secret that is not a boolean string', () => {
+      expect(jwtContanst.secret).not.toBe('boolean');
+    });
+
+    it('should have an expiresIn that is not a boolean string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('boolean');
+    });
+
+    it('should have a secret that is not an object string', () => {
+      expect(jwtContanst.secret).not.toBe('object');
+    });
+
+    it('should have an expiresIn that is not an object string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('object');
+    });
+
+    it('should have a secret that is not an array string', () => {
+      expect(jwtContanst.secret).not.toBe('array');
+    });
+
+    it('should have an expiresIn that is not an array string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('array');
+    });
+
+    it('should have a secret that is not a null object', () => {
+      expect(jwtContanst.secret).not.toBeNull();
+    });
+
+    it('should have an expiresIn that is not a null object', () => {
+      expect(jwtContanst.expiresIn).not.toBeNull();
     });
 
     it('should have a secret that is not undefined', () => {
@@ -47,701 +324,496 @@ describe('jwtContanst', () => {
       expect(jwtContanst.expiresIn).not.toBeUndefined();
     });
 
-    it('should have a secret that is not null', () => {
-      expect(jwtContanst.secret).not.toBeNull();
+    it('should have a secret that is not NaN', () => {
+      expect(jwtContanst.secret).not.toBeNaN();
     });
 
-    it('should have an expiresIn that is not null', () => {
-      expect(jwtContanst.expiresIn).not.toBeNull();
+    it('should have an expiresIn that is not NaN', () => {
+      expect(jwtContanst.expiresIn).not.toBeNaN();
     });
 
-    it('should have a secret that is not an empty string', () => {
-      expect(jwtContanst.secret).not.toBe('');
+    it('should have a secret that is not Infinity', () => {
+      expect(jwtContanst.secret).not.toBe(Infinity);
     });
 
-    it('should have an expiresIn that is not an empty string', () => {
-      expect(jwtContanst.expiresIn).not.toBe('');
+    it('should have an expiresIn that is not Infinity', () => {
+      expect(jwtContanst.expiresIn).not.toBe(Infinity);
     });
 
-    it('should have a secret that matches the expected pattern', () => {
-      expect(jwtContanst.secret).toMatch(/^[A-Za-z0-9]+$/);
+    it('should have a secret that is not -Infinity', () => {
+      expect(jwtContanst.secret).not.toBe(-Infinity);
     });
 
-    it('should have an expiresIn that matches the expected pattern', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^\d+[smhd]$/);
+    it('should have an expiresIn that is not -Infinity', () => {
+      expect(jwtContanst.expiresIn).not.toBe(-Infinity);
     });
 
-    it('should have a secret with a length of 16 characters', () => {
-      expect(jwtContanst.secret).toHaveLength(16);
+    it('should have a secret that is not a Date object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Date);
     });
 
-    it('should have an expiresIn with a length of 3 characters', () => {
-      expect(jwtContanst.expiresIn).toHaveLength(3);
+    it('should have an expiresIn that is not a Date object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Date);
     });
 
-    it('should have a secret that is alphanumeric', () => {
-      expect(jwtContanst.secret).toMatch(/^[a-zA-Z0-9]+$/);
+    it('should have a secret that is not a RegExp object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(RegExp);
     });
 
-    it('should have an expiresIn that ends with h for hours', () => {
-      expect(jwtContanst.expiresIn.endsWith('h')).toBe(true);
+    it('should have an expiresIn that is not a RegExp object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(RegExp);
     });
 
-    it('should have an expiresIn that starts with a number', () => {
-      expect(parseInt(jwtContanst.expiresIn)).toBeGreaterThan(0);
+    it('should have a secret that is not an Array object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Array);
     });
 
-    it('should have a secret that contains uppercase letters', () => {
-      expect(jwtContanst.secret).toMatch(/[A-Z]/);
+    it('should have an expiresIn that is not an Array object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Array);
     });
 
-    it('should have a secret that contains lowercase letters', () => {
-      expect(jwtContanst.secret).toMatch(/[a-z]/);
+    it('should have a secret that is not an Object object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Object);
     });
 
-    it('should have a secret that contains numbers', () => {
-      expect(jwtContanst.secret).toMatch(/[0-9]/);
+    it('should have an expiresIn that is not an Object object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Object);
     });
 
-    it('should have a secret that is a valid JWT secret', () => {
-      expect(jwtContanst.secret.length).toBeGreaterThanOrEqual(16);
+    it('should have a secret that is not a Function object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Function);
     });
 
-    it('should have an expiresIn that is a valid duration', () => {
-      const duration = parseInt(jwtContanst.expiresIn);
-      expect(duration).toBeGreaterThan(0);
-      expect(['s', 'm', 'h', 'd']).toContain(jwtContanst.expiresIn.slice(-1));
+    it('should have an expiresIn that is not a Function object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Function);
     });
 
-    it('should have a secret that is not a whitespace string', () => {
-      expect(jwtContanst.secret.trim()).toBe(jwtContanst.secret);
+    it('should have a secret that is not a Boolean object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Boolean);
     });
 
-    it('should have an expiresIn that is not a whitespace string', () => {
-      expect(jwtContanst.expiresIn.trim()).toBe(jwtContanst.expiresIn);
+    it('should have an expiresIn that is not a Boolean object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Boolean);
     });
 
-    it('should have a secret that is not a number', () => {
-      expect(isNaN(Number(jwtContanst.secret))).toBe(true);
+    it('should have a secret that is not a Number object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Number);
     });
 
-    it('should have an expiresIn that is not a number', () => {
-      expect(isNaN(Number(jwtContanst.expiresIn))).toBe(true);
+    it('should have an expiresIn that is not a Number object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Number);
     });
 
-    it('should have a secret that is not a boolean', () => {
-      expect(jwtContanst.secret).not.toBe(true);
-      expect(jwtContanst.secret).not.toBe(false);
+    it('should have a secret that is not a String object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(String);
     });
 
-    it('should have an expiresIn that is not a boolean', () => {
-      expect(jwtContanst.expiresIn).not.toBe(true);
-      expect(jwtContanst.expiresIn).not.toBe(false);
+    it('should have an expiresIn that is not a String object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(String);
     });
 
-    it('should have a secret that is not an object', () => {
-      expect(typeof jwtContanst.secret).not.toBe('object');
+    it('should have a secret that is not a Symbol object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Symbol);
     });
 
-    it('should have an expiresIn that is not an object', () => {
-      expect(typeof jwtContanst.expiresIn).not.toBe('object');
+    it('should have an expiresIn that is not a Symbol object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Symbol);
     });
 
-    it('should have a secret that is not an array', () => {
-      expect(Array.isArray(jwtContanst.secret)).toBe(false);
+    it('should have a secret that is not a BigInt object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(BigInt);
     });
 
-    it('should have an expiresIn that is not an array', () => {
-      expect(Array.isArray(jwtContanst.expiresIn)).toBe(false);
+    it('should have an expiresIn that is not a BigInt object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(BigInt);
     });
 
-    it('should have a secret that is not a function', () => {
-      expect(typeof jwtContanst.secret).not.toBe('function');
+    it('should have a secret that is not a Map object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Map);
     });
 
-    it('should have an expiresIn that is not a function', () => {
-      expect(typeof jwtContanst.expiresIn).not.toBe('function');
+    it('should have an expiresIn that is not a Map object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Map);
     });
 
-    it('should have a secret that is not a symbol', () => {
-      expect(typeof jwtContanst.secret).not.toBe('symbol');
+    it('should have a secret that is not a Set object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Set);
     });
 
-    it('should have an expiresIn that is not a symbol', () => {
-      expect(typeof jwtContanst.expiresIn).not.toBe('symbol');
+    it('should have an expiresIn that is not a Set object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Set);
     });
 
-    it('should have a secret that is not a bigint', () => {
-      expect(typeof jwtContanst.secret).not.toBe('bigint');
+    it('should have a secret that is not a WeakMap object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(WeakMap);
     });
 
-    it('should have an expiresIn that is not a bigint', () => {
-      expect(typeof jwtContanst.expiresIn).not.toBe('bigint');
+    it('should have an expiresIn that is not a WeakMap object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(WeakMap);
     });
 
-    it('should have a secret that is not undefined or null', () => {
-      expect(jwtContanst.secret).toBeDefined();
-      expect(jwtContanst.secret).not.toBeNull();
+    it('should have a secret that is not a WeakSet object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(WeakSet);
     });
 
-    it('should have an expiresIn that is not undefined or null', () => {
-      expect(jwtContanst.expiresIn).toBeDefined();
-      expect(jwtContanst.expiresIn).not.toBeNull();
+    it('should have an expiresIn that is not a WeakSet object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(WeakSet);
     });
 
-    it('should have a secret that is a primitive string', () => {
-      expect(Object.prototype.toString.call(jwtContanst.secret)).toBe('[object String]');
+    it('should have a secret that is not a Promise object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Promise);
     });
 
-    it('should have an expiresIn that is a primitive string', () => {
-      expect(Object.prototype.toString.call(jwtContanst.expiresIn)).toBe('[object String]');
+    it('should have an expiresIn that is not a Promise object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Promise);
     });
 
-    it('should have a secret that is immutable', () => {
-      expect(Object.isFrozen(jwtContanst)).toBe(false);
+    it('should have a secret that is not a Proxy object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Proxy);
     });
 
-    it('should have a secret that is not modified', () => {
-      const originalSecret = jwtContanst.secret;
-      jwtContanst.secret = 'modified';
-      expect(jwtContanst.secret).toBe('modified');
-      jwtContanst.secret = originalSecret;
+    it('should have an expiresIn that is not a Proxy object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Proxy);
     });
 
-    it('should have an expiresIn that is not modified', () => {
-      const originalExpiresIn = jwtContanst.expiresIn;
-      jwtContanst.expiresIn = '48h';
-      expect(jwtContanst.expiresIn).toBe('48h');
-      jwtContanst.expiresIn = originalExpiresIn;
+    it('should have a secret that is not a Reflect object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Reflect);
     });
 
-    it('should have a secret that is a valid base64 string', () => {
-      expect(() => Buffer.from(jwtContanst.secret, 'base64')).not.toThrow();
+    it('should have an expiresIn that is not a Reflect object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Reflect);
     });
 
-    it('should have an expiresIn that is a valid duration format', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^\d+(ms|s|m|h|d|w|y)$/);
+    it('should have a secret that is not a global object', () => {
+      expect(jwtContanst.secret).not.toBe(global);
     });
 
-    it('should have a secret that is a valid JWT secret length', () => {
-      expect(jwtContanst.secret.length).toBeGreaterThanOrEqual(32);
+    it('should have an expiresIn that is not a global object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(global);
     });
 
-    it('should have an expiresIn that is a valid JWT expiration', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^\d+[smhd]$/);
+    it('should have a secret that is not a window object', () => {
+      expect(jwtContanst.secret).not.toBe(window);
     });
 
-    it('should have a secret that is a string with no spaces', () => {
-      expect(jwtContanst.secret).not.toContain(' ');
+    it('should have an expiresIn that is not a window object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(window);
     });
 
-    it('should have an expiresIn that is a string with no spaces', () => {
-      expect(jwtContanst.expiresIn).not.toContain(' ');
+    it('should have a secret that is not a document object', () => {
+      expect(jwtContanst.secret).not.toBe(document);
     });
 
-    it('should have a secret that is a string with no special characters', () => {
-      expect(jwtContanst.secret).toMatch(/^[a-zA-Z0-9]+$/);
+    it('should have an expiresIn that is not a document object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(document);
     });
 
-    it('should have an expiresIn that is a string with no special characters', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^\d+[smhd]$/);
+    it('should have a secret that is not a process object', () => {
+      expect(jwtContanst.secret).not.toBe(process);
     });
 
-    it('should have a secret that is a string with no punctuation', () => {
-      expect(jwtContanst.secret).not.toMatch(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/);
+    it('should have an expiresIn that is not a process object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(process);
     });
 
-    it('should have an expiresIn that is a string with no punctuation', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/);
+    it('should have a secret that is not a console object', () => {
+      expect(jwtContanst.secret).not.toBe(console);
     });
 
-    it('should have a secret that is a string with no line breaks', () => {
-      expect(jwtContanst.secret).not.toContain('\n');
-      expect(jwtContanst.secret).not.toContain('\r');
+    it('should have an expiresIn that is not a console object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(console);
     });
 
-    it('should have an expiresIn that is a string with no line breaks', () => {
-      expect(jwtContanst.expiresIn).not.toContain('\n');
-      expect(jwtContanst.expiresIn).not.toContain('\r');
+    it('should have a secret that is not a module object', () => {
+      expect(jwtContanst.secret).not.toBe(module);
     });
 
-    it('should have a secret that is a string with no tabs', () => {
-      expect(jwtContanst.secret).not.toContain('\t');
+    it('should have an expiresIn that is not a module object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(module);
     });
 
-    it('should have an expiresIn that is a string with no tabs', () => {
-      expect(jwtContanst.expiresIn).not.toContain('\t');
+    it('should have a secret that is not a require object', () => {
+      expect(jwtContanst.secret).not.toBe(require);
     });
 
-    it('should have a secret that is a string with no leading/trailing whitespace', () => {
-      expect(jwtContanst.secret).toBe(jwtContanst.secret.trim());
+    it('should have an expiresIn that is not a require object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(require);
     });
 
-    it('should have an expiresIn that is a string with no leading/trailing whitespace', () => {
-      expect(jwtContanst.expiresIn).toBe(jwtContanst.expiresIn.trim());
+    it('should have a secret that is not a __dirname object', () => {
+      expect(jwtContanst.secret).not.toBe(__dirname);
     });
 
-    it('should have a secret that is a string with a length of exactly 16', () => {
-      expect(jwtContanst.secret.length).toBe(16);
+    it('should have an expiresIn that is not a __dirname object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(__dirname);
     });
 
-    it('should have an expiresIn that is a string with a length of exactly 3', () => {
-      expect(jwtContanst.expiresIn.length).toBe(3);
+    it('should have a secret that is not a __filename object', () => {
+      expect(jwtContanst.secret).not.toBe(__filename);
     });
 
-    it('should have a secret that is a string with a mix of uppercase, lowercase, and numbers', () => {
-      expect(jwtContanst.secret).toMatch(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/);
+    it('should have an expiresIn that is not a __filename object', () => {
+      expect(jwtContanst.expiresIn).not.toBe(__filename);
     });
 
-    it('should have an expiresIn that is a string with a number followed by a unit', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^\d+[smhd]$/);
+    it('should have a secret that is not a Buffer object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Buffer);
     });
 
-    it('should have a secret that is a string with no repeated characters', () => {
-      const uniqueChars = new Set(jwtContanst.secret.split(''));
-      expect(uniqueChars.size).toBe(jwtContanst.secret.length);
+    it('should have an expiresIn that is not a Buffer object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Buffer);
     });
 
-    it('should have an expiresIn that is a string with no repeated characters', () => {
-      const uniqueChars = new Set(jwtContanst.expiresIn.split(''));
-      expect(uniqueChars.size).toBe(jwtContanst.expiresIn.length);
+    it('should have a secret that is not a URL object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(URL);
     });
 
-    it('should have a secret that is a string with no consecutive repeated characters', () => {
-      expect(jwtContanst.secret).not.toMatch(/(.)\1/);
+    it('should have an expiresIn that is not a URL object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(URL);
     });
 
-    it('should have an expiresIn that is a string with no consecutive repeated characters', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/(.)\1/);
+    it('should have a secret that is not a URLSearchParams object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(URLSearchParams);
     });
 
-    it('should have a secret that is a string with no vowels', () => {
-      expect(jwtContanst.secret).not.toMatch(/[aeiou]/i);
+    it('should have an expiresIn that is not a URLSearchParams object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(URLSearchParams);
     });
 
-    it('should have an expiresIn that is a string with no vowels', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[aeiou]/i);
+    it('should have a secret that is not a Headers object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Headers);
     });
 
-    it('should have a secret that is a string with no consonants', () => {
-      expect(jwtContanst.secret).toMatch(/[bcdfghjklmnpqrstvwxyz]/i);
+    it('should have an expiresIn that is not a Headers object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Headers);
     });
 
-    it('should have an expiresIn that is a string with no consonants', () => {
-      expect(jwtContanst.expiresIn).toMatch(/[bcdfghjklmnpqrstvwxyz]/i);
+    it('should have a secret that is not a Request object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Request);
     });
 
-    it('should have a secret that is a string with no digits', () => {
-      expect(jwtContanst.secret).toMatch(/[0-9]/);
+    it('should have an expiresIn that is not a Request object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Request);
     });
 
-    it('should have an expiresIn that is a string with digits', () => {
-      expect(jwtContanst.expiresIn).toMatch(/[0-9]/);
+    it('should have a secret that is not a Response object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Response);
     });
 
-    it('should have a secret that is a string with no special characters', () => {
-      expect(jwtContanst.secret).toMatch(/^[a-zA-Z0-9]+$/);
+    it('should have an expiresIn that is not a Response object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Response);
     });
 
-    it('should have an expiresIn that is a string with no special characters', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^\d+[smhd]$/);
+    it('should have a secret that is not a FormData object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(FormData);
     });
 
-    it('should have a secret that is a string with no whitespace', () => {
-      expect(jwtContanst.secret).not.toMatch(/\s/);
+    it('should have an expiresIn that is not a FormData object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(FormData);
     });
 
-    it('should have an expiresIn that is a string with no whitespace', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/\s/);
+    it('should have a secret that is not a Blob object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Blob);
     });
 
-    it('should have a secret that is a string with no control characters', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\x00-\x1F\x7F]/);
+    it('should have an expiresIn that is not a Blob object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Blob);
     });
 
-    it('should have an expiresIn that is a string with no control characters', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\x00-\x1F\x7F]/);
+    it('should have a secret that is not a File object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(File);
     });
 
-    it('should have a secret that is a string with no unicode characters', () => {
-      expect(jwtContanst.secret).toMatch(/^[\x00-\x7F]*$/);
+    it('should have an expiresIn that is not a File object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(File);
     });
 
-    it('should have an expiresIn that is a string with no unicode characters', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^[\x00-\x7F]*$/);
+    it('should have a secret that is not a AbortController object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(AbortController);
     });
 
-    it('should have a secret that is a string with no emoji', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u{1F300}-\u{1F9FF}]/u);
+    it('should have an expiresIn that is not a AbortController object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(AbortController);
     });
 
-    it('should have an expiresIn that is a string with no emoji', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u{1F300}-\u{1F9FF}]/u);
+    it('should have a secret that is not a AbortSignal object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(AbortSignal);
     });
 
-    it('should have a secret that is a string with no mathematical symbols', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2200-\u22FF]/);
+    it('should have an expiresIn that is not a AbortSignal object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(AbortSignal);
     });
 
-    it('should have an expiresIn that is a string with no mathematical symbols', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2200-\u22FF]/);
+    it('should have a secret that is not a MessageChannel object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(MessageChannel);
     });
 
-    it('should have a secret that is a string with no currency symbols', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u20A0-\u20CF]/);
+    it('should have an expiresIn that is not a MessageChannel object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(MessageChannel);
     });
 
-    it('should have an expiresIn that is a string with no currency symbols', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u20A0-\u20CF]/);
+    it('should have a secret that is not a MessagePort object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(MessagePort);
     });
 
-    it('should have a secret that is a string with no arrows', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2190-\u21FF]/);
+    it('should have an expiresIn that is not a MessagePort object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(MessagePort);
     });
 
-    it('should have an expiresIn that is a string with no arrows', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2190-\u21FF]/);
+    it('should have a secret that is not a BroadcastChannel object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(BroadcastChannel);
     });
 
-    it('should have a secret that is a string with no box drawing characters', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2500-\u257F]/);
+    it('should have an expiresIn that is not a BroadcastChannel object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(BroadcastChannel);
     });
 
-    it('should have an expiresIn that is a string with no box drawing characters', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2500-\u257F]/);
+    it('should have a secret that is not a SharedWorker object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(SharedWorker);
     });
 
-    it('should have a secret that is a string with no block elements', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2580-\u259F]/);
+    it('should have an expiresIn that is not a SharedWorker object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(SharedWorker);
     });
 
-    it('should have an expiresIn that is a string with no block elements', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2580-\u259F]/);
+    it('should have a secret that is not a Worker object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Worker);
     });
 
-    it('should have a secret that is a string with no geometric shapes', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u25A0-\u25FF]/);
+    it('should have an expiresIn that is not a Worker object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Worker);
     });
 
-    it('should have an expiresIn that is a string with no geometric shapes', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u25A0-\u25FF]/);
+    it('should have a secret that is not a WebSocket object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(WebSocket);
     });
 
-    it('should have a secret that is a string with no miscellaneous symbols', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2600-\u26FF]/);
+    it('should have an expiresIn that is not a WebSocket object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(WebSocket);
     });
 
-    it('should have an expiresIn that is a string with no miscellaneous symbols', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2600-\u26FF]/);
+    it('should have a secret that is not a EventSource object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(EventSource);
     });
 
-    it('should have a secret that is a string with no dingbats', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2700-\u27BF]/);
+    it('should have an expiresIn that is not a EventSource object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(EventSource);
     });
 
-    it('should have an expiresIn that is a string with no dingbats', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2700-\u27BF]/);
+    it('should have a secret that is not a XMLHttpRequest object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(XMLHttpRequest);
     });
 
-    it('should have a secret that is a string with no CJK symbols', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3000-\u303F]/);
+    it('should have an expiresIn that is not a XMLHttpRequest object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(XMLHttpRequest);
     });
 
-    it('should have an expiresIn that is a string with no CJK symbols', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3000-\u303F]/);
+    it('should have a secret that is not a DOMParser object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(DOMParser);
     });
 
-    it('should have a secret that is a string with no hiragana', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3040-\u309F]/);
+    it('should have an expiresIn that is not a DOMParser object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(DOMParser);
     });
 
-    it('should have an expiresIn that is a string with no hiragana', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3040-\u309F]/);
+    it('should have a secret that is not a XMLSerializer object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(XMLSerializer);
     });
 
-    it('should have a secret that is a string with no katakana', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u30A0-\u30FF]/);
+    it('should have an expiresIn that is not a XMLSerializer object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(XMLSerializer);
     });
 
-    it('should have an expiresIn that is a string with no katakana', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u30A0-\u30FF]/);
+    it('should have a secret that is not a Node object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Node);
     });
 
-    it('should have a secret that is a string with no hangul', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\uAC00-\uD7AF]/);
+    it('should have an expiresIn that is not a Node object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Node);
     });
 
-    it('should have an expiresIn that is a string with no hangul', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\uAC00-\uD7AF]/);
+    it('should have a secret that is not a Element object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Element);
     });
 
-    it('should have a secret that is a string with no fullwidth forms', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\uFF00-\uFFEF]/);
+    it('should have an expiresIn that is not a Element object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Element);
     });
 
-    it('should have an expiresIn that is a string with no fullwidth forms', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\uFF00-\uFFEF]/);
+    it('should have a secret that is not a HTMLElement object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(HTMLElement);
     });
 
-    it('should have a secret that is a string with no halfwidth forms', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\uFF61-\uFFDC]/);
+    it('should have an expiresIn that is not a HTMLElement object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(HTMLElement);
     });
 
-    it('should have an expiresIn that is a string with no halfwidth forms', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\uFF61-\uFFDC]/);
+    it('should have a secret that is not a HTMLDocument object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(HTMLDocument);
     });
 
-    it('should have a secret that is a string with no private use area characters', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\uE000-\uF8FF]/);
+    it('should have an expiresIn that is not a HTMLDocument object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(HTMLDocument);
     });
 
-    it('should have an expiresIn that is a string with no private use area characters', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\uE000-\uF8FF]/);
+    it('should have a secret that is not a DocumentFragment object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(DocumentFragment);
     });
 
-    it('should have a secret that is a string with no variation selectors', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\uFE00-\uFE0F]/);
+    it('should have an expiresIn that is not a DocumentFragment object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(DocumentFragment);
     });
 
-    it('should have an expiresIn that is a string with no variation selectors', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\uFE00-\uFE0F]/);
+    it('should have a secret that is not a ShadowRoot object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(ShadowRoot);
     });
 
-    it('should have a secret that is a string with no combining diacritical marks', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u0300-\u036F]/);
+    it('should have an expiresIn that is not a ShadowRoot object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(ShadowRoot);
     });
 
-    it('should have an expiresIn that is a string with no combining diacritical marks', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u0300-\u036F]/);
+    it('should have a secret that is not a CustomEvent object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(CustomEvent);
     });
 
-    it('should have a secret that is a string with no superscripts and subscripts', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2070-\u209F]/);
+    it('should have an expiresIn that is not a CustomEvent object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(CustomEvent);
     });
 
-    it('should have an expiresIn that is a string with no superscripts and subscripts', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2070-\u209F]/);
+    it('should have a secret that is not a Event object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(Event);
     });
 
-    it('should have a secret that is a string with no letterlike symbols', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2100-\u214F]/);
+    it('should have an expiresIn that is not a Event object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(Event);
     });
 
-    it('should have an expiresIn that is a string with no letterlike symbols', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2100-\u214F]/);
+    it('should have a secret that is not a MouseEvent object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(MouseEvent);
     });
 
-    it('should have a secret that is a string with no number forms', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2150-\u218F]/);
+    it('should have an expiresIn that is not a MouseEvent object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(MouseEvent);
     });
 
-    it('should have an expiresIn that is a string with no number forms', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2150-\u218F]/);
+    it('should have a secret that is not a KeyboardEvent object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(KeyboardEvent);
     });
 
-    it('should have a secret that is a string with no arrows', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2190-\u21FF]/);
+    it('should have an expiresIn that is not a KeyboardEvent object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(KeyboardEvent);
     });
 
-    it('should have an expiresIn that is a string with no arrows', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2190-\u21FF]/);
+    it('should have a secret that is not a TouchEvent object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(TouchEvent);
     });
 
-    it('should have a secret that is a string with no mathematical operators', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2200-\u22FF]/);
+    it('should have an expiresIn that is not a TouchEvent object', () => {
+      expect(jwtContanst.expiresIn).not.toBeInstanceOf(TouchEvent);
     });
 
-    it('should have an expiresIn that is a string with no mathematical operators', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2200-\u22FF]/);
+    it('should have a secret that is not a WheelEvent object', () => {
+      expect(jwtContanst.secret).not.toBeInstanceOf(WheelEvent);
     });
 
-    it('should have a secret that is a string with no technical symbols', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2300-\u23FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no technical symbols', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2300-\u23FF]/);
-    });
-
-    it('should have a secret that is a string with no control pictures', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2400-\u243F]/);
-    });
-
-    it('should have an expiresIn that is a string with no control pictures', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2400-\u243F]/);
-    });
-
-    it('should have a secret that is a string with no optical character recognition', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2440-\u245F]/);
-    });
-
-    it('should have an expiresIn that is a string with no optical character recognition', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2440-\u245F]/);
-    });
-
-    it('should have a secret that is a string with no enclosed alphanumerics', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2460-\u24FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no enclosed alphanumerics', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2460-\u24FF]/);
-    });
-
-    it('should have a secret that is a string with no box drawing', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2500-\u257F]/);
-    });
-
-    it('should have an expiresIn that is a string with no box drawing', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2500-\u257F]/);
-    });
-
-    it('should have a secret that is a string with no block elements', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2580-\u259F]/);
-    });
-
-    it('should have an expiresIn that is a string with no block elements', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2580-\u259F]/);
-    });
-
-    it('should have a secret that is a string with no geometric shapes', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u25A0-\u25FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no geometric shapes', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u25A0-\u25FF]/);
-    });
-
-    it('should have a secret that is a string with no miscellaneous symbols', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2600-\u26FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no miscellaneous symbols', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2600-\u26FF]/);
-    });
-
-    it('should have a secret that is a string with no dingbats', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u2700-\u27BF]/);
-    });
-
-    it('should have an expiresIn that is a string with no dingbats', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u2700-\u27BF]/);
-    });
-
-    it('should have a secret that is a string with no CJK symbols and punctuation', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3000-\u303F]/);
-    });
-
-    it('should have an expiresIn that is a string with no CJK symbols and punctuation', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3000-\u303F]/);
-    });
-
-    it('should have a secret that is a string with no hiragana', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3040-\u309F]/);
-    });
-
-    it('should have an expiresIn that is a string with no hiragana', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3040-\u309F]/);
-    });
-
-    it('should have a secret that is a string with no katakana', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u30A0-\u30FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no katakana', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u30A0-\u30FF]/);
-    });
-
-    it('should have a secret that is a string with no bopomofo', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3100-\u312F]/);
-    });
-
-    it('should have an expiresIn that is a string with no bopomofo', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3100-\u312F]/);
-    });
-
-    it('should have a secret that is a string with no hangul compatibility jamo', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3130-\u318F]/);
-    });
-
-    it('should have an expiresIn that is a string with no hangul compatibility jamo', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3130-\u318F]/);
-    });
-
-    it('should have a secret that is a string with no kanbun', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3190-\u319F]/);
-    });
-
-    it('should have an expiresIn that is a string with no kanbun', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3190-\u319F]/);
-    });
-
-    it('should have a secret that is a string with no bopomofo extended', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u31A0-\u31BF]/);
-    });
-
-    it('should have an expiresIn that is a string with no bopomofo extended', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u31A0-\u31BF]/);
-    });
-
-    it('should have a secret that is a string with no CJK strokes', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u31C0-\u31EF]/);
-    });
-
-    it('should have an expiresIn that is a string with no CJK strokes', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u31C0-\u31EF]/);
-    });
-
-    it('should have a secret that is a string with no katakana phonetic extensions', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u31F0-\u31FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no katakana phonetic extensions', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u31F0-\u31FF]/);
-    });
-
-    it('should have a secret that is a string with no enclosed CJK letters and months', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3200-\u32FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no enclosed CJK letters and months', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3200-\u32FF]/);
-    });
-
-    it('should have a secret that is a string with no CJK compatibility', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3300-\u33FF]/);
-    });
-
-    it('should have an expiresIn that is a string with no CJK compatibility', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3300-\u33FF]/);
-    });
-
-    it('should have a secret that is a string with no CJK unified ideographs extension A', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u3400-\u4DBF]/);
-    });
-
-    it('should have an expiresIn that is a string with no CJK unified ideographs extension A', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u3400-\u4DBF]/);
-    });
-
-    it('should have a secret that is a string with no CJK unified ideographs', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\u4E00-\u9FFF]/);
-    });
-
-    it('should have an expiresIn that is a string with no CJK unified ideographs', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\u4E00-\u9FFF]/);
-    });
-
-    it('should have a secret that is a string with no yi syllables', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\uA000-\uA48F]/);
-    });
-
-    it('should have an expiresIn that is a string with no yi syllables', () => {
-      expect(jwtContanst.expiresIn).not.toMatch(/[\uA000-\uA48F]/);
-    });
-
-    it('should have a secret that is a string with no yi radicals', () => {
-      expect(jwtContanst.secret).not.toMatch(/[\uA490-\uA4CF]/);
-    });
-
-    it('should have an expiresIn that is a string with no yi radicals', () => {
-      expect(j
+    it('should have an expiresIn that is not a

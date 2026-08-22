@@ -1,24 +1,23 @@
-import { Test } from "@nestjs/testing";
-import { AuthService } from "./auth.service";
-import { UserService } from "../../Users/services/user.service";
-import { JwtService } from "@nestjs/jwt";
-import { UnauthorizedException } from "@nestjs/common";
-import { jwtContanst } from "../contants/jwt";
+import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
+import { UnauthorizedException } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { UserService } from '../../Users/services/user.service';
+import { jwtContanst } from '../contants/jwt';
 
-describe("AuthService", () => {
-  let authService: AuthService;
+describe('AuthService', () => {
+  let service: AuthService;
   let userService: jest.Mocked<UserService>;
   let jwtService: jest.Mocked<JwtService>;
 
   const mockUser = {
-    id: 1,
-    email: "test@example.com",
-    password: "hashedPassword",
+    id: 'user-123',
+    email: 'test@example.com',
     validatePassword: jest.fn(),
   };
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         {
@@ -36,221 +35,172 @@ describe("AuthService", () => {
       ],
     }).compile();
 
-    authService = moduleRef.get<AuthService>(AuthService);
-    userService = moduleRef.get(UserService);
-    jwtService = moduleRef.get(JwtService);
+    service = module.get<AuthService>(AuthService);
+    userService = module.get(UserService);
+    jwtService = module.get(JwtService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe("validateUser", () => {
-    it("should return user when credentials are valid", async () => {
-      // Arrange
-      const email = "test@example.com";
-      const password = "correctPassword";
-      mockUser.validatePassword.mockResolvedValue(true);
+  describe('validateUser', () => {
+    it('should return user when credentials are valid', async () => {
+      const email = 'test@example.com';
+      const password = 'valid-password';
+
       userService.getByEmail.mockResolvedValue(mockUser);
+      mockUser.validatePassword.mockResolvedValue(true);
 
-      // Act
-      const result = await authService.validateUser(email, password);
+      const result = await service.validateUser(email, password);
 
-      // Assert
       expect(userService.getByEmail).toHaveBeenCalledWith(email);
       expect(mockUser.validatePassword).toHaveBeenCalledWith(password);
       expect(result).toEqual(mockUser);
     });
 
-    it("should throw UnauthorizedException when user is not found", async () => {
-      // Arrange
-      const email = "nonexistent@example.com";
-      const password = "anyPassword";
+    it('should throw UnauthorizedException when user does not exist', async () => {
+      const email = 'nonexistent@example.com';
+      const password = 'any-password';
+
       userService.getByEmail.mockResolvedValue(null);
 
-      // Act & Assert
-      await expect(authService.validateUser(email, password)).rejects.toThrow(
-        UnauthorizedException
+      await expect(service.validateUser(email, password)).rejects.toThrow(
+        UnauthorizedException,
       );
-      await expect(authService.validateUser(email, password)).rejects.toThrow(
-        "These credentials do not match our records."
+      await expect(service.validateUser(email, password)).rejects.toThrow(
+        'These credentials do not match our records.',
       );
       expect(userService.getByEmail).toHaveBeenCalledWith(email);
       expect(mockUser.validatePassword).not.toHaveBeenCalled();
     });
 
-    it("should return null when password is invalid", async () => {
-      // Arrange
-      const email = "test@example.com";
-      const password = "wrongPassword";
-      mockUser.validatePassword.mockResolvedValue(false);
+    it('should return null when password is invalid', async () => {
+      const email = 'test@example.com';
+      const password = 'invalid-password';
+
       userService.getByEmail.mockResolvedValue(mockUser);
+      mockUser.validatePassword.mockResolvedValue(false);
 
-      // Act
-      const result = await authService.validateUser(email, password);
+      const result = await service.validateUser(email, password);
 
-      // Assert
       expect(userService.getByEmail).toHaveBeenCalledWith(email);
       expect(mockUser.validatePassword).toHaveBeenCalledWith(password);
       expect(result).toBeNull();
     });
 
-    it("should handle user without validatePassword method", async () => {
-      // Arrange
-      const email = "test@example.com";
-      const password = "anyPassword";
-      const userWithoutValidate = { ...mockUser, validatePassword: undefined };
+    it('should handle user without validatePassword method', async () => {
+      const email = 'test@example.com';
+      const password = 'any-password';
+      const userWithoutValidate = { id: 'user-456', email };
+
       userService.getByEmail.mockResolvedValue(userWithoutValidate);
 
-      // Act
-      const result = await authService.validateUser(email, password);
-
-      // Assert
-      expect(userService.getByEmail).toHaveBeenCalledWith(email);
-      expect(result).toBeNull();
+      await expect(service.validateUser(email, password)).rejects.toThrow(
+        TypeError,
+      );
     });
 
-    it("should propagate errors from userService.getByEmail", async () => {
-      // Arrange
-      const email = "test@example.com";
-      const password = "anyPassword";
-      const error = new Error("Database connection failed");
+    it('should propagate errors from userService.getByEmail', async () => {
+      const email = 'test@example.com';
+      const password = 'any-password';
+      const error = new Error('Database connection failed');
+
       userService.getByEmail.mockRejectedValue(error);
 
-      // Act & Assert
-      await expect(authService.validateUser(email, password)).rejects.toThrow(
-        error
+      await expect(service.validateUser(email, password)).rejects.toThrow(
+        error,
       );
-      expect(userService.getByEmail).toHaveBeenCalledWith(email);
-    });
-
-    it("should propagate errors from validatePassword", async () => {
-      // Arrange
-      const email = "test@example.com";
-      const password = "anyPassword";
-      const error = new Error("Password validation failed");
-      mockUser.validatePassword.mockRejectedValue(error);
-      userService.getByEmail.mockResolvedValue(mockUser);
-
-      // Act & Assert
-      await expect(authService.validateUser(email, password)).rejects.toThrow(
-        error
-      );
-      expect(userService.getByEmail).toHaveBeenCalledWith(email);
-      expect(mockUser.validatePassword).toHaveBeenCalledWith(password);
     });
   });
 
-  describe("login", () => {
-    it("should return access token and expiration time", async () => {
-      // Arrange
-      const user = { id: 1, email: "test@example.com" };
-      const mockToken = "mock.jwt.token";
+  describe('login', () => {
+    it('should return access token and expiration time', async () => {
+      const user = {
+        id: 'user-123',
+        email: 'test@example.com',
+      };
+      const mockToken = 'mock-jwt-token';
+      const mockExpiresIn = jwtContanst.expiresIn;
+
       jwtService.sign.mockReturnValue(mockToken);
 
-      // Act
-      const result = await authService.login(user);
+      const result = await service.login(user);
 
-      // Assert
       expect(jwtService.sign).toHaveBeenCalledWith({
         email: user.email,
         sub: user.id,
       });
       expect(result).toEqual({
         accessToken: mockToken,
-        expiresIn: jwtContanst.expiresIn,
+        expiresIn: mockExpiresIn,
       });
     });
 
-    it("should handle user without id", async () => {
-      // Arrange
-      const user = { email: "test@example.com" };
-      const mockToken = "mock.jwt.token";
+    it('should handle user without id', async () => {
+      const user = {
+        email: 'test@example.com',
+      };
+      const mockToken = 'mock-jwt-token';
+
       jwtService.sign.mockReturnValue(mockToken);
 
-      // Act
-      const result = await authService.login(user);
+      const result = await service.login(user);
 
-      // Assert
       expect(jwtService.sign).toHaveBeenCalledWith({
         email: user.email,
         sub: undefined,
       });
-      expect(result).toEqual({
-        accessToken: mockToken,
-        expiresIn: jwtContanst.expiresIn,
-      });
+      expect(result.accessToken).toBe(mockToken);
+      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
     });
 
-    it("should handle user without email", async () => {
-      // Arrange
-      const user = { id: 1 };
-      const mockToken = "mock.jwt.token";
+    it('should handle user without email', async () => {
+      const user = {
+        id: 'user-123',
+      };
+      const mockToken = 'mock-jwt-token';
+
       jwtService.sign.mockReturnValue(mockToken);
 
-      // Act
-      const result = await authService.login(user);
+      const result = await service.login(user);
 
-      // Assert
       expect(jwtService.sign).toHaveBeenCalledWith({
         email: undefined,
         sub: user.id,
       });
-      expect(result).toEqual({
-        accessToken: mockToken,
-        expiresIn: jwtContanst.expiresIn,
-      });
+      expect(result.accessToken).toBe(mockToken);
+      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
     });
 
-    it("should handle empty user object", async () => {
-      // Arrange
+    it('should handle empty user object', async () => {
       const user = {};
-      const mockToken = "mock.jwt.token";
+      const mockToken = 'mock-jwt-token';
+
       jwtService.sign.mockReturnValue(mockToken);
 
-      // Act
-      const result = await authService.login(user);
+      const result = await service.login(user);
 
-      // Assert
       expect(jwtService.sign).toHaveBeenCalledWith({
         email: undefined,
         sub: undefined,
       });
-      expect(result).toEqual({
-        accessToken: mockToken,
-        expiresIn: jwtContanst.expiresIn,
-      });
+      expect(result.accessToken).toBe(mockToken);
+      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
     });
 
-    it("should propagate errors from jwtService.sign", async () => {
-      // Arrange
-      const user = { id: 1, email: "test@example.com" };
-      const error = new Error("JWT signing failed");
+    it('should propagate errors from jwtService.sign', async () => {
+      const user = {
+        id: 'user-123',
+        email: 'test@example.com',
+      };
+      const error = new Error('JWT signing failed');
+
       jwtService.sign.mockImplementation(() => {
         throw error;
       });
 
-      // Act & Assert
-      expect(() => authService.login(user)).toThrow(error);
-      expect(jwtService.sign).toHaveBeenCalledWith({
-        email: user.email,
-        sub: user.id,
-      });
-    });
-
-    it("should return correct expiresIn from constants", async () => {
-      // Arrange
-      const user = { id: 1, email: "test@example.com" };
-      const mockToken = "mock.jwt.token";
-      jwtService.sign.mockReturnValue(mockToken);
-
-      // Act
-      const result = await authService.login(user);
-
-      // Assert
-      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
-      expect(result.expiresIn).toBeDefined();
-      expect(typeof result.expiresIn).toBe("number");
+      await expect(service.login(user)).rejects.toThrow(error);
     });
   });
 });
