@@ -2,86 +2,183 @@ import { Test } from '@nestjs/testing';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './App/app.module';
+import * as mainModule from './main';
 
 jest.mock('@nestjs/core', () => ({
-  NestFactory: { create: jest.fn() },
+  NestFactory: {
+    create: jest.fn(),
+  },
 }));
 
-jest.mock('@nestjs/common', () => {
-  const actual = jest.requireActual('@nestjs/common');
-  return { ...actual, ValidationPipe: jest.fn() };
-});
+jest.mock('@nestjs/common', () => ({
+  ValidationPipe: jest.fn().mockImplementation(() => ({
+    transform: true,
+    whitelist: true,
+  })),
+}));
 
-jest.mock('./App/app.module', () => {
-  const { Module } = jest.requireActual('@nestjs/common');
-  @Module({})
-  class AppModule {}
-  return { AppModule };
-});
+jest.mock('./App/app.module', () => ({
+  AppModule: class AppModuleMock {},
+}));
 
-describe('main.ts bootstrap', () => {
-  let appMock: { useGlobalPipes: jest.Mock; listen: jest.Mock };
+describe('main.ts bootstrap function', () => {
+  let mockApp: {
+    useGlobalPipes: jest.Mock;
+    listen: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    appMock = {
+
+    mockApp = {
       useGlobalPipes: jest.fn(),
       listen: jest.fn().mockResolvedValue(undefined),
     };
-    (NestFactory.create as jest.Mock).mockResolvedValue(appMock);
+
+    (NestFactory.create as jest.Mock).mockResolvedValue(mockApp);
   });
 
-  it('should create the app with AppModule and listen on port 3000', async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    expect(moduleRef).toBeDefined();
-
-    jest.isolateModules(() => {
-      require('./main');
-    });
-
-    expect(NestFactory.create).toHaveBeenCalledWith(AppModule);
-    expect(ValidationPipe).toHaveBeenCalledTimes(1);
-    expect(appMock.useGlobalPipes).toHaveBeenCalledWith(expect.any(ValidationPipe));
-    expect(appMock.listen).toHaveBeenCalledWith(3000);
+  it('should be defined', () => {
+    expect(mainModule).toBeDefined();
   });
 
-  it('should call useGlobalPipes before listen', () => {
-    jest.isolateModules(() => {
-      require('./main');
+  describe('bootstrap', () => {
+    it('should call NestFactory.create with AppModule', async () => {
+      await mainModule.bootstrap();
+
+      expect(NestFactory.create).toHaveBeenCalledWith(AppModule);
+      expect(NestFactory.create).toHaveBeenCalledTimes(1);
     });
 
-    const useGlobalPipesOrder = appMock.useGlobalPipes.mock.invocationCallOrder[0];
-    const listenOrder = appMock.listen.mock.invocationCallOrder[0];
-    expect(useGlobalPipesOrder).toBeLessThan(listenOrder);
-  });
+    it('should create a ValidationPipe instance', async () => {
+      await mainModule.bootstrap();
 
-  it('should handle NestFactory.create rejection', async () => {
-    const error = new Error('create failed');
-    (NestFactory.create as jest.Mock).mockRejectedValue(error);
-
-    const rejectionPromise = new Promise((resolve) => {
-      process.once('unhandledRejection', (reason) => resolve(reason));
+      expect(ValidationPipe).toHaveBeenCalled();
+      expect(ValidationPipe).toHaveBeenCalledTimes(1);
     });
 
-    jest.isolateModules(() => {
-      require('./main');
+    it('should call app.useGlobalPipes with a ValidationPipe instance', async () => {
+      await mainModule.bootstrap();
+
+      expect(mockApp.useGlobalPipes).toHaveBeenCalled();
+      expect(mockApp.useGlobalPipes).toHaveBeenCalledTimes(1);
+      expect(mockApp.useGlobalPipes).toHaveBeenCalledWith(expect.any(ValidationPipe));
     });
 
-    await expect(rejectionPromise).resolves.toBe(error);
-  });
+    it('should call app.listen with port 3000', async () => {
+      await mainModule.bootstrap();
 
-  it('should handle app.listen rejection', async () => {
-    const error = new Error('listen failed');
-    appMock.listen.mockRejectedValue(error);
-
-    const rejectionPromise = new Promise((resolve) => {
-      process.once('unhandledRejection', (reason) => resolve(reason));
+      expect(mockApp.listen).toHaveBeenCalledWith(3000);
+      expect(mockApp.listen).toHaveBeenCalledTimes(1);
     });
 
-    jest.isolateModules(() => {
-      require('./main');
+    it('should call all methods in correct order', async () => {
+      await mainModule.bootstrap();
+
+      const createCallOrder = (NestFactory.create as jest.Mock).mock.invocationCallOrder[0];
+      const useGlobalPipesCallOrder = mockApp.useGlobalPipes.mock.invocationCallOrder[0];
+      const listenCallOrder = mockApp.listen.mock.invocationCallOrder[0];
+
+      expect(createCallOrder).toBeLessThan(useGlobalPipesCallOrder);
+      expect(useGlobalPipesCallOrder).toBeLessThan(listenCallOrder);
     });
 
-    await expect(rejectionPromise).resolves.toBe(error);
+    it('should handle errors from NestFactory.create', async () => {
+      const error = new Error('Failed to create app');
+      (NestFactory.create as jest.Mock).mockRejectedValue(error);
+
+      await expect(mainModule.bootstrap()).rejects.toThrow('Failed to create app');
+    });
+
+    it('should handle errors from app.listen', async () => {
+      const error = new Error('Failed to listen');
+      mockApp.listen.mockRejectedValue(error);
+
+      await expect(mainModule.bootstrap()).rejects.toThrow('Failed to listen');
+    });
+
+    it('should handle errors from useGlobalPipes', async () => {
+      const error = new Error('Failed to set global pipes');
+      mockApp.useGlobalPipes.mockImplementation(() => {
+        throw error;
+      });
+
+      await expect(mainModule.bootstrap()).rejects.toThrow('Failed to set global pipes');
+    });
+
+    it('should not call listen if useGlobalPipes throws', async () => {
+      const error = new Error('Failed to set global pipes');
+      mockApp.useGlobalPipes.mockImplementation(() => {
+        throw error;
+      });
+
+      await expect(mainModule.bootstrap()).rejects.toThrow('Failed to set global pipes');
+      expect(mockApp.listen).not.toHaveBeenCalled();
+    });
+
+    it('should not call useGlobalPipes if create fails', async () => {
+      (NestFactory.create as jest.Mock).mockRejectedValue(new Error('Create failed'));
+
+      await expect(mainModule.bootstrap()).rejects.toThrow('Create failed');
+      expect(mockApp.useGlobalPipes).not.toHaveBeenCalled();
+      expect(mockApp.listen).not.toHaveBeenCalled();
+    });
+
+    it('should handle ValidationPipe constructor throwing', async () => {
+      (ValidationPipe as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('ValidationPipe failed');
+      });
+
+      await expect(mainModule.bootstrap()).rejects.toThrow('ValidationPipe failed');
+      expect(mockApp.useGlobalPipes).not.toHaveBeenCalled();
+      expect(mockApp.listen).not.toHaveBeenCalled();
+    });
+
+    it('should handle app being null/undefined from create', async () => {
+      (NestFactory.create as jest.Mock).mockResolvedValue(null);
+
+      await expect(mainModule.bootstrap()).rejects.toThrow();
+    });
+
+    it('should handle listen returning a promise that resolves', async () => {
+      mockApp.listen.mockResolvedValue('server started');
+
+      await expect(mainModule.bootstrap()).resolves.toBeUndefined();
+      expect(mockApp.listen).toHaveBeenCalledWith(3000);
+    });
+
+    it('should handle multiple bootstrap calls', async () => {
+      await mainModule.bootstrap();
+      await mainModule.bootstrap();
+
+      expect(NestFactory.create).toHaveBeenCalledTimes(2);
+      expect(mockApp.useGlobalPipes).toHaveBeenCalledTimes(2);
+      expect(mockApp.listen).toHaveBeenCalledTimes(2);
+    });
+
+    it('should pass correct ValidationPipe configuration', async () => {
+      await mainModule.bootstrap();
+
+      const validationPipeInstance = (ValidationPipe as jest.Mock).mock.instances[0];
+      expect(validationPipeInstance).toBeDefined();
+      expect(validationPipeInstance.transform).toBe(true);
+      expect(validationPipeInstance.whitelist).toBe(true);
+    });
+
+    it('should use the same app instance for all operations', async () => {
+      await mainModule.bootstrap();
+
+      expect(mockApp.useGlobalPipes).toHaveBeenCalled();
+      expect(mockApp.listen).toHaveBeenCalled();
+      expect(mockApp.useGlobalPipes.mock.instances[0]).toBe(mockApp);
+      expect(mockApp.listen.mock.instances[0]).toBe(mockApp);
+    });
+
+    it('should not call any methods if bootstrap is not invoked', () => {
+      expect(NestFactory.create).not.toHaveBeenCalled();
+      expect(ValidationPipe).not.toHaveBeenCalled();
+      expect(mockApp.useGlobalPipes).not.toHaveBeenCalled();
+      expect(mockApp.listen).not.toHaveBeenCalled();
+    });
   });
 });

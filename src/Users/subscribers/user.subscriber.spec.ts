@@ -4,105 +4,134 @@ import { UserSubscriber } from './user.subscriber';
 import { User } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
-jest.mock('bcrypt', () => ({
-  hash: jest.fn(),
-}));
+jest.mock('bcrypt');
 
 describe('UserSubscriber', () => {
   let subscriber: UserSubscriber;
-  let connectionMock: { subscribers: any[] };
-  let bcryptHashMock: jest.Mock;
+  let mockConnection: jest.Mocked<Connection>;
+  let mockInsertEvent: jest.Mocked<InsertEvent<User>>;
 
   beforeEach(async () => {
-    connectionMock = { subscribers: [] };
-    bcryptHashMock = bcrypt.hash as jest.Mock;
+    mockConnection = {
+      subscribers: [],
+    } as unknown as jest.Mocked<Connection>;
 
     const moduleRef = await Test.createTestingModule({
       providers: [
-        { provide: Connection, useValue: connectionMock },
         UserSubscriber,
+        {
+          provide: Connection,
+          useValue: mockConnection,
+        },
       ],
     }).compile();
 
-    subscriber = moduleRef.get(UserSubscriber);
+    subscriber = moduleRef.get<UserSubscriber>(UserSubscriber);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(subscriber).toBeDefined();
-  });
-
-  it('should register itself to connection subscribers', () => {
-    expect(connectionMock.subscribers).toContain(subscriber);
+  describe('constructor', () => {
+    it('should push the subscriber to the connection subscribers array', () => {
+      expect(mockConnection.subscribers).toContain(subscriber);
+    });
   });
 
   describe('listenTo', () => {
-    it('should return User entity', () => {
+    it('should return the User entity', () => {
       expect(subscriber.listenTo()).toBe(User);
     });
   });
 
   describe('hashPassword', () => {
-    it('should hash password with bcrypt using salt rounds 10', async () => {
-      bcryptHashMock.mockResolvedValue('hashed_password');
+    it('should hash the password with bcrypt using salt rounds of 10', async () => {
+      const password = 'plainPassword123';
+      const hashedPassword = 'hashedPassword123';
 
-      const result = await subscriber.hashPassword('plain_password');
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
 
-      expect(bcryptHashMock).toHaveBeenCalledWith('plain_password', 10);
-      expect(result).toBe('hashed_password');
+      const result = await subscriber.hashPassword(password);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
+      expect(result).toBe(hashedPassword);
     });
 
     it('should handle empty password', async () => {
-      bcryptHashMock.mockResolvedValue('hashed_empty');
+      const password = '';
+      const hashedPassword = 'hashedEmptyPassword';
 
-      const result = await subscriber.hashPassword('');
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
 
-      expect(bcryptHashMock).toHaveBeenCalledWith('', 10);
-      expect(result).toBe('hashed_empty');
+      const result = await subscriber.hashPassword(password);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
+      expect(result).toBe(hashedPassword);
     });
 
-    it('should handle undefined password', async () => {
-      bcryptHashMock.mockResolvedValue('hashed_undefined');
+    it('should propagate bcrypt errors', async () => {
+      const password = 'password123';
+      const error = new Error('bcrypt error');
 
-      const result = await subscriber.hashPassword(undefined as any);
+      (bcrypt.hash as jest.Mock).mockRejectedValue(error);
 
-      expect(bcryptHashMock).toHaveBeenCalledWith(undefined, 10);
-      expect(result).toBe('hashed_undefined');
+      await expect(subscriber.hashPassword(password)).rejects.toThrow(error);
+      expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
     });
   });
 
   describe('beforeInsert', () => {
-    it('should hash the entity password before insert', async () => {
-      bcryptHashMock.mockResolvedValue('hashed_password');
-      const event = { entity: { password: 'plain_password' } } as any;
-
-      await subscriber.beforeInsert(event);
-
-      expect(bcryptHashMock).toHaveBeenCalledWith('plain_password', 10);
-      expect(event.entity.password).toBe('hashed_password');
+    beforeEach(() => {
+      mockInsertEvent = {
+        entity: {
+          password: 'plainPassword123',
+        },
+      } as unknown as jest.Mocked<InsertEvent<User>>;
     });
 
-    it('should hash empty password before insert', async () => {
-      bcryptHashMock.mockResolvedValue('hashed_empty');
-      const event = { entity: { password: '' } } as any;
+    it('should hash the password before insertion', async () => {
+      const hashedPassword = 'hashedPassword123';
 
-      await subscriber.beforeInsert(event);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
 
-      expect(bcryptHashMock).toHaveBeenCalledWith('', 10);
-      expect(event.entity.password).toBe('hashed_empty');
+      await subscriber.beforeInsert(mockInsertEvent);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('plainPassword123', 10);
+      expect(mockInsertEvent.entity.password).toBe(hashedPassword);
     });
 
-    it('should hash undefined password before insert', async () => {
-      bcryptHashMock.mockResolvedValue('hashed_undefined');
-      const event = { entity: { password: undefined } } as any;
+    it('should handle empty password in event entity', async () => {
+      mockInsertEvent.entity.password = '';
+      const hashedPassword = 'hashedEmptyPassword';
 
-      await subscriber.beforeInsert(event);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
 
-      expect(bcryptHashMock).toHaveBeenCalledWith(undefined, 10);
-      expect(event.entity.password).toBe('hashed_undefined');
+      await subscriber.beforeInsert(mockInsertEvent);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('', 10);
+      expect(mockInsertEvent.entity.password).toBe(hashedPassword);
+    });
+
+    it('should handle undefined password in event entity', async () => {
+      mockInsertEvent.entity.password = undefined as unknown as string;
+      const hashedPassword = 'hashedUndefinedPassword';
+
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+      await subscriber.beforeInsert(mockInsertEvent);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith(undefined, 10);
+      expect(mockInsertEvent.entity.password).toBe(hashedPassword);
+    });
+
+    it('should propagate errors from hashPassword', async () => {
+      const error = new Error('Hashing failed');
+
+      (bcrypt.hash as jest.Mock).mockRejectedValue(error);
+
+      await expect(subscriber.beforeInsert(mockInsertEvent)).rejects.toThrow(error);
+      expect(bcrypt.hash).toHaveBeenCalledWith('plainPassword123', 10);
     });
   });
 });

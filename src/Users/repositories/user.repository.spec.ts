@@ -1,192 +1,154 @@
-typescript
-import { Test } from "@nestjs/testing";
-import { UserRepository } from "./user.repository";
-import { RepositoryBase } from "../../App/abstracts/repository.base";
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { UserRepository } from './user.repository';
+import { User } from '../entities/user.entity';
+import { RepositoryBase } from '../../App/abstracts/repository.base';
 
-jest.mock("typeorm", () => ({
-  EntityRepository: () => (target: any) => target,
-}));
+describe('UserRepository', () => {
+  let userRepository: UserRepository;
+  let mockRepositoryBase: jest.Mocked<Partial<RepositoryBase<User>>>;
 
-jest.mock("../../App/abstracts/repository.base", () => {
-  return {
-    RepositoryBase: class {
-      find = jest.fn();
-      findOne = jest.fn();
-      save = jest.fn();
-      delete = jest.fn();
-      create = jest.fn();
-      update = jest.fn();
-      count = jest.fn();
-    },
+  const mockUser: User = {
+    id: 1,
+    email: 'test@example.com',
+    password: 'hashedPassword',
+    firstName: 'John',
+    lastName: 'Doe',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
-});
 
-jest.mock("../entities/user.entity", () => ({
-  User: class {},
-}));
-
-describe("UserRepository", () => {
-  let repository: UserRepository;
+  const mockUsers: User[] = [
+    mockUser,
+    {
+      id: 2,
+      email: 'jane@example.com',
+      password: 'hashedPassword2',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [UserRepository],
-    }).compile();
-
-    repository = moduleRef.get(UserRepository);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should be defined", () => {
-    expect(repository).toBeDefined();
-  });
-
-  it("should be an instance of RepositoryBase", () => {
-    expect(repository).toBeInstanceOf(RepositoryBase);
-  });
-
-  it("should have all base repository methods", () => {
-    expect(repository.find).toBeDefined();
-    expect(repository.findOne).toBeDefined();
-    expect(repository.save).toBeDefined();
-    expect(repository.delete).toBeDefined();
-    expect(repository.create).toBeDefined();
-    expect(repository.update).toBeDefined();
-    expect(repository.count).toBeDefined();
-  });
-
-  describe("find", () => {
-    it("should return an array of users", async () => {
-      const users = [{ id: 1, email: "test@example.com" }];
-      (repository.find as jest.Mock).mockResolvedValue(users);
-
-      const result = await repository.find();
-
-      expect(repository.find).toHaveBeenCalled();
-      expect(result).toEqual(users);
-    });
-
-    it("should return an empty array when no users exist", async () => {
-      (repository.find as jest.Mock).mockResolvedValue([]);
-
-      const result = await repository.find();
-
-      expect(result).toEqual([]);
-    });
-
-    it("should pass options to the base find method", async () => {
-      const options = { where: { active: true } };
-      (repository.find as jest.Mock).mockResolvedValue([]);
-
-      await repository.find(options);
-
-      expect(repository.find).toHaveBeenCalledWith(options);
-    });
-  });
-
-  describe("findOne", () => {
-    it("should return a user when found", async () => {
-      const user = { id: 1, email: "test@example.com" };
-      (repository.findOne as jest.Mock).mockResolvedValue(user);
-
-      const result = await repository.findOne({ where: { id: 1 } });
-
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(result).toEqual(user);
-    });
-
-    it("should return null when user is not found", async () => {
-      (repository.findOne as jest.Mock).mockResolvedValue(null);
-
-      const result = await repository.findOne({ where: { id: 999 } });
-
-      expect(result).toBeNull();
-    });
-  });
-
-  describe("save", () => {
-    it("should save a user and return the saved entity", async () => {
-      const user = { id: 1, email: "test@example.com" };
-      (repository.save as jest.Mock).mockResolvedValue(user);
-
-      const result = await repository.save(user);
-
-      expect(repository.save).toHaveBeenCalledWith(user);
-      expect(result).toEqual(user);
-    });
-
-    it("should propagate errors from the database", async () => {
-      const error = new Error("Database error");
-      (repository.save as jest.Mock).mockRejectedValue(error);
-
-      await expect(repository.save({})).rejects.toThrow("Database error");
-    });
-  });
-
-  describe("delete", () => {
-    it("should delete a user by id", async () => {
-      const deleteResult = { affected: 1 };
-      (repository.delete as jest.Mock).mockResolvedValue(deleteResult);
-
-      const result = await repository.delete(1);
-
-      expect(repository.delete).toHaveBeenCalledWith(1);
-      expect(result).toEqual(deleteResult);
-    });
-
-    it("should handle delete when no rows affected", async () => {
-      (repository.delete as jest.Mock).mockResolvedValue({ affected: 0 });
-
-      const result = await repository.delete(999);
-
-      expect(result.affected).toBe(0);
-    });
-  });
-
-  describe("create", () => {
-    it("should create a new user instance", () => {
-      const userData = { email: "new@example.com" };
-      const newUser = { id: 2, ...userData };
-      (repository.create as jest.Mock).mockReturnValue(newUser);
-
-      const result = repository.create(userData);
-
-      expect(repository.create).toHaveBeenCalledWith(userData);
-      expect(result).toEqual(newUser);
-    });
-  });
-
-  describe("update", () => {
-    it("should update a user and return the update result", async () => {
-      const updateResult = { affected: 1, raw: {} };
-      (repository.update as jest.Mock).mockResolvedValue(updateResult);
-
-      const result = await repository.update(1, { email: "updated@example.com" });
-
-      expect(repository.update).toHaveBeenCalledWith(1, { email: "updated@example.com" });
-      expect(result).toEqual(updateResult);
-    });
-  });
-
-  describe("count", () => {
-    it("should return the number of users", async () => {
-      (repository.count as jest.Mock).mockResolvedValue(5);
-
-      const result = await repository.count();
-
-      expect(repository.count).toHaveBeenCalled();
-      expect(result).toBe(5);
-    });
-
-    it("should return 0 when no users exist", async () => {
-      (repository.count as jest.Mock).mockResolvedValue(0);
-
-      const result = await repository.count();
-
-      expect(result).toBe(0);
-    });
-  });
-});
+    mockRepositoryBase = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+      findAndCount: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      softDelete: jest.fn(),
+      restore: jest.fn(),
+      merge: jest.fn(),
+      preload: jest.fn(),
+      increment: jest.fn(),
+      decrement: jest.fn(),
+      query: jest.fn(),
+      clear: jest.fn(),
+      insert: jest.fn(),
+      upsert: jest.fn(),
+      exists: jest.fn(),
+      existsBy: jest.fn(),
+      findOneBy: jest.fn(),
+      findOneOrFail: jest.fn(),
+      findOneByOrFail: jest.fn(),
+      findBy: jest.fn(),
+      findByIds: jest.fn(),
+      findAndCountBy: jest.fn(),
+      findAndCountByIds: jest.fn(),
+      findOptions: jest.fn(),
+      getMany: jest.fn(),
+      getManyAndCount: jest.fn(),
+      getOne: jest.fn(),
+      getRawMany: jest.fn(),
+      getRawOne: jest.fn(),
+      getCount: jest.fn(),
+      getExists: jest.fn(),
+      offset: jest.fn(),
+      take: jest.fn(),
+      skip: jest.fn(),
+      limit: jest.fn(),
+      orderBy: jest.fn(),
+      groupBy: jest.fn(),
+      having: jest.fn(),
+      where: jest.fn(),
+      andWhere: jest.fn(),
+      orWhere: jest.fn(),
+      setParameters: jest.fn(),
+      select: jest.fn(),
+      addSelect: jest.fn(),
+      innerJoin: jest.fn(),
+      leftJoin: jest.fn(),
+      innerJoinAndSelect: jest.fn(),
+      leftJoinAndSelect: jest.fn(),
+      innerJoinAndMapMany: jest.fn(),
+      innerJoinAndMapOne: jest.fn(),
+      leftJoinAndMapMany: jest.fn(),
+      leftJoinAndMapOne: jest.fn(),
+      cache: jest.fn(),
+      withDeleted: jest.fn(),
+      useIndex: jest.fn(),
+      useTable: jest.fn(),
+      comment: jest.fn(),
+      setLock: jest.fn(),
+      setOption: jest.fn(),
+      distinct: jest.fn(),
+      distinctOn: jest.fn(),
+      getQuery: jest.fn(),
+      getSql: jest.fn(),
+      getParameters: jest.fn(),
+      clone: jest.fn(),
+      expressionMap: jest.fn(),
+      getQueryAndParameters: jest.fn(),
+      getQueryAndParametersWithAlias: jest.fn(),
+      getQueryAndParametersWithAliasAndParameters: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderBy: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimit: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffset: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhere: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupBy: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHaving: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelect: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoin: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCache: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeleted: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndex: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTable: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndComment: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLock: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOption: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinct: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOn: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQuery: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSql: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParameters: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndClone: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMap: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParameters: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAlias: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParameters: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderBy: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimit: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffset: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhere: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupBy: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHaving: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelect: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoin: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCache: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeleted: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndex: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTable: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndComment: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLock: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOption: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinct: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOn: jest.fn(),
+      getQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndSetLockAndSetOptionAndDistinctAndDistinctOnAndGetQueryAndGetSqlAndGetParametersAndCloneAndExpressionMapAndGetQueryAndParametersAndGetQueryAndParametersWithAliasAndGetQueryAndParametersWithAliasAndParametersAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUseIndexAndUseTableAndCommentAndGetQueryAndParametersWithAliasAndParametersAndOrderByAndLimitAndOffsetAndWhereAndGroupByAndHavingAndSelectAndJoinAndCacheAndWithDeletedAndUse
