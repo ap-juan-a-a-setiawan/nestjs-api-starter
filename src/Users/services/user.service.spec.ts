@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from '../entities/user.entity';
-import { CreateUserDto } from '../dto/create-user.dto';
 import { UserRepository } from '../repositories/user.repository';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { getRepository } from 'typeorm';
 
 jest.mock('typeorm', () => ({
@@ -14,7 +14,7 @@ jest.mock('typeorm', () => ({
 describe('UserService', () => {
   let service: UserService;
   let userRepository: jest.Mocked<UserRepository>;
-  let mockGetRepository: jest.Mock;
+  let mockQueryBuilder: any;
 
   const mockUser: User = {
     id: '1',
@@ -22,9 +22,7 @@ describe('UserService', () => {
     password: 'hashedPassword',
     firstName: 'John',
     lastName: 'Doe',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  } as User;
 
   const mockCreateUserDto: CreateUserDto = {
     email: 'new@example.com',
@@ -34,8 +32,11 @@ describe('UserService', () => {
   };
 
   beforeEach(async () => {
-    mockGetRepository = jest.fn();
-    (getRepository as jest.Mock).mockImplementation(mockGetRepository);
+    mockQueryBuilder = {
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getOne: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,7 +47,7 @@ describe('UserService', () => {
             find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
-            createQueryBuilder: jest.fn(),
+            createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
           },
         },
       ],
@@ -68,7 +69,7 @@ describe('UserService', () => {
       const result = await service.getAll();
 
       expect(result).toEqual(users);
-      expect(userRepository.find).toHaveBeenCalled();
+      expect(userRepository.find).toHaveBeenCalledTimes(1);
     });
 
     it('should return an empty array when no users exist', async () => {
@@ -77,10 +78,10 @@ describe('UserService', () => {
       const result = await service.getAll();
 
       expect(result).toEqual([]);
-      expect(userRepository.find).toHaveBeenCalled();
+      expect(userRepository.find).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle repository errors', async () => {
+    it('should handle errors from the repository', async () => {
       const error = new Error('Database error');
       userRepository.find.mockRejectedValue(error);
 
@@ -98,7 +99,7 @@ describe('UserService', () => {
       expect(userRepository.findOne).toHaveBeenCalledWith('1');
     });
 
-    it('should return null when user not found', async () => {
+    it('should return null when user is not found', async () => {
       userRepository.findOne.mockResolvedValue(null);
 
       const result = await service.getById('999');
@@ -107,7 +108,7 @@ describe('UserService', () => {
       expect(userRepository.findOne).toHaveBeenCalledWith('999');
     });
 
-    it('should handle repository errors', async () => {
+    it('should handle errors from the repository', async () => {
       const error = new Error('Database error');
       userRepository.findOne.mockRejectedValue(error);
 
@@ -117,126 +118,119 @@ describe('UserService', () => {
 
   describe('getByEmail', () => {
     it('should return a user by email with password', async () => {
-      const queryBuilder = {
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(mockUser),
-      };
-      userRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+      const userWithPassword = { ...mockUser, password: 'plainPassword' };
+      mockQueryBuilder.getOne.mockResolvedValue(userWithPassword);
 
       const result = await service.getByEmail('test@example.com');
 
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(userWithPassword);
       expect(userRepository.createQueryBuilder).toHaveBeenCalledWith('user');
-      expect(queryBuilder.addSelect).toHaveBeenCalledWith('user.password');
-      expect(queryBuilder.where).toHaveBeenCalledWith('user.email = :email', { email: 'test@example.com' });
-      expect(queryBuilder.getOne).toHaveBeenCalled();
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith('user.password');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.email = :email', { email: 'test@example.com' });
+      expect(mockQueryBuilder.getOne).toHaveBeenCalledTimes(1);
     });
 
-    it('should return null when user not found', async () => {
-      const queryBuilder = {
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-      };
-      userRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+    it('should return null when user is not found', async () => {
+      mockQueryBuilder.getOne.mockResolvedValue(null);
 
       const result = await service.getByEmail('nonexistent@example.com');
 
       expect(result).toBeNull();
-      expect(queryBuilder.getOne).toHaveBeenCalled();
+      expect(mockQueryBuilder.getOne).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle query builder errors', async () => {
-      const error = new Error('Query error');
-      const queryBuilder = {
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockRejectedValue(error),
-      };
-      userRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+    it('should handle errors from the query builder', async () => {
+      const error = new Error('Database error');
+      mockQueryBuilder.getOne.mockRejectedValue(error);
 
       await expect(service.getByEmail('test@example.com')).rejects.toThrow(error);
     });
   });
 
   describe('create', () => {
-    it('should create a new user when email is unique', async () => {
-      const queryBuilder = {
+    it('should create a new user successfully', async () => {
+      const mockRepoQueryBuilder = {
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       };
-      mockGetRepository.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+      (getRepository as jest.Mock).mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockRepoQueryBuilder),
       });
-
       userRepository.save.mockResolvedValue(mockUser);
 
       const result = await service.create(mockCreateUserDto);
 
       expect(result).toEqual(mockUser);
-      expect(mockGetRepository).toHaveBeenCalledWith(User);
-      expect(queryBuilder.where).toHaveBeenCalledWith('user.email = :email', { email: mockCreateUserDto.email });
-      expect(queryBuilder.getOne).toHaveBeenCalled();
+      expect(getRepository).toHaveBeenCalledWith(User);
+      expect(mockRepoQueryBuilder.where).toHaveBeenCalledWith('user.email = :email', { email: mockCreateUserDto.email });
+      expect(mockRepoQueryBuilder.getOne).toHaveBeenCalledTimes(1);
       expect(userRepository.save).toHaveBeenCalledWith(mockCreateUserDto);
     });
 
     it('should throw HttpException when email already exists', async () => {
-      const queryBuilder = {
+      const mockRepoQueryBuilder = {
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockUser),
       };
-      mockGetRepository.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+      (getRepository as jest.Mock).mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockRepoQueryBuilder),
       });
 
       await expect(service.create(mockCreateUserDto)).rejects.toThrow(HttpException);
-      await expect(service.create(mockCreateUserDto)).rejects.toThrow(
-        expect.objectContaining({
-          status: HttpStatus.BAD_REQUEST,
-          response: {
-            statusCode: HttpStatus.BAD_REQUEST,
-            errors: ['Email must be unique.'],
-            error: 'Bad Request',
-          },
-        })
-      );
+      await expect(service.create(mockCreateUserDto)).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        response: {
+          statusCode: HttpStatus.BAD_REQUEST,
+          errors: ['Email must be unique.'],
+          error: 'Bad Request'
+        }
+      });
       expect(userRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should handle database errors during email check', async () => {
-      const error = new Error('Database error');
-      const queryBuilder = {
+    it('should handle errors when checking for existing user', async () => {
+      const mockRepoQueryBuilder = {
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockRejectedValue(error),
+        getOne: jest.fn().mockRejectedValue(new Error('Database error')),
       };
-      mockGetRepository.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+      (getRepository as jest.Mock).mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockRepoQueryBuilder),
       });
 
-      await expect(service.create(mockCreateUserDto)).rejects.toThrow(error);
+      await expect(service.create(mockCreateUserDto)).rejects.toThrow('Database error');
       expect(userRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should handle save errors', async () => {
-      const queryBuilder = {
+    it('should handle errors when saving the new user', async () => {
+      const mockRepoQueryBuilder = {
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       };
-      mockGetRepository.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+      (getRepository as jest.Mock).mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockRepoQueryBuilder),
       });
-
-      const error = new Error('Save error');
+      const error = new Error('Database error');
       userRepository.save.mockRejectedValue(error);
 
       await expect(service.create(mockCreateUserDto)).rejects.toThrow(error);
     });
 
-    it('should handle missing getRepository', async () => {
-      mockGetRepository.mockReturnValue(null);
+    it('should handle empty email in create user dto', async () => {
+      const emptyEmailDto = { ...mockCreateUserDto, email: '' };
+      const mockRepoQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      (getRepository as jest.Mock).mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockRepoQueryBuilder),
+      });
+      userRepository.save.mockResolvedValue(mockUser);
 
-      await expect(service.create(mockCreateUserDto)).rejects.toThrow();
+      const result = await service.create(emptyEmailDto);
+
+      expect(result).toEqual(mockUser);
+      expect(mockRepoQueryBuilder.where).toHaveBeenCalledWith('user.email = :email', { email: '' });
+      expect(userRepository.save).toHaveBeenCalledWith(emptyEmailDto);
     });
   });
 });

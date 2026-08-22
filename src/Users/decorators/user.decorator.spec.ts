@@ -1,185 +1,283 @@
 import { createParamDecorator, ExecutionContext } } from '@nestjs/common';
 import { User } from './user.decorator';
 
-jest.mock('@nestjs/common', () => ({
-  createParamDecorator: jest.fn().mockImplementation((fn) => fn),
-}));
+describe('User Decorator', () => {
+  describe('createParamDecorator', () => {
+    let mockExecutionContext: jest.Mocked<ExecutionContext>;
+    let mockSwitchToHttp: jest.Mock;
+    let mockRequest: jest.Mock;
 
-describe('UserDecorator', () => {
-  let mockExecutionContext: jest.Mocked<ExecutionContext>;
-  let mockRequest: any;
+    beforeEach(() => {
+      mockSwitchToHttp = jest.fn();
+      mockRequest = jest.fn();
+      
+      mockExecutionContext = {
+        switchToHttp: mockSwitchToHttp,
+      } as unknown as jest.Mocked<ExecutionContext>;
 
-  beforeEach(() => {
-    mockRequest = {
-      user: {
-        id: 1,
-        email: 'test@example.com',
-        roles: ['admin'],
-      },
-    };
+      mockSwitchToHttp.mockReturnValue({
+        getRequest: mockRequest,
+      });
+    });
 
-    mockExecutionContext = {
-      switchToHttp: jest.fn().mockReturnValue({
-        getRequest: jest.fn().mockReturnValue(mockRequest),
-      }),
-    } as unknown as jest.Mocked<ExecutionContext>;
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe('User decorator factory function', () => {
     it('should be defined', () => {
       expect(User).toBeDefined();
     });
 
     it('should return the user object from the request', () => {
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toEqual(mockRequest.user);
+      const mockUser = { id: 1, username: 'testuser' };
+      mockRequest.mockReturnValue({ user: mockUser });
+
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(mockSwitchToHttp).toHaveBeenCalled();
+      expect(mockRequest).toHaveBeenCalled();
+      expect(result).toEqual(mockUser);
     });
 
-    it('should return undefined when request has no user property', () => {
-      mockRequest = {};
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+    it('should return undefined when user is not present in request', () => {
+      mockRequest.mockReturnValue({});
 
-      const result = User(undefined, mockExecutionContext);
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
       expect(result).toBeUndefined();
     });
 
-    it('should return null when request.user is null', () => {
-      mockRequest.user = null;
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+    it('should return null when user is null in request', () => {
+      mockRequest.mockReturnValue({ user: null });
 
-      const result = User(undefined, mockExecutionContext);
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
       expect(result).toBeNull();
     });
 
-    it('should return the user object when data parameter is provided', () => {
-      const data = 'some-data';
-      const result = User(data, mockExecutionContext);
-      expect(result).toEqual(mockRequest.user);
+    it('should handle the data parameter without affecting the result', () => {
+      const mockUser = { id: 2, username: 'anotheruser' };
+      mockRequest.mockReturnValue({ user: mockUser });
+
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory('some-data', mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
     });
 
-    it('should handle missing request object', () => {
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(undefined);
-
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toBeUndefined();
-    });
-
-    it('should handle null request object', () => {
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(null);
-
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toBeUndefined();
-    });
-
-    it('should call switchToHttp and getRequest methods', () => {
-      User(undefined, mockExecutionContext);
-
-      expect(mockExecutionContext.switchToHttp).toHaveBeenCalledTimes(1);
-      expect(mockExecutionContext.switchToHttp().getRequest).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return the exact user object reference', () => {
-      const userObject = { id: 123, name: 'John Doe' };
-      mockRequest.user = userObject;
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
-
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toBe(userObject);
-    });
-
-    it('should work with complex user objects', () => {
-      const complexUser = {
-        id: 1,
+    it('should handle complex user objects', () => {
+      const mockUser = {
+        id: 3,
+        username: 'complexuser',
+        roles: ['admin', 'editor'],
         profile: {
           firstName: 'John',
           lastName: 'Doe',
-          address: {
-            street: '123 Main St',
-            city: 'Anytown',
-          },
+          email: 'john.doe@example.com'
         },
-        permissions: ['read', 'write', 'delete'],
-        metadata: {
-          lastLogin: new Date('2024-01-01'),
-          isActive: true,
-        },
+        createdAt: new Date('2023-01-01'),
+        isActive: true
       };
-      mockRequest.user = complexUser;
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+      mockRequest.mockReturnValue({ user: mockUser });
 
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toEqual(complexUser);
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
+      expect(result.roles).toHaveLength(2);
       expect(result.profile.firstName).toBe('John');
-      expect(result.permissions).toContain('write');
-      expect(result.metadata.isActive).toBe(true);
+      expect(result.isActive).toBe(true);
     });
 
-    it('should handle request with user as empty object', () => {
-      mockRequest.user = {};
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+    it('should handle request with additional properties', () => {
+      const mockUser = { id: 4, username: 'testuser4' };
+      mockRequest.mockReturnValue({ 
+        user: mockUser,
+        headers: { authorization: 'Bearer token' },
+        query: { page: 1 },
+        params: { id: 4 }
+      });
 
-      const result = User(undefined, mockExecutionContext);
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should throw an error if switchToHttp is not available', () => {
+      const invalidContext = {} as ExecutionContext;
+
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      expect(() => decoratorFactory(null, invalidContext)).toThrow();
+    });
+
+    it('should throw an error if getRequest is not available', () => {
+      mockSwitchToHttp.mockReturnValue({});
+
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      expect(() => decoratorFactory(null, mockExecutionContext)).toThrow();
+    });
+
+    it('should handle empty user object', () => {
+      mockRequest.mockReturnValue({ user: {} });
+
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
       expect(result).toEqual({});
+      expect(Object.keys(result)).toHaveLength(0);
     });
 
-    it('should handle request with user as primitive value', () => {
-      mockRequest.user = 'user-string';
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+    it('should handle user object with nested null values', () => {
+      const mockUser = { 
+        id: 5, 
+        username: 'testuser5',
+        profile: null,
+        settings: null
+      };
+      mockRequest.mockReturnValue({ user: mockUser });
 
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toBe('user-string');
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
+      expect(result.profile).toBeNull();
+      expect(result.settings).toBeNull();
     });
 
-    it('should handle request with user as number', () => {
-      mockRequest.user = 42;
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+    it('should handle user object with array properties', () => {
+      const mockUser = { 
+        id: 6, 
+        username: 'testuser6',
+        permissions: ['read', 'write', 'delete'],
+        tags: ['admin', 'user']
+      };
+      mockRequest.mockReturnValue({ user: mockUser });
 
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toBe(42);
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
+      expect(result.permissions).toHaveLength(3);
+      expect(result.tags).toContain('admin');
     });
 
-    it('should handle request with user as boolean', () => {
-      mockRequest.user = true;
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+    it('should handle user object with date properties', () => {
+      const mockUser = { 
+        id: 7, 
+        username: 'testuser7',
+        lastLogin: new Date('2023-06-15T10:30:00Z'),
+        expiresAt: new Date('2024-06-15T10:30:00Z')
+      };
+      mockRequest.mockReturnValue({ user: mockUser });
 
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toBe(true);
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
+      expect(result.lastLogin).toBeInstanceOf(Date);
+      expect(result.expiresAt).toBeInstanceOf(Date);
     });
 
-    it('should handle request with user as array', () => {
-      mockRequest.user = [1, 2, 3];
-      mockExecutionContext.switchToHttp().getRequest.mockReturnValue(mockRequest);
+    it('should handle user object with boolean properties', () => {
+      const mockUser = { 
+        id: 8, 
+        username: 'testuser8',
+        isAdmin: true,
+        isVerified: false,
+        isDeleted: false
+      };
+      mockRequest.mockReturnValue({ user: mockUser });
 
-      const result = User(undefined, mockExecutionContext);
-      expect(result).toEqual([1, 2, 3]);
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
+      expect(result.isAdmin).toBe(true);
+      expect(result.isVerified).toBe(false);
+      expect(result.isDeleted).toBe(false);
     });
 
-    it('should handle switchToHttp throwing an error', () => {
-      mockExecutionContext.switchToHttp.mockImplementation(() => {
-        throw new Error('HTTP context not available');
-      });
+    it('should handle user object with numeric properties', () => {
+      const mockUser = { 
+        id: 9, 
+        username: 'testuser9',
+        age: 25,
+        score: 98.5,
+        attempts: 0
+      };
+      mockRequest.mockReturnValue({ user: mockUser });
 
-      expect(() => User(undefined, mockExecutionContext)).toThrow('HTTP context not available');
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
+
+      const result = decoratorFactory(null, mockExecutionContext);
+
+      expect(result).toEqual(mockUser);
+      expect(result.age).toBe(25);
+      expect(result.score).toBe(98.5);
+      expect(result.attempts).toBe(0);
     });
 
-    it('should handle getRequest throwing an error', () => {
-      mockExecutionContext.switchToHttp().getRequest.mockImplementation(() => {
-        throw new Error('Request not available');
-      });
+    it('should handle user object with string properties', () => {
+      const mockUser = { 
+        id: 10, 
+        username: 'testuser10',
+        email: 'test@example.com',
+        phone: '+1234567890',
+        address: '123 Main St'
+      };
+      mockRequest.mockReturnValue({ user: mockUser });
 
-      expect(() => User(undefined, mockExecutionContext)).toThrow('Request not available');
-    });
+      const decoratorFactory = (User as unknown as { 
+        factory: (data: unknown, ctx: ExecutionContext) => any 
+      }).factory;
 
-    it('should handle undefined execution context', () => {
-      expect(() => User(undefined, undefined as any)).toThrow();
-    });
+      const result = decoratorFactory(null, mockExecutionContext);
 
-    it('should handle null execution context', () => {
-      expect(() => User(undefined, null as any)).toThrow();
+      expect(result).toEqual(mockUser);
+      expect(result.email).toContain('@');
+      expect(result.phone).toMatch(/^\+/);
+      expect(result.address).toContain('Main St');
     });
   });
 });

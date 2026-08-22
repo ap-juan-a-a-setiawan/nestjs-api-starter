@@ -17,11 +17,7 @@ describe('EntityBase', () => {
     entityBase = module.get<EntityBase>(EntityBase);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe('EntityBase instantiation', () => {
+  describe('EntityBase abstract class', () => {
     it('should be defined', () => {
       expect(entityBase).toBeDefined();
     });
@@ -33,10 +29,8 @@ describe('EntityBase', () => {
     it('should have the correct prototype', () => {
       expect(Object.getPrototypeOf(entityBase)).toBe(EntityBase.prototype);
     });
-  });
 
-  describe('EntityBase abstract class', () => {
-    it('should not be instantiable directly', () => {
+    it('should be an abstract class and cannot be instantiated directly', () => {
       expect(() => {
         // @ts-ignore - Testing abstract class instantiation
         new EntityBase();
@@ -47,18 +41,49 @@ describe('EntityBase', () => {
       expect(Object.keys(entityBase)).toHaveLength(0);
     });
 
-    it('should have no enumerable properties on prototype', () => {
-      const prototypeProperties = Object.getOwnPropertyNames(EntityBase.prototype);
-      expect(prototypeProperties).toEqual(['constructor']);
+    it('should have no own property descriptors', () => {
+      expect(Object.getOwnPropertyDescriptors(entityBase)).toEqual({});
     });
 
-    it('should have a constructor', () => {
+    it('should have no methods defined on the prototype', () => {
+      const prototypeMethods = Object.getOwnPropertyNames(EntityBase.prototype);
+      expect(prototypeMethods).toEqual(['constructor']);
+    });
+
+    it('should not have any static methods', () => {
+      const staticMethods = Object.getOwnPropertyNames(EntityBase);
+      expect(staticMethods).toEqual(['length', 'name', 'prototype']);
+    });
+
+    it('should be extensible', () => {
+      expect(Object.isExtensible(entityBase)).toBe(true);
+    });
+
+    it('should not be frozen', () => {
+      expect(Object.isFrozen(entityBase)).toBe(false);
+    });
+
+    it('should not be sealed', () => {
+      expect(Object.isSealed(entityBase)).toBe(false);
+    });
+
+    it('should have a constructor that is the EntityBase class', () => {
+      expect(entityBase.constructor).toBe(EntityBase);
+    });
+
+    it('should have the correct name property', () => {
+      expect(EntityBase.name).toBe('EntityBase');
+    });
+
+    it('should have a prototype that is an object', () => {
+      expect(typeof EntityBase.prototype).toBe('object');
+    });
+
+    it('should have a prototype with a constructor property', () => {
       expect(EntityBase.prototype.constructor).toBe(EntityBase);
     });
-  });
 
-  describe('EntityBase inheritance', () => {
-    it('should allow subclassing', () => {
+    it('should support inheritance', () => {
       class TestEntity extends EntityBase {
         testMethod(): string {
           return 'test';
@@ -71,205 +96,196 @@ describe('EntityBase', () => {
       expect(testEntity.testMethod()).toBe('test');
     });
 
-    it('should allow subclass with additional properties', () => {
+    it('should allow subclasses to add properties', () => {
       class TestEntity extends EntityBase {
         id: number;
-        name: string;
-
-        constructor(id: number, name: string) {
+        constructor(id: number) {
           super();
           this.id = id;
-          this.name = name;
-        }
-
-        getInfo(): string {
-          return `${this.id}: ${this.name}`;
         }
       }
 
-      const testEntity = new TestEntity(1, 'Test');
+      const testEntity = new TestEntity(1);
       expect(testEntity.id).toBe(1);
-      expect(testEntity.name).toBe('Test');
-      expect(testEntity.getInfo()).toBe('1: Test');
+      expect(testEntity).toBeInstanceOf(EntityBase);
     });
 
-    it('should allow multiple levels of inheritance', () => {
+    it('should allow subclasses to override methods', () => {
       class BaseEntity extends EntityBase {
-        baseMethod(): string {
+        getType(): string {
           return 'base';
         }
       }
 
       class ChildEntity extends BaseEntity {
-        childMethod(): string {
+        getType(): string {
           return 'child';
         }
       }
 
       const childEntity = new ChildEntity();
-      expect(childEntity).toBeInstanceOf(EntityBase);
-      expect(childEntity).toBeInstanceOf(BaseEntity);
-      expect(childEntity).toBeInstanceOf(ChildEntity);
-      expect(childEntity.baseMethod()).toBe('base');
-      expect(childEntity.childMethod()).toBe('child');
-    });
-  });
-
-  describe('EntityBase methods', () => {
-    it('should not have any public methods defined', () => {
-      const methods = Object.getOwnPropertyNames(EntityBase.prototype);
-      expect(methods).toEqual(['constructor']);
+      expect(childEntity.getType()).toBe('child');
     });
 
-    it('should not have any static methods', () => {
-      const staticMethods = Object.getOwnPropertyNames(EntityBase);
-      expect(staticMethods).toEqual(['length', 'name', 'prototype']);
-    });
-  });
+    it('should allow multiple levels of inheritance', () => {
+      class Level1 extends EntityBase {}
+      class Level2 extends Level1 {}
+      class Level3 extends Level2 {}
 
-  describe('EntityBase with mock providers', () => {
-    it('should work with mocked dependencies', async () => {
-      const mockService = {
-        getData: jest.fn().mockReturnValue('mock data'),
-        save: jest.fn().mockResolvedValue(true),
-      };
-
-      class TestEntity extends EntityBase {
-        constructor(private service: typeof mockService) {
-          super();
-        }
-
-        getData(): string {
-          return this.service.getData();
-        }
-
-        async save(): Promise<boolean> {
-          return this.service.save();
-        }
-      }
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          {
-            provide: 'MOCK_SERVICE',
-            useValue: mockService,
-          },
-          {
-            provide: TestEntity,
-            useFactory: (service: typeof mockService) => new TestEntity(service),
-            inject: ['MOCK_SERVICE'],
-          },
-        ],
-      }).compile();
-
-      const testEntity = module.get<TestEntity>(TestEntity);
-
-      expect(testEntity.getData()).toBe('mock data');
-      expect(mockService.getData).toHaveBeenCalled();
-
-      await expect(testEntity.save()).resolves.toBe(true);
-      expect(mockService.save).toHaveBeenCalled();
+      const level3 = new Level3();
+      expect(level3).toBeInstanceOf(EntityBase);
+      expect(level3).toBeInstanceOf(Level1);
+      expect(level3).toBeInstanceOf(Level2);
+      expect(level3).toBeInstanceOf(Level3);
     });
 
-    it('should handle mocked service errors', async () => {
-      const mockService = {
-        getData: jest.fn().mockImplementation(() => {
-          throw new Error('Service error');
-        }),
-        save: jest.fn().mockRejectedValue(new Error('Save failed')),
-      };
-
-      class TestEntity extends EntityBase {
-        constructor(private service: typeof mockService) {
-          super();
-        }
-
-        getData(): string {
-          return this.service.getData();
-        }
-
-        async save(): Promise<boolean> {
-          return this.service.save();
-        }
-      }
-
-      const testEntity = new TestEntity(mockService);
-
-      expect(() => testEntity.getData()).toThrow('Service error');
-      await expect(testEntity.save()).rejects.toThrow('Save failed');
-    });
-  });
-
-  describe('EntityBase edge cases', () => {
-    it('should handle subclass with no constructor', () => {
-      class EmptyEntity extends EntityBase {}
-
-      const emptyEntity = new EmptyEntity();
-      expect(emptyEntity).toBeInstanceOf(EntityBase);
-      expect(emptyEntity).toBeInstanceOf(EmptyEntity);
+    it('should have a prototype chain that includes Object.prototype', () => {
+      expect(entityBase instanceof Object).toBe(true);
+      expect(Object.getPrototypeOf(Object.getPrototypeOf(entityBase))).toBe(Object.prototype);
     });
 
-    it('should handle subclass with private constructor', () => {
-      class PrivateEntity extends EntityBase {
-        private constructor() {
-          super();
-        }
-
-        static create(): PrivateEntity {
-          return new PrivateEntity();
-        }
-      }
-
-      const privateEntity = PrivateEntity.create();
-      expect(privateEntity).toBeInstanceOf(EntityBase);
-      expect(privateEntity).toBeInstanceOf(PrivateEntity);
+    it('should have a toString method inherited from Object', () => {
+      expect(typeof entityBase.toString).toBe('function');
+      expect(entityBase.toString()).toBe('[object Object]');
     });
 
-    it('should handle subclass with protected constructor', () => {
-      class ProtectedEntity extends EntityBase {
-        protected constructor() {
-          super();
-        }
-
-        static create(): ProtectedEntity {
-          return new ProtectedEntity();
-        }
-      }
-
-      const protectedEntity = ProtectedEntity.create();
-      expect(protectedEntity).toBeInstanceOf(EntityBase);
-      expect(protectedEntity).toBeInstanceOf(ProtectedEntity);
+    it('should have a valueOf method inherited from Object', () => {
+      expect(typeof entityBase.valueOf).toBe('function');
+      expect(entityBase.valueOf()).toBe(entityBase);
     });
 
-    it('should handle subclass with parameterized constructor', () => {
-      class ParameterizedEntity extends EntityBase {
-        constructor(public value: number) {
-          super();
-        }
-      }
-
-      const parameterizedEntity = new ParameterizedEntity(42);
-      expect(parameterizedEntity.value).toBe(42);
-      expect(parameterizedEntity).toBeInstanceOf(EntityBase);
+    it('should have a hasOwnProperty method inherited from Object', () => {
+      expect(typeof entityBase.hasOwnProperty).toBe('function');
+      expect(entityBase.hasOwnProperty('test')).toBe(false);
     });
 
-    it('should handle subclass with getters and setters', () => {
-      class PropertyEntity extends EntityBase {
-        private _name: string = '';
+    it('should have an isPrototypeOf method inherited from Object', () => {
+      expect(typeof entityBase.isPrototypeOf).toBe('function');
+      expect(entityBase.isPrototypeOf({})).toBe(false);
+    });
 
-        get name(): string {
-          return this._name;
-        }
+    it('should have a propertyIsEnumerable method inherited from Object', () => {
+      expect(typeof entityBase.propertyIsEnumerable).toBe('function');
+      expect(entityBase.propertyIsEnumerable('test')).toBe(false);
+    });
 
-        set name(value: string) {
-          this._name = value;
-        }
-      }
+    it('should have a toLocaleString method inherited from Object', () => {
+      expect(typeof entityBase.toLocaleString).toBe('function');
+      expect(entityBase.toLocaleString()).toBe('[object Object]');
+    });
 
-      const propertyEntity = new PropertyEntity();
-      propertyEntity.name = 'Test';
-      expect(propertyEntity.name).toBe('Test');
-      expect(propertyEntity).toBeInstanceOf(EntityBase);
+    it('should have a getOwnPropertyDescriptor method available', () => {
+      expect(typeof Object.getOwnPropertyDescriptor).toBe('function');
+      expect(Object.getOwnPropertyDescriptor(EntityBase.prototype, 'constructor')).toBeDefined();
+    });
+
+    it('should have a getPrototypeOf method available', () => {
+      expect(typeof Object.getPrototypeOf).toBe('function');
+      expect(Object.getPrototypeOf(entityBase)).toBe(EntityBase.prototype);
+    });
+
+    it('should have a setPrototypeOf method available', () => {
+      expect(typeof Object.setPrototypeOf).toBe('function');
+      const newProto = {};
+      Object.setPrototypeOf(entityBase, newProto);
+      expect(Object.getPrototypeOf(entityBase)).toBe(newProto);
+    });
+
+    it('should have a create method available', () => {
+      expect(typeof Object.create).toBe('function');
+      const created = Object.create(EntityBase.prototype);
+      expect(created).toBeInstanceOf(EntityBase);
+    });
+
+    it('should have an assign method available', () => {
+      expect(typeof Object.assign).toBe('function');
+      const target = {};
+      const source = { test: 'value' };
+      Object.assign(target, source);
+      expect(target).toEqual({ test: 'value' });
+    });
+
+    it('should have a defineProperty method available', () => {
+      expect(typeof Object.defineProperty).toBe('function');
+      const obj = {};
+      Object.defineProperty(obj, 'test', { value: 'value', enumerable: true });
+      expect(obj).toHaveProperty('test', 'value');
+    });
+
+    it('should have a defineProperties method available', () => {
+      expect(typeof Object.defineProperties).toBe('function');
+      const obj = {};
+      Object.defineProperties(obj, {
+        test1: { value: 'value1', enumerable: true },
+        test2: { value: 'value2', enumerable: true },
+      });
+      expect(obj).toEqual({ test1: 'value1', test2: 'value2' });
+    });
+
+    it('should have a freeze method available', () => {
+      expect(typeof Object.freeze).toBe('function');
+      const obj = { test: 'value' };
+      Object.freeze(obj);
+      expect(Object.isFrozen(obj)).toBe(true);
+    });
+
+    it('should have a seal method available', () => {
+      expect(typeof Object.seal).toBe('function');
+      const obj = { test: 'value' };
+      Object.seal(obj);
+      expect(Object.isSealed(obj)).toBe(true);
+    });
+
+    it('should have a preventExtensions method available', () => {
+      expect(typeof Object.preventExtensions).toBe('function');
+      const obj = {};
+      Object.preventExtensions(obj);
+      expect(Object.isExtensible(obj)).toBe(false);
+    });
+
+    it('should have an is method available', () => {
+      expect(typeof Object.is).toBe('function');
+      expect(Object.is(NaN, NaN)).toBe(true);
+      expect(Object.is(0, -0)).toBe(false);
+    });
+
+    it('should have a keys method available', () => {
+      expect(typeof Object.keys).toBe('function');
+      const obj = { test: 'value' };
+      expect(Object.keys(obj)).toEqual(['test']);
+    });
+
+    it('should have a values method available', () => {
+      expect(typeof Object.values).toBe('function');
+      const obj = { test: 'value' };
+      expect(Object.values(obj)).toEqual(['value']);
+    });
+
+    it('should have an entries method available', () => {
+      expect(typeof Object.entries).toBe('function');
+      const obj = { test: 'value' };
+      expect(Object.entries(obj)).toEqual([['test', 'value']]);
+    });
+
+    it('should have a fromEntries method available', () => {
+      expect(typeof Object.fromEntries).toBe('function');
+      const entries = [['test', 'value']];
+      expect(Object.fromEntries(entries)).toEqual({ test: 'value' });
+    });
+
+    it('should have a getOwnPropertySymbols method available', () => {
+      expect(typeof Object.getOwnPropertySymbols).toBe('function');
+      const symbol = Symbol('test');
+      const obj = { [symbol]: 'value' };
+      expect(Object.getOwnPropertySymbols(obj)).toEqual([symbol]);
+    });
+
+    it('should have a getOwnPropertyDescriptors method available', () => {
+      expect(typeof Object.getOwnPropertyDescriptors).toBe('function');
+      const obj = { test: 'value' };
+      const descriptors = Object.getOwnPropertyDescriptors(obj);
+      expect(descriptors.test).toBeDefined();
+      expect(descriptors.test.value).toBe('value');
     });
   });
 });

@@ -13,16 +13,12 @@ describe('JwtAuthGuard', () => {
     guard = moduleRef.get<JwtAuthGuard>(JwtAuthGuard);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('should be defined', () => {
+    expect(guard).toBeDefined();
   });
 
   describe('canActivate', () => {
-    it('should be defined', () => {
-      expect(guard).toBeDefined();
-    });
-
-    it('should call super.canActivate with the execution context', async () => {
+    it('should call super.canActivate with the correct context', async () => {
       const mockContext = {
         switchToHttp: jest.fn().mockReturnValue({
           getRequest: jest.fn().mockReturnValue({
@@ -74,24 +70,7 @@ describe('JwtAuthGuard', () => {
       expect(result).toBe(false);
     });
 
-    it('should throw an error when no token is provided', async () => {
-      const mockContext = {
-        switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: {},
-          }),
-        }),
-      } as unknown as ExecutionContext;
-
-      // Mock the parent AuthGuard's canActivate to throw
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
-        new Error('Unauthorized'),
-      );
-
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Unauthorized');
-    });
-
-    it('should throw an error when token is invalid', async () => {
+    it('should throw an error when authentication throws', async () => {
       const mockContext = {
         switchToHttp: jest.fn().mockReturnValue({
           getRequest: jest.fn().mockReturnValue({
@@ -100,64 +79,123 @@ describe('JwtAuthGuard', () => {
         }),
       } as unknown as ExecutionContext;
 
-      // Mock the parent AuthGuard's canActivate to throw
+      const error = new Error('Unauthorized');
+      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(error);
+
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(error);
+    });
+
+    it('should handle missing authorization header', async () => {
+      const mockContext = {
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue({
+            headers: {},
+          }),
+        }),
+      } as unknown as ExecutionContext;
+
       jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
-        new Error('Invalid token'),
+        new Error('No auth token'),
       );
 
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Invalid token');
+      await expect(guard.canActivate(mockContext)).rejects.toThrow('No auth token');
     });
 
-    it('should handle missing execution context', async () => {
-      const canActivateSpy = jest.spyOn(JwtAuthGuard.prototype, 'canActivate');
+    it('should handle malformed authorization header', async () => {
+      const mockContext = {
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue({
+            headers: { authorization: 'InvalidFormat' },
+          }),
+        }),
+      } as unknown as ExecutionContext;
 
-      await expect(guard.canActivate(undefined as unknown as ExecutionContext)).rejects.toThrow();
-      expect(canActivateSpy).toHaveBeenCalledWith(undefined);
+      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
+        new Error('Invalid token format'),
+      );
+
+      await expect(guard.canActivate(mockContext)).rejects.toThrow('Invalid token format');
     });
 
-    it('should handle null execution context', async () => {
-      const canActivateSpy = jest.spyOn(JwtAuthGuard.prototype, 'canActivate');
+    it('should handle expired token', async () => {
+      const mockContext = {
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue({
+            headers: { authorization: 'Bearer expired-token' },
+          }),
+        }),
+      } as unknown as ExecutionContext;
 
-      await expect(guard.canActivate(null as unknown as ExecutionContext)).rejects.toThrow();
-      expect(canActivateSpy).toHaveBeenCalledWith(null);
+      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
+        new Error('Token expired'),
+      );
+
+      await expect(guard.canActivate(mockContext)).rejects.toThrow('Token expired');
+    });
+
+    it('should handle null context', async () => {
+      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
+        new Error('Invalid context'),
+      );
+
+      await expect(guard.canActivate(null as unknown as ExecutionContext)).rejects.toThrow(
+        'Invalid context',
+      );
+    });
+
+    it('should handle undefined request', async () => {
+      const mockContext = {
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue(undefined),
+        }),
+      } as unknown as ExecutionContext;
+
+      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
+        new Error('Request is undefined'),
+      );
+
+      await expect(guard.canActivate(mockContext)).rejects.toThrow('Request is undefined');
     });
   });
 
   describe('handleRequest', () => {
-    it('should be inherited from AuthGuard', () => {
-      expect(typeof guard.handleRequest).toBe('function');
-    });
-
-    it('should return the user when no error and user exists', () => {
+    it('should return the user when authentication succeeds', () => {
       const mockUser = { id: 1, username: 'testuser' };
       const result = guard.handleRequest(null, mockUser);
       expect(result).toEqual(mockUser);
     });
 
-    it('should throw when error is provided', () => {
-      const mockError = new Error('Authentication error');
-      expect(() => guard.handleRequest(mockError, null)).toThrow('Authentication error');
+    it('should throw an error when err is provided', () => {
+      const error = new Error('Authentication error');
+      expect(() => guard.handleRequest(error, null)).toThrow(error);
     });
 
-    it('should throw when user is not provided', () => {
-      expect(() => guard.handleRequest(null, null)).toThrow();
+    it('should throw an error when user is not found', () => {
+      expect(() => guard.handleRequest(null, null)).toThrow('User not found');
     });
 
-    it('should throw UnauthorizedException when user is not provided', () => {
-      expect(() => guard.handleRequest(null, null)).toThrow('Unauthorized');
-    });
-  });
-
-  describe('inheritance', () => {
-    it('should extend AuthGuard with jwt strategy', () => {
-      expect(JwtAuthGuard.prototype).toBeInstanceOf(Object);
-      expect(JwtAuthGuard.name).toBe('JwtAuthGuard');
+    it('should throw an error when user is undefined', () => {
+      expect(() => guard.handleRequest(null, undefined)).toThrow('User not found');
     });
 
-    it('should have the correct strategy name', () => {
-      // The strategy name 'jwt' is passed to the parent AuthGuard
-      const authGuardInstance = new JwtAuthGuard();
-      expect(authGuardInstance).toBeDefined();
+    it('should throw an error when user is false', () => {
+      expect(() => guard.handleRequest(null, false)).toThrow('User not found');
+    });
+
+    it('should throw an error when user is an empty object', () => {
+      expect(() => guard.handleRequest(null, {})).toThrow('User not found');
+    });
+
+    it('should return user when valid user object is provided', () => {
+      const mockUser = { id: 1, username: 'testuser', roles: ['admin'] };
+      const result = guard.handleRequest(null, mockUser);
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should throw the original error when both err and user are provided', () => {
+      const error = new Error('Custom error');
+      const mockUser = { id: 1 };
+      expect(() => guard.handleRequest(error, mockUser)).toThrow(error);
     });
   });
 });

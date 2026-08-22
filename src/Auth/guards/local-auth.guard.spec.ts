@@ -1,13 +1,29 @@
 import { Test } from '@nestjs/testing';
-import { ExecutionContext } from '@nestjs/common';
 import { LocalAuthGuard } from './local-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
+import { ExecutionContext } from '@nestjs/common';
 
 jest.mock('@nestjs/passport', () => ({
-  AuthGuard: jest.fn().mockImplementation(() => {
+  AuthGuard: jest.fn().mockImplementation((strategy: string) => {
     return class MockAuthGuard {
-      canActivate(context: ExecutionContext) {
+      constructor() {
+        this.strategy = strategy;
+      }
+      private strategy: string;
+      
+      canActivate(context: ExecutionContext): boolean | Promise<boolean> {
         return true;
+      }
+      
+      handleRequest(err: any, user: any, info: any) {
+        if (err || !user) {
+          throw err || new Error('Unauthorized');
+        }
+        return user;
+      }
+      
+      logIn(request: any) {
+        return Promise.resolve();
       }
     };
   }),
@@ -15,171 +31,201 @@ jest.mock('@nestjs/passport', () => ({
 
 describe('LocalAuthGuard', () => {
   let guard: LocalAuthGuard;
-  let mockAuthGuard: jest.Mock;
+  let mockAuthGuardInstance: any;
 
   beforeEach(async () => {
-    mockAuthGuard = AuthGuard as jest.Mock;
-    mockAuthGuard.mockClear();
-
     const moduleRef = await Test.createTestingModule({
       providers: [LocalAuthGuard],
     }).compile();
 
     guard = moduleRef.get<LocalAuthGuard>(LocalAuthGuard);
+    mockAuthGuardInstance = (guard as any);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(guard).toBeDefined();
-  });
-
-  it('should call AuthGuard with "local" strategy', () => {
-    expect(mockAuthGuard).toHaveBeenCalledWith('local');
-  });
-
-  it('should extend AuthGuard', () => {
-    expect(guard).toBeInstanceOf(AuthGuard('local'));
-  });
-
-  describe('canActivate', () => {
-    it('should return true when AuthGuard canActivate returns true', () => {
-      const mockContext = {} as ExecutionContext;
-      const result = guard.canActivate(mockContext);
-      expect(result).toBe(true);
+  describe('Class Definition', () => {
+    it('should be defined', () => {
+      expect(guard).toBeDefined();
     });
 
-    it('should return false when AuthGuard canActivate returns false', () => {
-      const mockContext = {} as ExecutionContext;
-      const mockCanActivate = jest.fn().mockReturnValue(false);
-      
-      // Override the canActivate method
-      Object.defineProperty(guard, 'canActivate', {
-        value: mockCanActivate,
-        writable: true,
-      });
-
-      const result = guard.canActivate(mockContext);
-      expect(result).toBe(false);
-      expect(mockCanActivate).toHaveBeenCalledWith(mockContext);
+    it('should be injectable', () => {
+      expect(LocalAuthGuard).toBeDefined();
+      expect(typeof LocalAuthGuard).toBe('function');
     });
 
-    it('should handle errors from AuthGuard canActivate', () => {
-      const mockContext = {} as ExecutionContext;
-      const error = new Error('Authentication failed');
-      const mockCanActivate = jest.fn().mockImplementation(() => {
-        throw error;
-      });
-
-      Object.defineProperty(guard, 'canActivate', {
-        value: mockCanActivate,
-        writable: true,
-      });
-
-      expect(() => guard.canActivate(mockContext)).toThrow(error);
-      expect(mockCanActivate).toHaveBeenCalledWith(mockContext);
+    it('should extend AuthGuard with "local" strategy', () => {
+      expect(AuthGuard).toHaveBeenCalledWith('local');
     });
 
-    it('should handle async canActivate returning a promise', async () => {
-      const mockContext = {} as ExecutionContext;
-      const mockCanActivate = jest.fn().mockResolvedValue(true);
-
-      Object.defineProperty(guard, 'canActivate', {
-        value: mockCanActivate,
-        writable: true,
-      });
-
-      const result = await guard.canActivate(mockContext);
-      expect(result).toBe(true);
-      expect(mockCanActivate).toHaveBeenCalledWith(mockContext);
-    });
-
-    it('should handle async canActivate rejecting with error', async () => {
-      const mockContext = {} as ExecutionContext;
-      const error = new Error('Async authentication failed');
-      const mockCanActivate = jest.fn().mockRejectedValue(error);
-
-      Object.defineProperty(guard, 'canActivate', {
-        value: mockCanActivate,
-        writable: true,
-      });
-
-      await expect(guard.canActivate(mockContext)).rejects.toThrow(error);
-      expect(mockCanActivate).toHaveBeenCalledWith(mockContext);
+    it('should have the correct prototype chain', () => {
+      expect(guard instanceof LocalAuthGuard).toBe(true);
+      expect(Object.getPrototypeOf(LocalAuthGuard.prototype)).toBeDefined();
     });
   });
 
-  describe('inheritance behavior', () => {
-    it('should inherit canActivate from AuthGuard', () => {
-      expect(typeof guard.canActivate).toBe('function');
-    });
-
-    it('should inherit handleRequest from AuthGuard', () => {
-      expect(typeof guard.handleRequest).toBe('function');
-    });
-
-    it('should inherit logIn from AuthGuard', () => {
-      expect(typeof guard.logIn).toBe('function');
-    });
-
-    it('should inherit logOut from AuthGuard', () => {
-      expect(typeof guard.logOut).toBe('function');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle null context', () => {
-      const result = guard.canActivate(null as unknown as ExecutionContext);
-      expect(result).toBe(true);
-    });
-
-    it('should handle undefined context', () => {
-      const result = guard.canActivate(undefined as unknown as ExecutionContext);
-      expect(result).toBe(true);
-    });
-
-    it('should handle context with request object', () => {
-      const mockContext = {
-        switchToHttp: () => ({
-          getRequest: () => ({ user: { id: 1, username: 'test' } }),
-        }),
-      } as unknown as ExecutionContext;
-
-      const result = guard.canActivate(mockContext);
-      expect(result).toBe(true);
-    });
-
-    it('should handle context with headers', () => {
-      const mockContext = {
-        switchToHttp: () => ({
-          getRequest: () => ({
-            headers: { authorization: 'Bearer token123' },
+  describe('Inherited Methods', () => {
+    describe('canActivate', () => {
+      it('should return true when authentication succeeds', async () => {
+        const mockContext = {
+          switchToHttp: jest.fn().mockReturnValue({
+            getRequest: jest.fn().mockReturnValue({}),
+            getResponse: jest.fn().mockReturnValue({}),
           }),
-        }),
-      } as unknown as ExecutionContext;
+        } as unknown as ExecutionContext;
 
-      const result = guard.canActivate(mockContext);
-      expect(result).toBe(true);
+        const result = await guard.canActivate(mockContext);
+        expect(result).toBe(true);
+      });
+
+      it('should handle execution context with request and response', async () => {
+        const mockRequest = { user: { id: 1, username: 'test' } };
+        const mockResponse = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        const mockContext = {
+          switchToHttp: jest.fn().mockReturnValue({
+            getRequest: jest.fn().mockReturnValue(mockRequest),
+            getResponse: jest.fn().mockReturnValue(mockResponse),
+          }),
+        } as unknown as ExecutionContext;
+
+        const result = await guard.canActivate(mockContext);
+        expect(result).toBe(true);
+      });
+
+      it('should handle empty execution context', async () => {
+        const mockContext = {} as ExecutionContext;
+        const result = await guard.canActivate(mockContext);
+        expect(result).toBe(true);
+      });
+    });
+
+    describe('handleRequest', () => {
+      it('should return user when no error and user exists', () => {
+        const mockUser = { id: 1, username: 'test' };
+        const result = mockAuthGuardInstance.handleRequest(null, mockUser, null);
+        expect(result).toEqual(mockUser);
+      });
+
+      it('should throw error when error is provided', () => {
+        const mockError = new Error('Authentication failed');
+        expect(() => {
+          mockAuthGuardInstance.handleRequest(mockError, null, null);
+        }).toThrow('Authentication failed');
+      });
+
+      it('should throw error when user is not provided', () => {
+        expect(() => {
+          mockAuthGuardInstance.handleRequest(null, null, null);
+        }).toThrow('Unauthorized');
+      });
+
+      it('should throw error when both error and user are missing', () => {
+        expect(() => {
+          mockAuthGuardInstance.handleRequest(undefined, undefined, undefined);
+        }).toThrow('Unauthorized');
+      });
+
+      it('should return user when error is null and user exists', () => {
+        const mockUser = { id: 2, username: 'john' };
+        const result = mockAuthGuardInstance.handleRequest(null, mockUser, { message: 'info' });
+        expect(result).toEqual(mockUser);
+      });
+    });
+
+    describe('logIn', () => {
+      it('should resolve successfully with valid request', async () => {
+        const mockRequest = { user: { id: 1 } };
+        await expect(mockAuthGuardInstance.logIn(mockRequest)).resolves.toBeUndefined();
+      });
+
+      it('should resolve successfully with empty request', async () => {
+        await expect(mockAuthGuardInstance.logIn({})).resolves.toBeUndefined();
+      });
+
+      it('should resolve successfully with null request', async () => {
+        await expect(mockAuthGuardInstance.logIn(null)).resolves.toBeUndefined();
+      });
     });
   });
 
-  describe('AuthGuard instantiation', () => {
-    it('should instantiate AuthGuard with correct strategy name', () => {
-      expect(mockAuthGuard).toHaveBeenCalledTimes(1);
-      expect(mockAuthGuard).toHaveBeenCalledWith('local');
+  describe('Strategy Configuration', () => {
+    it('should be instantiated with "local" strategy', () => {
+      expect(AuthGuard).toHaveBeenCalledWith('local');
+      expect(AuthGuard).toHaveBeenCalledTimes(1);
     });
 
-    it('should not instantiate AuthGuard with wrong strategy name', () => {
-      expect(mockAuthGuard).not.toHaveBeenCalledWith('jwt');
-      expect(mockAuthGuard).not.toHaveBeenCalledWith('google');
+    it('should have strategy property set to "local"', () => {
+      expect(mockAuthGuardInstance.strategy).toBe('local');
     });
+  });
 
-    it('should be a singleton instance', () => {
+  describe('Edge Cases', () => {
+    it('should handle multiple instantiations', () => {
+      const guard1 = new LocalAuthGuard();
       const guard2 = new LocalAuthGuard();
-      expect(guard2).toBeInstanceOf(LocalAuthGuard);
-      expect(guard2).toBeInstanceOf(AuthGuard('local'));
+      expect(guard1).toBeDefined();
+      expect(guard2).toBeDefined();
+      expect(guard1).not.toBe(guard2);
+    });
+
+    it('should maintain singleton behavior when injected', async () => {
+      const moduleRef = await Test.createTestingModule({
+        providers: [LocalAuthGuard],
+      }).compile();
+
+      const guard1 = moduleRef.get<LocalAuthGuard>(LocalAuthGuard);
+      const guard2 = moduleRef.get<LocalAuthGuard>(LocalAuthGuard);
+      expect(guard1).toBe(guard2);
+    });
+
+    it('should work with dependency injection', async () => {
+      const moduleRef = await Test.createTestingModule({
+        providers: [LocalAuthGuard],
+      }).compile();
+
+      const injectedGuard = moduleRef.get<LocalAuthGuard>(LocalAuthGuard);
+      expect(injectedGuard).toBeInstanceOf(LocalAuthGuard);
+    });
+  });
+
+  describe('Integration with NestJS', () => {
+    it('should be usable as a guard in NestJS', async () => {
+      const moduleRef = await Test.createTestingModule({
+        providers: [
+          LocalAuthGuard,
+          {
+            provide: 'APP_GUARD',
+            useClass: LocalAuthGuard,
+          },
+        ],
+      }).compile();
+
+      const app = moduleRef.createNestApplication();
+      await app.init();
+      
+      const guard = app.get(LocalAuthGuard);
+      expect(guard).toBeDefined();
+      
+      await app.close();
+    });
+
+    it('should work with custom execution context', async () => {
+      const customContext = {
+        getHandler: jest.fn().mockReturnValue(() => {}),
+        getClass: jest.fn().mockReturnValue(class TestController {}),
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue({
+            headers: { authorization: 'Bearer token' },
+            body: { username: 'test', password: 'password' },
+          }),
+          getResponse: jest.fn().mockReturnValue({}),
+        }),
+      } as unknown as ExecutionContext;
+
+      const result = await guard.canActivate(customContext);
+      expect(result).toBe(true);
     });
   });
 });

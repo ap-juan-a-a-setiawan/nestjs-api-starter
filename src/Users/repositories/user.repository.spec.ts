@@ -39,306 +39,381 @@ describe('UserRepository', () => {
       count: jest.fn(),
       findAndCount: jest.fn(),
       createQueryBuilder: jest.fn(),
-      manager: jest.fn(),
-      metadata: jest.fn(),
-      target: jest.fn(),
-      hasId: jest.fn(),
-      getId: jest.fn(),
-      preload: jest.fn(),
-      merge: jest.fn(),
-      remove: jest.fn(),
-      softDelete: jest.fn(),
-      softRemove: jest.fn(),
-      restore: jest.fn(),
-      query: jest.fn(),
-      clear: jest.fn(),
-      increment: jest.fn(),
-      decrement: jest.fn(),
-      insert: jest.fn(),
-      upsert: jest.fn(),
-      exists: jest.fn(),
-      existsBy: jest.fn(),
-      findOneBy: jest.fn(),
-      findOneById: jest.fn(),
-      findBy: jest.fn(),
-      findByIds: jest.fn(),
-      findAndCountBy: jest.fn(),
-      countBy: jest.fn(),
-      sum: jest.fn(),
-      average: jest.fn(),
-      minimum: jest.fn(),
-      maximum: jest.fn(),
-      extend: jest.fn(),
-      withRepository: jest.fn(),
-      transaction: jest.fn(),
-      getRepository: jest.fn(),
-      getTreeRepository: jest.fn(),
-      getMongoRepository: jest.fn(),
-      getCustomRepository: jest.fn(),
-      getEntityManager: jest.fn(),
-      getConnection: jest.fn(),
-      getManager: jest.fn(),
-      getMongoManager: jest.fn(),
-      getMongoRepositoryManager: jest.fn(),
-      getTreeRepositoryManager: jest.fn(),
-      getCustomRepositoryManager: jest.fn(),
-      getEntityManagerManager: jest.fn(),
-      getConnectionManager: jest.fn(),
-      getManagerManager: jest.fn(),
-      getMongoManagerManager: jest.fn(),
-      getMongoRepositoryManagerManager: jest.fn(),
-      getTreeRepositoryManagerManager: jest.fn(),
-      getCustomRepositoryManagerManager: jest.fn(),
-      getEntityManagerManagerManager: jest.fn(),
-      getConnectionManagerManager: jest.fn(),
-      getManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getConnectionManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getMongoRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getTreeRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getCustomRepositoryManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager: jest.fn(),
-      getEntityManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManagerManager
+      manager: {
+        transaction: jest.fn(),
+      },
+    } as unknown as jest.Mocked<RepositoryBase<User>>;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserRepository,
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockRepositoryBase,
+        },
+      ],
+    }).compile();
+
+    userRepository = module.get<UserRepository>(UserRepository);
+    // Override the internal repository with our mock
+    Object.assign(userRepository, mockRepositoryBase);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('findAll', () => {
+    it('should return an array of users', async () => {
+      mockRepositoryBase.find.mockResolvedValue(mockUsers);
+
+      const result = await userRepository.find();
+
+      expect(result).toEqual(mockUsers);
+      expect(mockRepositoryBase.find).toHaveBeenCalled();
+      expect(mockRepositoryBase.find).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return an empty array when no users exist', async () => {
+      mockRepositoryBase.find.mockResolvedValue([]);
+
+      const result = await userRepository.find();
+
+      expect(result).toEqual([]);
+      expect(mockRepositoryBase.find).toHaveBeenCalled();
+    });
+
+    it('should pass options to find method', async () => {
+      const options = { where: { isActive: true }, take: 10 };
+      mockRepositoryBase.find.mockResolvedValue([mockUser]);
+
+      await userRepository.find(options);
+
+      expect(mockRepositoryBase.find).toHaveBeenCalledWith(options);
+    });
+
+    it('should handle errors when finding users', async () => {
+      const error = new Error('Database error');
+      mockRepositoryBase.find.mockRejectedValue(error);
+
+      await expect(userRepository.find()).rejects.toThrow('Database error');
+      expect(mockRepositoryBase.find).toHaveBeenCalled();
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a single user by id', async () => {
+      mockRepositoryBase.findOne.mockResolvedValue(mockUser);
+
+      const result = await userRepository.findOne(1);
+
+      expect(result).toEqual(mockUser);
+      expect(mockRepositoryBase.findOne).toHaveBeenCalledWith(1);
+    });
+
+    it('should return a single user by criteria', async () => {
+      const criteria = { where: { email: 'test@example.com' } };
+      mockRepositoryBase.findOne.mockResolvedValue(mockUser);
+
+      const result = await userRepository.findOne(criteria);
+
+      expect(result).toEqual(mockUser);
+      expect(mockRepositoryBase.findOne).toHaveBeenCalledWith(criteria);
+    });
+
+    it('should return null when user not found', async () => {
+      mockRepositoryBase.findOne.mockResolvedValue(null);
+
+      const result = await userRepository.findOne(999);
+
+      expect(result).toBeNull();
+      expect(mockRepositoryBase.findOne).toHaveBeenCalledWith(999);
+    });
+
+    it('should handle errors when finding a user', async () => {
+      const error = new Error('Database error');
+      mockRepositoryBase.findOne.mockRejectedValue(error);
+
+      await expect(userRepository.findOne(1)).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('create', () => {
+    it('should create a new user', async () => {
+      const newUserData = {
+        email: 'new@example.com',
+        password: 'password123',
+        firstName: 'Jane',
+        lastName: 'Smith',
+      };
+      const createdUser = { ...mockUser, ...newUserData };
+      mockRepositoryBase.create.mockReturnValue(createdUser);
+
+      const result = userRepository.create(newUserData);
+
+      expect(result).toEqual(createdUser);
+      expect(mockRepositoryBase.create).toHaveBeenCalledWith(newUserData);
+    });
+
+    it('should create multiple users', async () => {
+      const usersData = [
+        { email: 'user1@example.com', password: 'pass1' },
+        { email: 'user2@example.com', password: 'pass2' },
+      ];
+      const createdUsers = usersData.map((data, index) => ({
+        ...mockUser,
+        ...data,
+        id: index + 1,
+      }));
+      mockRepositoryBase.create.mockReturnValue(createdUsers);
+
+      const result = userRepository.create(usersData);
+
+      expect(result).toEqual(createdUsers);
+      expect(mockRepositoryBase.create).toHaveBeenCalledWith(usersData);
+    });
+
+    it('should handle errors when creating a user', () => {
+      const error = new Error('Validation error');
+      mockRepositoryBase.create.mockImplementation(() => {
+        throw error;
+      });
+
+      expect(() => userRepository.create({ email: 'test@test.com' })).toThrow(
+        'Validation error',
+      );
+    });
+  });
+
+  describe('save', () => {
+    it('should save a user', async () => {
+      mockRepositoryBase.save.mockResolvedValue(mockUser);
+
+      const result = await userRepository.save(mockUser);
+
+      expect(result).toEqual(mockUser);
+      expect(mockRepositoryBase.save).toHaveBeenCalledWith(mockUser);
+    });
+
+    it('should save multiple users', async () => {
+      mockRepositoryBase.save.mockResolvedValue(mockUsers);
+
+      const result = await userRepository.save(mockUsers);
+
+      expect(result).toEqual(mockUsers);
+      expect(mockRepositoryBase.save).toHaveBeenCalledWith(mockUsers);
+    });
+
+    it('should handle errors when saving a user', async () => {
+      const error = new Error('Database error');
+      mockRepositoryBase.save.mockRejectedValue(error);
+
+      await expect(userRepository.save(mockUser)).rejects.toThrow(
+        'Database error',
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('should update a user', async () => {
+      const updateResult = { affected: 1, raw: {} };
+      mockRepositoryBase.update.mockResolvedValue(updateResult);
+
+      const result = await userRepository.update(1, { firstName: 'Updated' });
+
+      expect(result).toEqual(updateResult);
+      expect(mockRepositoryBase.update).toHaveBeenCalledWith(1, {
+        firstName: 'Updated',
+      });
+    });
+
+    it('should handle update with criteria object', async () => {
+      const criteria = { email: 'test@example.com' };
+      const updateResult = { affected: 1, raw: {} };
+      mockRepositoryBase.update.mockResolvedValue(updateResult);
+
+      const result = await userRepository.update(criteria, {
+        isActive: false,
+      });
+
+      expect(result).toEqual(updateResult);
+      expect(mockRepositoryBase.update).toHaveBeenCalledWith(criteria, {
+        isActive: false,
+      });
+    });
+
+    it('should handle errors when updating a user', async () => {
+      const error = new Error('Database error');
+      mockRepositoryBase.update.mockRejectedValue(error);
+
+      await expect(
+        userRepository.update(1, { firstName: 'Updated' }),
+      ).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a user by id', async () => {
+      const deleteResult = { affected: 1, raw: {} };
+      mockRepositoryBase.delete.mockResolvedValue(deleteResult);
+
+      const result = await userRepository.delete(1);
+
+      expect(result).toEqual(deleteResult);
+      expect(mockRepositoryBase.delete).toHaveBeenCalledWith(1);
+    });
+
+    it('should delete a user by criteria', async () => {
+      const criteria = { email: 'test@example.com' };
+      const deleteResult = { affected: 1, raw: {} };
+      mockRepositoryBase.delete.mockResolvedValue(deleteResult);
+
+      const result = await userRepository.delete(criteria);
+
+      expect(result).toEqual(deleteResult);
+      expect(mockRepositoryBase.delete).toHaveBeenCalledWith(criteria);
+    });
+
+    it('should handle errors when deleting a user', async () => {
+      const error = new Error('Database error');
+      mockRepositoryBase.delete.mockRejectedValue(error);
+
+      await expect(userRepository.delete(1)).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('count', () => {
+    it('should return the count of users', async () => {
+      mockRepositoryBase.count.mockResolvedValue(5);
+
+      const result = await userRepository.count();
+
+      expect(result).toBe(5);
+      expect(mockRepositoryBase.count).toHaveBeenCalled();
+    });
+
+    it('should return count with criteria', async () => {
+      const criteria = { where: { isActive: true } };
+      mockRepositoryBase.count.mockResolvedValue(3);
+
+      const result = await userRepository.count(criteria);
+
+      expect(result).toBe(3);
+      expect(mockRepositoryBase.count).toHaveBeenCalledWith(criteria);
+    });
+
+    it('should handle errors when counting users', async () => {
+      const error = new Error('Database error');
+      mockRepositoryBase.count.mockRejectedValue(error);
+
+      await expect(userRepository.count()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('findAndCount', () => {
+    it('should return users and count', async () => {
+      const result = [mockUsers, mockUsers.length];
+      mockRepositoryBase.findAndCount.mockResolvedValue(result);
+
+      const [users, count] = await userRepository.findAndCount();
+
+      expect(users).toEqual(mockUsers);
+      expect(count).toBe(mockUsers.length);
+      expect(mockRepositoryBase.findAndCount).toHaveBeenCalled();
+    });
+
+    it('should return empty array and zero count when no users', async () => {
+      mockRepositoryBase.findAndCount.mockResolvedValue([[], 0]);
+
+      const [users, count] = await userRepository.findAndCount();
+
+      expect(users).toEqual([]);
+      expect(count).toBe(0);
+    });
+
+    it('should handle errors when finding and counting users', async () => {
+      const error = new Error('Database error');
+      mockRepositoryBase.findAndCount.mockRejectedValue(error);
+
+      await expect(userRepository.findAndCount()).rejects.toThrow(
+        'Database error',
+      );
+    });
+  });
+
+  describe('createQueryBuilder', () => {
+    it('should create a query builder', () => {
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+      mockRepositoryBase.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = userRepository.createQueryBuilder('user');
+
+      expect(result).toBe(mockQueryBuilder);
+      expect(mockRepositoryBase.createQueryBuilder).toHaveBeenCalledWith(
+        'user',
+      );
+    });
+
+    it('should handle errors when creating query builder', () => {
+      const error = new Error('Query builder error');
+      mockRepositoryBase.createQueryBuilder.mockImplementation(() => {
+        throw error;
+      });
+
+      expect(() => userRepository.createQueryBuilder('user')).toThrow(
+        'Query builder error',
+      );
+    });
+  });
+
+  describe('transaction', () => {
+    it('should execute a transaction', async () => {
+      const transactionResult = 'transaction result';
+      const mockManager = {
+        transaction: jest.fn().mockResolvedValue(transactionResult),
+      };
+      mockRepositoryBase.manager = mockManager;
+
+      const callback = jest.fn().mockResolvedValue(transactionResult);
+      const result = await userRepository.manager.transaction(callback);
+
+      expect(result).toBe(transactionResult);
+      expect(mockManager.transaction).toHaveBeenCalledWith(callback);
+    });
+
+    it('should handle transaction errors', async () => {
+      const error = new Error('Transaction failed');
+      const mockManager = {
+        transaction: jest.fn().mockRejectedValue(error),
+      };
+      mockRepositoryBase.manager = mockManager;
+
+      const callback = jest.fn();
+      await expect(userRepository.manager.transaction(callback)).rejects.toThrow(
+        'Transaction failed',
+      );
+    });
+  });
+
+  describe('inheritance', () => {
+    it('should be an instance of RepositoryBase', () => {
+      expect(userRepository).toBeInstanceOf(RepositoryBase);
+    });
+
+    it('should have all RepositoryBase methods', () => {
+      expect(userRepository).toHaveProperty('find');
+      expect(userRepository).toHaveProperty('findOne');
+      expect(userRepository).toHaveProperty('create');
+      expect(userRepository).toHaveProperty('save');
+      expect(userRepository).toHaveProperty('update');
+      expect(userRepository).toHaveProperty('delete');
+      expect(userRepository).toHaveProperty('count');
+      expect(userRepository).toHaveProperty('findAndCount');
+      expect(userRepository).toHaveProperty('createQueryBuilder');
+      expect(userRepository).toHaveProperty('manager');
+    });
+  });
+});

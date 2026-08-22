@@ -12,13 +12,13 @@ class TestEntity {
 class TestRepository extends RepositoryBase<TestEntity> {}
 
 describe('RepositoryBase', () => {
-  let repositoryBase: TestRepository;
+  let repository: TestRepository;
   let mockRepository: jest.Mocked<Partial<Repository<TestEntity>>>;
 
-  const mockEntity = { id: 1, name: 'Test Entity' };
-  const mockEntities = [
-    { id: 1, name: 'Test Entity 1' },
-    { id: 2, name: 'Test Entity 2' },
+  const mockEntity: TestEntity = { id: 1, name: 'Test Entity' };
+  const mockEntities: TestEntity[] = [
+    { id: 1, name: 'Entity 1' },
+    { id: 2, name: 'Entity 2' },
   ];
 
   beforeEach(async () => {
@@ -32,40 +32,27 @@ describe('RepositoryBase', () => {
       update: jest.fn(),
       delete: jest.fn(),
       remove: jest.fn(),
-      softDelete: jest.fn(),
-      softRemove: jest.fn(),
-      restore: jest.fn(),
       count: jest.fn(),
-      increment: jest.fn(),
-      decrement: jest.fn(),
-      createQueryBuilder: jest.fn(),
-      manager: {} as any,
-      metadata: {} as any,
-      target: TestEntity,
-      hasId: jest.fn(),
-      getId: jest.fn(),
-      preload: jest.fn(),
-      insert: jest.fn(),
-      upsert: jest.fn(),
       exists: jest.fn(),
-      existsBy: jest.fn(),
-      query: jest.fn(),
-      clear: jest.fn(),
-      merge: jest.fn(),
-      createEntityManager: jest.fn(),
-      getEntityManager: jest.fn(),
-      getRepository: jest.fn(),
-      getTreeRepository: jest.fn(),
-      getMongoRepository: jest.fn(),
-      getCustomRepository: jest.fn(),
-      transaction: jest.fn(),
-      findOneOrFail: jest.fn(),
-      findOneByOrFail: jest.fn(),
-      findByIds: jest.fn(),
-      findBy: jest.fn(),
-      findAndCountBy: jest.fn(),
-      findOptionsToWhere: jest.fn(),
-      extend: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      manager: {
+        transaction: jest.fn(),
+      } as any,
+      metadata: {
+        target: TestEntity,
+        name: 'TestEntity',
+        tableName: 'test_entity',
+        columns: [],
+        relations: [],
+        indices: [],
+        uniques: [],
+        checks: [],
+        exclusions: [],
+        foreignKeys: [],
+        generatedColumns: [],
+        primaryColumns: [],
+        connection: {},
+      } as any,
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -81,65 +68,32 @@ describe('RepositoryBase', () => {
       ],
     }).compile();
 
-    repositoryBase = module.get<TestRepository>(TestRepository);
-    
-    // Assign mock repository methods to the base repository
-    Object.assign(repositoryBase, mockRepository);
+    repository = module.get<TestRepository>(TestRepository);
+    // Inject mock repository into the base class
+    Object.assign(repository, mockRepository);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Inheritance', () => {
+  describe('Inheritance from Repository', () => {
     it('should be defined', () => {
-      expect(repositoryBase).toBeDefined();
+      expect(repository).toBeDefined();
     });
 
     it('should extend Repository class', () => {
-      expect(repositoryBase).toBeInstanceOf(Repository);
+      expect(repository).toBeInstanceOf(Repository);
     });
 
-    it('should have all Repository methods', () => {
-      const repositoryMethods = [
-        'find',
-        'findOne',
-        'findOneBy',
-        'findAndCount',
-        'create',
-        'save',
-        'update',
-        'delete',
-        'remove',
-        'softDelete',
-        'softRemove',
-        'restore',
-        'count',
-        'increment',
-        'decrement',
-        'createQueryBuilder',
-        'hasId',
-        'getId',
-        'preload',
-        'insert',
-        'upsert',
-        'exists',
-        'existsBy',
-        'query',
-        'clear',
-        'merge',
-        'findOneOrFail',
-        'findOneByOrFail',
-        'findByIds',
-        'findBy',
-        'findAndCountBy',
-        'extend',
-      ];
-
-      repositoryMethods.forEach(method => {
-        expect(repositoryBase).toHaveProperty(method);
-        expect(typeof (repositoryBase as any)[method]).toBe('function');
-      });
+    it('should have access to repository methods', () => {
+      expect(repository.find).toBeDefined();
+      expect(repository.findOne).toBeDefined();
+      expect(repository.save).toBeDefined();
+      expect(repository.delete).toBeDefined();
+      expect(repository.create).toBeDefined();
+      expect(repository.update).toBeDefined();
+      expect(repository.count).toBeDefined();
     });
   });
 
@@ -147,26 +101,27 @@ describe('RepositoryBase', () => {
     it('should find all entities', async () => {
       (mockRepository.find as jest.Mock).mockResolvedValue(mockEntities);
 
-      const result = await repositoryBase.find();
+      const result = await repository.find();
 
-      expect(mockRepository.find).toHaveBeenCalled();
       expect(result).toEqual(mockEntities);
+      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockRepository.find).toHaveBeenCalledTimes(1);
     });
 
     it('should find entities with options', async () => {
-      const options = { where: { name: 'Test' }, take: 10 };
-      (mockRepository.find as jest.Mock).mockResolvedValue([mockEntity]);
+      const options = { where: { name: 'Entity 1' } };
+      (mockRepository.find as jest.Mock).mockResolvedValue([mockEntities[0]]);
 
-      const result = await repositoryBase.find(options);
+      const result = await repository.find(options);
 
+      expect(result).toEqual([mockEntities[0]]);
       expect(mockRepository.find).toHaveBeenCalledWith(options);
-      expect(result).toEqual([mockEntity]);
     });
 
     it('should return empty array when no entities found', async () => {
       (mockRepository.find as jest.Mock).mockResolvedValue([]);
 
-      const result = await repositoryBase.find();
+      const result = await repository.find();
 
       expect(result).toEqual([]);
     });
@@ -175,7 +130,7 @@ describe('RepositoryBase', () => {
       const error = new Error('Database error');
       (mockRepository.find as jest.Mock).mockRejectedValue(error);
 
-      await expect(repositoryBase.find()).rejects.toThrow('Database error');
+      await expect(repository.find()).rejects.toThrow('Database error');
     });
   });
 
@@ -183,25 +138,25 @@ describe('RepositoryBase', () => {
     it('should find one entity by id', async () => {
       (mockRepository.findOne as jest.Mock).mockResolvedValue(mockEntity);
 
-      const result = await repositoryBase.findOne({ where: { id: 1 } });
+      const result = await repository.findOne({ where: { id: 1 } });
 
-      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(result).toEqual(mockEntity);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
     });
 
     it('should return null when entity not found', async () => {
       (mockRepository.findOne as jest.Mock).mockResolvedValue(null);
 
-      const result = await repositoryBase.findOne({ where: { id: 999 } });
+      const result = await repository.findOne({ where: { id: 999 } });
 
       expect(result).toBeNull();
     });
 
     it('should handle errors', async () => {
-      const error = new Error('Entity not found');
+      const error = new Error('Find one error');
       (mockRepository.findOne as jest.Mock).mockRejectedValue(error);
 
-      await expect(repositoryBase.findOne({ where: { id: 1 } })).rejects.toThrow('Entity not found');
+      await expect(repository.findOne({ where: { id: 1 } })).rejects.toThrow('Find one error');
     });
   });
 
@@ -209,61 +164,85 @@ describe('RepositoryBase', () => {
     it('should find one entity by criteria', async () => {
       (mockRepository.findOneBy as jest.Mock).mockResolvedValue(mockEntity);
 
-      const result = await repositoryBase.findOneBy({ id: 1 });
+      const result = await repository.findOneBy({ id: 1 });
 
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
       expect(result).toEqual(mockEntity);
+      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
     });
 
     it('should return null when entity not found', async () => {
       (mockRepository.findOneBy as jest.Mock).mockResolvedValue(null);
 
-      const result = await repositoryBase.findOneBy({ id: 999 });
+      const result = await repository.findOneBy({ id: 999 });
 
       expect(result).toBeNull();
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Find one by error');
+      (mockRepository.findOneBy as jest.Mock).mockRejectedValue(error);
+
+      await expect(repository.findOneBy({ id: 1 })).rejects.toThrow('Find one by error');
     });
   });
 
   describe('findAndCount', () => {
     it('should find entities and count', async () => {
-      const mockResult = [mockEntities, mockEntities.length];
-      (mockRepository.findAndCount as jest.Mock).mockResolvedValue(mockResult);
+      const result = [mockEntities, mockEntities.length];
+      (mockRepository.findAndCount as jest.Mock).mockResolvedValue(result);
 
-      const [entities, count] = await repositoryBase.findAndCount();
+      const [entities, count] = await repository.findAndCount();
 
-      expect(mockRepository.findAndCount).toHaveBeenCalled();
       expect(entities).toEqual(mockEntities);
       expect(count).toBe(2);
+      expect(mockRepository.findAndCount).toHaveBeenCalled();
     });
 
     it('should return empty array and zero count when no entities', async () => {
       (mockRepository.findAndCount as jest.Mock).mockResolvedValue([[], 0]);
 
-      const [entities, count] = await repositoryBase.findAndCount();
+      const [entities, count] = await repository.findAndCount();
 
       expect(entities).toEqual([]);
       expect(count).toBe(0);
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Find and count error');
+      (mockRepository.findAndCount as jest.Mock).mockRejectedValue(error);
+
+      await expect(repository.findAndCount()).rejects.toThrow('Find and count error');
     });
   });
 
   describe('create', () => {
     it('should create a new entity instance', () => {
       const newEntity = { name: 'New Entity' };
-      (mockRepository.create as jest.Mock).mockReturnValue({ id: 3, ...newEntity });
+      (mockRepository.create as jest.Mock).mockReturnValue({ ...newEntity, id: undefined });
 
-      const result = repositoryBase.create(newEntity);
+      const result = repository.create(newEntity);
 
+      expect(result).toEqual({ ...newEntity, id: undefined });
       expect(mockRepository.create).toHaveBeenCalledWith(newEntity);
-      expect(result).toEqual({ id: 3, ...newEntity });
     });
 
-    it('should create entity without data', () => {
+    it('should create entity with no arguments', () => {
       (mockRepository.create as jest.Mock).mockReturnValue({});
 
-      const result = repositoryBase.create();
+      const result = repository.create();
 
-      expect(mockRepository.create).toHaveBeenCalled();
       expect(result).toEqual({});
+      expect(mockRepository.create).toHaveBeenCalledWith();
+    });
+
+    it('should create multiple entities', () => {
+      const entities = [{ name: 'Entity 1' }, { name: 'Entity 2' }];
+      (mockRepository.create as jest.Mock).mockReturnValue(entities);
+
+      const result = repository.create(entities);
+
+      expect(result).toEqual(entities);
+      expect(mockRepository.create).toHaveBeenCalledWith(entities);
     });
   });
 
@@ -271,26 +250,26 @@ describe('RepositoryBase', () => {
     it('should save an entity', async () => {
       (mockRepository.save as jest.Mock).mockResolvedValue(mockEntity);
 
-      const result = await repositoryBase.save(mockEntity);
+      const result = await repository.save(mockEntity);
 
-      expect(mockRepository.save).toHaveBeenCalledWith(mockEntity);
       expect(result).toEqual(mockEntity);
+      expect(mockRepository.save).toHaveBeenCalledWith(mockEntity);
     });
 
     it('should save multiple entities', async () => {
       (mockRepository.save as jest.Mock).mockResolvedValue(mockEntities);
 
-      const result = await repositoryBase.save(mockEntities);
+      const result = await repository.save(mockEntities);
 
-      expect(mockRepository.save).toHaveBeenCalledWith(mockEntities);
       expect(result).toEqual(mockEntities);
+      expect(mockRepository.save).toHaveBeenCalledWith(mockEntities);
     });
 
     it('should handle save errors', async () => {
-      const error = new Error('Save failed');
+      const error = new Error('Save error');
       (mockRepository.save as jest.Mock).mockRejectedValue(error);
 
-      await expect(repositoryBase.save(mockEntity)).rejects.toThrow('Save failed');
+      await expect(repository.save(mockEntity)).rejects.toThrow('Save error');
     });
   });
 
@@ -299,40 +278,56 @@ describe('RepositoryBase', () => {
       const updateResult = { affected: 1, raw: {}, generatedMaps: [] };
       (mockRepository.update as jest.Mock).mockResolvedValue(updateResult);
 
-      const result = await repositoryBase.update(1, { name: 'Updated' });
+      const result = await repository.update(1, { name: 'Updated' });
 
-      expect(mockRepository.update).toHaveBeenCalledWith(1, { name: 'Updated' });
       expect(result).toEqual(updateResult);
+      expect(mockRepository.update).toHaveBeenCalledWith(1, { name: 'Updated' });
     });
 
-    it('should return affected 0 when entity not found', async () => {
-      const updateResult = { affected: 0, raw: {}, generatedMaps: [] };
+    it('should handle update with criteria object', async () => {
+      const updateResult = { affected: 1, raw: {}, generatedMaps: [] };
       (mockRepository.update as jest.Mock).mockResolvedValue(updateResult);
 
-      const result = await repositoryBase.update(999, { name: 'Updated' });
+      const result = await repository.update({ id: 1 }, { name: 'Updated' });
 
-      expect(result.affected).toBe(0);
+      expect(result).toEqual(updateResult);
+      expect(mockRepository.update).toHaveBeenCalledWith({ id: 1 }, { name: 'Updated' });
+    });
+
+    it('should handle update errors', async () => {
+      const error = new Error('Update error');
+      (mockRepository.update as jest.Mock).mockRejectedValue(error);
+
+      await expect(repository.update(1, { name: 'Updated' })).rejects.toThrow('Update error');
     });
   });
 
   describe('delete', () => {
-    it('should delete an entity', async () => {
+    it('should delete an entity by id', async () => {
       const deleteResult = { affected: 1, raw: {} };
       (mockRepository.delete as jest.Mock).mockResolvedValue(deleteResult);
 
-      const result = await repositoryBase.delete(1);
+      const result = await repository.delete(1);
 
-      expect(mockRepository.delete).toHaveBeenCalledWith(1);
       expect(result).toEqual(deleteResult);
+      expect(mockRepository.delete).toHaveBeenCalledWith(1);
     });
 
-    it('should return affected 0 when entity not found', async () => {
-      const deleteResult = { affected: 0, raw: {} };
+    it('should delete an entity by criteria', async () => {
+      const deleteResult = { affected: 1, raw: {} };
       (mockRepository.delete as jest.Mock).mockResolvedValue(deleteResult);
 
-      const result = await repositoryBase.delete(999);
+      const result = await repository.delete({ id: 1 });
 
-      expect(result.affected).toBe(0);
+      expect(result).toEqual(deleteResult);
+      expect(mockRepository.delete).toHaveBeenCalledWith({ id: 1 });
+    });
+
+    it('should handle delete errors', async () => {
+      const error = new Error('Delete error');
+      (mockRepository.delete as jest.Mock).mockRejectedValue(error);
+
+      await expect(repository.delete(1)).rejects.toThrow('Delete error');
     });
   });
 
@@ -340,192 +335,62 @@ describe('RepositoryBase', () => {
     it('should remove an entity', async () => {
       (mockRepository.remove as jest.Mock).mockResolvedValue(mockEntity);
 
-      const result = await repositoryBase.remove(mockEntity);
+      const result = await repository.remove(mockEntity);
 
-      expect(mockRepository.remove).toHaveBeenCalledWith(mockEntity);
       expect(result).toEqual(mockEntity);
+      expect(mockRepository.remove).toHaveBeenCalledWith(mockEntity);
     });
 
     it('should remove multiple entities', async () => {
       (mockRepository.remove as jest.Mock).mockResolvedValue(mockEntities);
 
-      const result = await repositoryBase.remove(mockEntities);
+      const result = await repository.remove(mockEntities);
 
-      expect(mockRepository.remove).toHaveBeenCalledWith(mockEntities);
       expect(result).toEqual(mockEntities);
+      expect(mockRepository.remove).toHaveBeenCalledWith(mockEntities);
     });
-  });
 
-  describe('softDelete', () => {
-    it('should soft delete an entity', async () => {
-      const deleteResult = { affected: 1, raw: {}, generatedMaps: [] };
-      (mockRepository.softDelete as jest.Mock).mockResolvedValue(deleteResult);
+    it('should handle remove errors', async () => {
+      const error = new Error('Remove error');
+      (mockRepository.remove as jest.Mock).mockRejectedValue(error);
 
-      const result = await repositoryBase.softDelete(1);
-
-      expect(mockRepository.softDelete).toHaveBeenCalledWith(1);
-      expect(result).toEqual(deleteResult);
-    });
-  });
-
-  describe('softRemove', () => {
-    it('should soft remove an entity', async () => {
-      (mockRepository.softRemove as jest.Mock).mockResolvedValue(mockEntity);
-
-      const result = await repositoryBase.softRemove(mockEntity);
-
-      expect(mockRepository.softRemove).toHaveBeenCalledWith(mockEntity);
-      expect(result).toEqual(mockEntity);
-    });
-  });
-
-  describe('restore', () => {
-    it('should restore a soft-deleted entity', async () => {
-      const restoreResult = { affected: 1, raw: {}, generatedMaps: [] };
-      (mockRepository.restore as jest.Mock).mockResolvedValue(restoreResult);
-
-      const result = await repositoryBase.restore(1);
-
-      expect(mockRepository.restore).toHaveBeenCalledWith(1);
-      expect(result).toEqual(restoreResult);
+      await expect(repository.remove(mockEntity)).rejects.toThrow('Remove error');
     });
   });
 
   describe('count', () => {
-    it('should count entities', async () => {
+    it('should count all entities', async () => {
       (mockRepository.count as jest.Mock).mockResolvedValue(5);
 
-      const result = await repositoryBase.count();
+      const result = await repository.count();
 
-      expect(mockRepository.count).toHaveBeenCalled();
       expect(result).toBe(5);
+      expect(mockRepository.count).toHaveBeenCalled();
     });
 
     it('should count entities with options', async () => {
-      const options = { where: { name: 'Test' } };
-      (mockRepository.count as jest.Mock).mockResolvedValue(2);
+      const options = { where: { name: 'Entity 1' } };
+      (mockRepository.count as jest.Mock).mockResolvedValue(1);
 
-      const result = await repositoryBase.count(options);
+      const result = await repository.count(options);
 
+      expect(result).toBe(1);
       expect(mockRepository.count).toHaveBeenCalledWith(options);
-      expect(result).toBe(2);
     });
 
     it('should return zero when no entities', async () => {
       (mockRepository.count as jest.Mock).mockResolvedValue(0);
 
-      const result = await repositoryBase.count();
+      const result = await repository.count();
 
       expect(result).toBe(0);
     });
-  });
 
-  describe('increment', () => {
-    it('should increment a column value', async () => {
-      const incrementResult = { affected: 1, raw: {}, generatedMaps: [] };
-      (mockRepository.increment as jest.Mock).mockResolvedValue(incrementResult);
+    it('should handle count errors', async () => {
+      const error = new Error('Count error');
+      (mockRepository.count as jest.Mock).mockRejectedValue(error);
 
-      const result = await repositoryBase.increment({ id: 1 }, 'count', 1);
-
-      expect(mockRepository.increment).toHaveBeenCalledWith({ id: 1 }, 'count', 1);
-      expect(result).toEqual(incrementResult);
-    });
-  });
-
-  describe('decrement', () => {
-    it('should decrement a column value', async () => {
-      const decrementResult = { affected: 1, raw: {}, generatedMaps: [] };
-      (mockRepository.decrement as jest.Mock).mockResolvedValue(decrementResult);
-
-      const result = await repositoryBase.decrement({ id: 1 }, 'count', 1);
-
-      expect(mockRepository.decrement).toHaveBeenCalledWith({ id: 1 }, 'count', 1);
-      expect(result).toEqual(decrementResult);
-    });
-  });
-
-  describe('createQueryBuilder', () => {
-    it('should create a query builder', () => {
-      const mockQueryBuilder = {};
-      (mockRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
-
-      const result = repositoryBase.createQueryBuilder('test');
-
-      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('test');
-      expect(result).toEqual(mockQueryBuilder);
-    });
-  });
-
-  describe('hasId', () => {
-    it('should check if entity has id', () => {
-      (mockRepository.hasId as jest.Mock).mockReturnValue(true);
-
-      const result = repositoryBase.hasId(mockEntity);
-
-      expect(mockRepository.hasId).toHaveBeenCalledWith(mockEntity);
-      expect(result).toBe(true);
-    });
-
-    it('should return false when entity has no id', () => {
-      (mockRepository.hasId as jest.Mock).mockReturnValue(false);
-
-      const result = repositoryBase.hasId({ name: 'No ID' });
-
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('getId', () => {
-    it('should get entity id', () => {
-      (mockRepository.getId as jest.Mock).mockReturnValue(1);
-
-      const result = repositoryBase.getId(mockEntity);
-
-      expect(mockRepository.getId).toHaveBeenCalledWith(mockEntity);
-      expect(result).toBe(1);
-    });
-  });
-
-  describe('preload', () => {
-    it('should preload an entity', async () => {
-      (mockRepository.preload as jest.Mock).mockResolvedValue(mockEntity);
-
-      const result = await repositoryBase.preload({ id: 1, name: 'Updated' });
-
-      expect(mockRepository.preload).toHaveBeenCalledWith({ id: 1, name: 'Updated' });
-      expect(result).toEqual(mockEntity);
-    });
-
-    it('should return null when entity not found', async () => {
-      (mockRepository.preload as jest.Mock).mockResolvedValue(null);
-
-      const result = await repositoryBase.preload({ id: 999 });
-
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('insert', () => {
-    it('should insert an entity', async () => {
-      const insertResult = { identifiers: [{ id: 1 }], generatedMaps: [], raw: {} };
-      (mockRepository.insert as jest.Mock).mockResolvedValue(insertResult);
-
-      const result = await repositoryBase.insert(mockEntity);
-
-      expect(mockRepository.insert).toHaveBeenCalledWith(mockEntity);
-      expect(result).toEqual(insertResult);
-    });
-  });
-
-  describe('upsert', () => {
-    it('should upsert an entity', async () => {
-      const upsertResult = { identifiers: [{ id: 1 }], generatedMaps: [], raw: {} };
-      (mockRepository.upsert as jest.Mock).mockResolvedValue(upsertResult);
-
-      const result = await repositoryBase.upsert(mockEntity, ['id']);
-
-      expect(mockRepository.upsert).toHaveBeenCalledWith(mockEntity, ['id']);
-      expect(result).toEqual(upsertResult);
+      await expect(repository.count()).rejects.toThrow('Count error');
     });
   });
 
@@ -533,178 +398,123 @@ describe('RepositoryBase', () => {
     it('should check if entity exists', async () => {
       (mockRepository.exists as jest.Mock).mockResolvedValue(true);
 
-      const result = await repositoryBase.exists({ where: { id: 1 } });
+      const result = await repository.exists({ where: { id: 1 } });
 
-      expect(mockRepository.exists).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(result).toBe(true);
+      expect(mockRepository.exists).toHaveBeenCalledWith({ where: { id: 1 } });
     });
 
     it('should return false when entity does not exist', async () => {
       (mockRepository.exists as jest.Mock).mockResolvedValue(false);
 
-      const result = await repositoryBase.exists({ where: { id: 999 } });
+      const result = await repository.exists({ where: { id: 999 } });
 
       expect(result).toBe(false);
     });
-  });
 
-  describe('existsBy', () => {
-    it('should check if entity exists by criteria', async () => {
-      (mockRepository.existsBy as jest.Mock).mockResolvedValue(true);
+    it('should handle exists errors', async () => {
+      const error = new Error('Exists error');
+      (mockRepository.exists as jest.Mock).mockRejectedValue(error);
 
-      const result = await repositoryBase.existsBy({ id: 1 });
-
-      expect(mockRepository.existsBy).toHaveBeenCalledWith({ id: 1 });
-      expect(result).toBe(true);
+      await expect(repository.exists({ where: { id: 1 } })).rejects.toThrow('Exists error');
     });
   });
 
-  describe('query', () => {
-    it('should execute a raw query', async () => {
-      const queryResult = [{ id: 1, name: 'Test' }];
-      (mockRepository.query as jest.Mock).mockResolvedValue(queryResult);
+  describe('createQueryBuilder', () => {
+    it('should create a query builder', () => {
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+      (mockRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
-      const result = await repositoryBase.query('SELECT * FROM test');
+      const result = repository.createQueryBuilder('test');
 
-      expect(mockRepository.query).toHaveBeenCalledWith('SELECT * FROM test');
-      expect(result).toEqual(queryResult);
+      expect(result).toBe(mockQueryBuilder);
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('test');
+    });
+
+    it('should create query builder without alias', () => {
+      const mockQueryBuilder = {};
+      (mockRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
+
+      const result = repository.createQueryBuilder();
+
+      expect(result).toBe(mockQueryBuilder);
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith();
     });
   });
 
-  describe('clear', () => {
-    it('should clear all entities', async () => {
-      (mockRepository.clear as jest.Mock).mockResolvedValue(undefined);
+  describe('manager', () => {
+    it('should have access to manager', () => {
+      expect(repository.manager).toBeDefined();
+    });
 
-      await repositoryBase.clear();
+    it('should support transactions', async () => {
+      const mockTransactionalEntityManager = {};
+      (mockRepository.manager.transaction as jest.Mock).mockImplementation(
+        async (cb: any) => cb(mockTransactionalEntityManager),
+      );
 
-      expect(mockRepository.clear).toHaveBeenCalled();
+      const result = await repository.manager.transaction(async (manager) => {
+        return 'transaction result';
+      });
+
+      expect(result).toBe('transaction result');
+      expect(mockRepository.manager.transaction).toHaveBeenCalled();
     });
   });
 
-  describe('merge', () => {
-    it('should merge entities', () => {
-      const mergedEntity = { id: 1, name: 'Merged' };
-      (mockRepository.merge as jest.Mock).mockReturnValue(mergedEntity);
-
-      const result = repositoryBase.merge(mockEntity, { name: 'Merged' });
-
-      expect(mockRepository.merge).toHaveBeenCalledWith(mockEntity, { name: 'Merged' });
-      expect(result).toEqual(mergedEntity);
+  describe('metadata', () => {
+    it('should have metadata', () => {
+      expect(repository.metadata).toBeDefined();
+      expect(repository.metadata.target).toBe(TestEntity);
+      expect(repository.metadata.tableName).toBe('test_entity');
     });
   });
 
-  describe('findOneOrFail', () => {
-    it('should find one entity or fail', async () => {
-      (mockRepository.findOneOrFail as jest.Mock).mockResolvedValue(mockEntity);
+  describe('Edge cases', () => {
+    it('should handle null entity in save', async () => {
+      (mockRepository.save as jest.Mock).mockResolvedValue(null);
 
-      const result = await repositoryBase.findOneOrFail({ where: { id: 1 } });
+      const result = await repository.save(null as any);
 
-      expect(mockRepository.findOneOrFail).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(result).toEqual(mockEntity);
+      expect(result).toBeNull();
     });
 
-    it('should throw error when entity not found', async () => {
-      const error = new Error('Entity not found');
-      (mockRepository.findOneOrFail as jest.Mock).mockRejectedValue(error);
+    it('should handle undefined options in find', async () => {
+      (mockRepository.find as jest.Mock).mockResolvedValue(mockEntities);
 
-      await expect(repositoryBase.findOneOrFail({ where: { id: 999 } })).rejects.toThrow('Entity not found');
-    });
-  });
+      const result = await repository.find(undefined);
 
-  describe('findOneByOrFail', () => {
-    it('should find one entity by criteria or fail', async () => {
-      (mockRepository.findOneByOrFail as jest.Mock).mockResolvedValue(mockEntity);
-
-      const result = await repositoryBase.findOneByOrFail({ id: 1 });
-
-      expect(mockRepository.findOneByOrFail).toHaveBeenCalledWith({ id: 1 });
-      expect(result).toEqual(mockEntity);
-    });
-
-    it('should throw error when entity not found', async () => {
-      const error = new Error('Entity not found');
-      (mockRepository.findOneByOrFail as jest.Mock).mockRejectedValue(error);
-
-      await expect(repositoryBase.findOneByOrFail({ id: 999 })).rejects.toThrow('Entity not found');
-    });
-  });
-
-  describe('findByIds', () => {
-    it('should find entities by ids', async () => {
-      (mockRepository.findByIds as jest.Mock).mockResolvedValue(mockEntities);
-
-      const result = await repositoryBase.findByIds([1, 2]);
-
-      expect(mockRepository.findByIds).toHaveBeenCalledWith([1, 2]);
       expect(result).toEqual(mockEntities);
+      expect(mockRepository.find).toHaveBeenCalledWith(undefined);
     });
 
-    it('should return empty array when no ids provided', async () => {
-      (mockRepository.findByIds as jest.Mock).mockResolvedValue([]);
+    it('should handle empty array in save', async () => {
+      (mockRepository.save as jest.Mock).mockResolvedValue([]);
 
-      const result = await repositoryBase.findByIds([]);
+      const result = await repository.save([]);
 
       expect(result).toEqual([]);
     });
-  });
 
-  describe('findBy', () => {
-    it('should find entities by criteria', async () => {
-      (mockRepository.findBy as jest.Mock).mockResolvedValue(mockEntities);
+    it('should handle delete with non-existent id', async () => {
+      const deleteResult = { affected: 0, raw: {} };
+      (mockRepository.delete as jest.Mock).mockResolvedValue(deleteResult);
 
-      const result = await repositoryBase.findBy({ name: 'Test' });
+      const result = await repository.delete(999);
 
-      expect(mockRepository.findBy).toHaveBeenCalledWith({ name: 'Test' });
-      expect(result).toEqual(mockEntities);
-    });
-  });
-
-  describe('findAndCountBy', () => {
-    it('should find entities and count by criteria', async () => {
-      const mockResult = [mockEntities, mockEntities.length];
-      (mockRepository.findAndCountBy as jest.Mock).mockResolvedValue(mockResult);
-
-      const [entities, count] = await repositoryBase.findAndCountBy({ name: 'Test' });
-
-      expect(mockRepository.findAndCountBy).toHaveBeenCalledWith({ name: 'Test' });
-      expect(entities).toEqual(mockEntities);
-      expect(count).toBe(2);
-    });
-  });
-
-  describe('extend', () => {
-    it('should extend the repository', () => {
-      const customMethods = { customMethod: jest.fn() };
-      const extendedRepo = { ...repositoryBase, ...customMethods };
-      (mockRepository.extend as jest.Mock).mockReturnValue(extendedRepo);
-
-      const result = repositoryBase.extend(customMethods);
-
-      expect(mockRepository.extend).toHaveBeenCalledWith(customMethods);
-      expect(result).toEqual(extendedRepo);
-    });
-  });
-
-  describe('Error handling', () => {
-    it('should handle database connection errors', async () => {
-      const error = new Error('Connection lost');
-      (mockRepository.find as jest.Mock).mockRejectedValue(error);
-
-      await expect(repositoryBase.find()).rejects.toThrow('Connection lost');
+      expect(result.affected).toBe(0);
     });
 
-    it('should handle constraint violations', async () => {
-      const error = new Error('Duplicate entry');
-      (mockRepository.save as jest.Mock).mockRejectedValue(error);
+    it('should handle update with non-existent id', async () => {
+      const updateResult = { affected: 0, raw: {}, generatedMaps: [] };
+      (mockRepository.update as jest.Mock).mockResolvedValue(updateResult);
 
-      await expect(repositoryBase.save(mockEntity)).rejects.toThrow('Duplicate entry');
-    });
+      const result = await repository.update(999, { name: 'Updated' });
 
-    it('should handle invalid input', async () => {
-      const error = new Error('Invalid input');
-      (mockRepository.update as jest.Mock).mockRejectedValue(error);
-
-      await expect(repositoryBase.update(1, null as any)).rejects.toThrow('Invalid input');
+      expect(result.affected).toBe(0);
     });
   });
 });
