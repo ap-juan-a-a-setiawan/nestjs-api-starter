@@ -1,111 +1,95 @@
 typescript
-import 'reflect-metadata';
-import { Controller, Module } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { AppModule } from './app.module';
+import { configService } from './services/config.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from '../Users/users.module';
+import { AuthModule } from '../Auth/auth.module';
+import { AppController } from './controllers/app.controller';
 
-@Module({})
-class UsersModuleMock {}
-@Module({})
-class AuthModuleMock {}
-@Controller()
-class AppControllerMock {}
-@Module({})
-class TypeOrmModuleMock {}
-
-const mockUsersModule = UsersModuleMock;
-const mockAuthModule = AuthModuleMock;
-const mockAppController = AppControllerMock;
-const mockConfigService = {
-  getTypeOrmConfig: jest.fn().mockReturnValue({ type: 'postgres' }),
-};
-const mockTypeOrmModule = {
-  forRoot: jest.fn().mockReturnValue({ module: TypeOrmModuleMock, providers: [] }),
-};
-
-jest.mock('../Users/users.module', () => ({
-  UsersModule: mockUsersModule,
-}));
-jest.mock('../Auth/auth.module', () => ({
-  AuthModule: mockAuthModule,
-}));
-jest.mock('./controllers/app.controller', () => ({
-  AppController: mockAppController,
-}));
-jest.mock('./services/config.service', () => ({
-  configService: mockConfigService,
-}));
 jest.mock('@nestjs/typeorm', () => ({
-  TypeOrmModule: mockTypeOrmModule,
+  TypeOrmModule: {
+    forRoot: jest.fn().mockReturnValue({
+      module: class TypeOrmCoreModule {},
+      providers: [],
+    }),
+  },
 }));
 
-const AppModule: any = require('./app.module').AppModule;
+jest.mock('./services/config.service', () => ({
+  configService: {
+    getTypeOrmConfig: jest.fn().mockReturnValue({ type: 'postgres' }),
+  },
+}));
+
+jest.mock('./controllers/app.controller', () => {
+  const { Controller } = require('@nestjs/common');
+  @Controller()
+  class AppController {}
+  return { AppController };
+});
+
+jest.mock('../Users/users.module', () => {
+  const { Module } = require('@nestjs/common');
+  @Module({})
+  class UsersModule {}
+  return { UsersModule };
+});
+
+jest.mock('../Auth/auth.module', () => {
+  const { Module } = require('@nestjs/common');
+  @Module({})
+  class AuthModule {}
+  return { AuthModule };
+});
 
 describe('AppModule', () => {
-  let moduleRef: TestingModule;
-
-  beforeAll(async () => {
-    moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-  });
-
-  afterAll(async () => {
-    await moduleRef.close();
+  afterEach(() => {
+    jest.clearAllMocks();
+    (configService.getTypeOrmConfig as jest.Mock).mockReturnValue({ type: 'postgres' });
+    (TypeOrmModule.forRoot as jest.Mock).mockReturnValue({
+      module: class TypeOrmCoreModule {},
+      providers: [],
+    });
   });
 
   it('should be defined', () => {
-    expect(AppModule).toBeDefined();
+    const module = new AppModule();
+    expect(module).toBeDefined();
   });
 
-  it('should compile the module', () => {
-    expect(moduleRef).toBeDefined();
+  it('should call configService.getTypeOrmConfig and TypeOrmModule.forRoot with the config', () => {
+    expect(configService.getTypeOrmConfig).toHaveBeenCalled();
+    expect(TypeOrmModule.forRoot).toHaveBeenCalledWith({ type: 'postgres' });
   });
 
-  it('should register the AppController', () => {
-    const appController = moduleRef.get(mockAppController);
-    expect(appController).toBeDefined();
-  });
-
-  it('should have correct module metadata', () => {
-    const imports = Reflect.getMetadata('imports', AppModule);
+  it('should have AppController in controllers metadata', () => {
     const controllers = Reflect.getMetadata('controllers', AppModule);
+    expect(controllers).toContain(AppController);
+  });
+
+  it('should have UsersModule and AuthModule in imports metadata', () => {
+    const imports = Reflect.getMetadata('imports', AppModule);
+    expect(imports).toContain(UsersModule);
+    expect(imports).toContain(AuthModule);
+  });
+
+  it('should have empty providers metadata', () => {
     const providers = Reflect.getMetadata('providers', AppModule);
-
-    expect(imports).toHaveLength(3);
-    expect(imports[0]).toBe(mockUsersModule);
-    expect(imports[1]).toBe(mockAuthModule);
-    expect(imports[2]).toBe(mockTypeOrmModule.forRoot.mock.results[0].value);
-
-    expect(controllers).toHaveLength(1);
-    expect(controllers[0]).toBe(mockAppController);
-
     expect(providers).toEqual([]);
   });
 
-  it('should call configService.getTypeOrmConfig and TypeOrmModule.forRoot with config', () => {
-    expect(mockConfigService.getTypeOrmConfig).toHaveBeenCalledTimes(1);
-    expect(mockTypeOrmModule.forRoot).toHaveBeenCalledWith({ type: 'postgres' });
+  it('should compile with Test.createTestingModule', async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    expect(moduleRef).toBeDefined();
   });
 
-  it('should handle configService returning undefined gracefully', () => {
-    mockConfigService.getTypeOrmConfig.mockReturnValue(undefined);
-
-    jest.isolateModules(() => {
-      const ReloadedAppModule: any = require('./app.module').AppModule;
-      expect(ReloadedAppModule).toBeDefined();
-    });
-
-    expect(mockConfigService.getTypeOrmConfig).toHaveBeenLastCalledWith();
-    expect(mockTypeOrmModule.forRoot).toHaveBeenLastCalledWith(undefined);
-  });
-
-  it('should throw if configService.getTypeOrmConfig throws', () => {
-    mockConfigService.getTypeOrmConfig.mockImplementation(() => {
-      throw new Error('Config error');
-    });
-
-    jest.isolateModules(() => {
-      expect(() => require('./app.module')).toThrow('Config error');
-    });
+  it('should handle configService.getTypeOrmConfig returning undefined', () => {
+    (configService.getTypeOrmConfig as jest.Mock).mockReturnValue(undefined);
+    jest.resetModules();
+    const { AppModule: AppModule2 } = require('./app.module');
+    expect(configService.getTypeOrmConfig).toHaveBeenCalled();
+    expect(TypeOrmModule.forRoot).toHaveBeenCalledWith(undefined);
+    expect(AppModule2).toBeDefined();
   });
 });

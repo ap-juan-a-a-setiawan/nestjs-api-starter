@@ -1,14 +1,36 @@
+typescript
 import { Test } from '@nestjs/testing';
-import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 
-jest.mock('@nestjs/passport', () => ({
-  AuthGuard: jest.fn(() => {
-    return class MockAuthGuard {
-      canActivate = jest.fn();
-    };
-  }),
-}));
+jest.mock('@nestjs/passport', () => {
+  const mockCanActivate = jest.fn().mockReturnValue(true);
+  const mockGetAuthenticateOptions = jest.fn().mockReturnValue({});
+  const mockHandleRequest = jest.fn().mockImplementation((err: unknown, user: unknown, _info: unknown) => {
+    if (err) {
+      throw err;
+    }
+    return user;
+  });
+  const mockLogIn = jest.fn().mockResolvedValue(undefined);
+  const mockLogOut = jest.fn().mockResolvedValue(undefined);
+
+  return {
+    AuthGuard: jest.fn().mockImplementation((_type: string) => {
+      return class MockAuthGuard {
+        canActivate = mockCanActivate;
+        getAuthenticateOptions = mockGetAuthenticateOptions;
+        handleRequest = mockHandleRequest;
+        logIn = mockLogIn;
+        logOut = mockLogOut;
+      };
+    }),
+  };
+});
+
+const authGuardMock = AuthGuard as jest.Mock;
+const mockAuthGuardClass = authGuardMock.mock.results[0].value;
+const authGuardStrategy = authGuardMock.mock.calls[0][0];
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
@@ -29,27 +51,57 @@ describe('JwtAuthGuard', () => {
     expect(guard).toBeDefined();
   });
 
-  it('should call AuthGuard with the "jwt" strategy', () => {
-    expect(AuthGuard).toHaveBeenCalledWith('jwt');
-    expect(AuthGuard).toHaveBeenCalledTimes(1);
+  it('should call AuthGuard with "jwt" strategy', () => {
+    expect(authGuardStrategy).toBe('jwt');
   });
 
   it('should extend the class returned by AuthGuard("jwt")', () => {
-    const baseClass = (AuthGuard as jest.Mock).mock.results[0].value;
-    expect(guard).toBeInstanceOf(baseClass);
+    expect(guard).toBeInstanceOf(mockAuthGuardClass);
   });
 
-  it('should expose a canActivate method from the AuthGuard base class', () => {
-    expect(typeof guard.canActivate).toBe('function');
+  describe('canActivate', () => {
+    it('should return true for a valid context', () => {
+      const context = {
+        switchToHttp: () => ({ getRequest: () => ({}) }),
+      };
+      expect(guard.canActivate(context)).toBe(true);
+    });
+
+    it('should return true even without context', () => {
+      expect(guard.canActivate(undefined)).toBe(true);
+    });
   });
 
-  it('should delegate canActivate calls to the AuthGuard base implementation', async () => {
-    const context = {};
-    const canActivate = guard.canActivate as jest.Mock;
+  describe('getAuthenticateOptions', () => {
+    it('should return an empty object', () => {
+      const context = {};
+      expect(guard.getAuthenticateOptions(context)).toEqual({});
+    });
+  });
 
-    await canActivate(context);
+  describe('handleRequest', () => {
+    it('should return the user when no error is provided', () => {
+      const user = { id: 1, username: 'test' };
+      expect(guard.handleRequest(null, user, null)).toBe(user);
+    });
 
-    expect(canActivate).toHaveBeenCalledWith(context);
-    expect(canActivate).toHaveBeenCalledTimes(1);
+    it('should throw the error when an error is provided', () => {
+      const error = new Error('Unauthorized');
+      expect(() => guard.handleRequest(error, null, null)).toThrow(error);
+    });
+  });
+
+  describe('logIn', () => {
+    it('should resolve successfully', async () => {
+      const request = {};
+      await expect(guard.logIn(request)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('logOut', () => {
+    it('should resolve successfully', async () => {
+      const request = {};
+      await expect(guard.logOut(request)).resolves.toBeUndefined();
+    });
   });
 });

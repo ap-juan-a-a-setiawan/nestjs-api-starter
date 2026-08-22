@@ -2,28 +2,35 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 
 describe('AppController', () => {
-  let appController: AppController;
+  let controller: AppController;
 
   beforeEach(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
     }).compile();
 
-    appController = moduleRef.get<AppController>(AppController);
+    controller = module.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should be defined', () => {
-      expect(appController).toBeDefined();
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getHello', () => {
+    it('should return "Hello World"', () => {
+      expect(controller.getHello()).toBe('Hello World');
     });
 
-    it('getHello should return "Hello World"', () => {
-      expect(appController.getHello()).toBe('Hello World');
+    it('should return a string', () => {
+      expect(typeof controller.getHello()).toBe('string');
     });
 
-    it('getHello should return a string', () => {
-      const result = appController.getHello();
-      expect(typeof result).toBe('string');
+    it('should return a non-empty string', () => {
+      expect(controller.getHello().length).toBeGreaterThan(0);
+    });
+
+    it('should not return undefined', () => {
+      expect(controller.getHello()).not.toBeUndefined();
     });
   });
 });

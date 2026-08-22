@@ -1,97 +1,100 @@
-ts
-import 'reflect-metadata';
+typescript
 import { Test } from '@nestjs/testing';
-import { ExtractJwt } from 'passport-jwt';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { jwtContanst } from '../contants/jwt';
 import { JwtStrategy } from './jwt.strategy';
 
 jest.mock('@nestjs/passport', () => ({
-  PassportStrategy: jest.fn().mockImplementation((strategy: any) => {
-    return class MockPassportStrategy {
-      public options: any;
-      constructor(options: any) {
-        this.options = options;
-      }
-    };
-  }),
+  PassportStrategy: jest.fn().mockReturnValue(
+    class MockStrategy {
+      constructor(public options: any) {}
+    }
+  ),
 }));
 
 jest.mock('passport-jwt', () => ({
+  Strategy: class MockJwtStrategy {},
   ExtractJwt: {
-    fromAuthHeaderAsBearerToken: jest.fn(() => jest.fn()),
+    fromAuthHeaderAsBearerToken: jest.fn().mockReturnValue('mockJwtFromRequest'),
   },
-  Strategy: jest.fn(),
 }));
 
 jest.mock('../contants/jwt', () => ({
-  jwtContanst: {
-    secret: 'test-secret',
-  },
+  jwtContanst: { secret: 'test-secret' },
 }));
 
 describe('JwtStrategy', () => {
-  let jwtStrategy: JwtStrategy;
+  let strategy: JwtStrategy;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
       providers: [JwtStrategy],
     }).compile();
 
-    jwtStrategy = moduleRef.get<JwtStrategy>(JwtStrategy);
+    strategy = moduleRef.get<JwtStrategy>(JwtStrategy);
   });
 
   it('should be defined', () => {
-    expect(jwtStrategy).toBeDefined();
+    expect(strategy).toBeDefined();
   });
 
-  it('should call super with correct options', () => {
-    expect(ExtractJwt.fromAuthHeaderAsBearerToken).toHaveBeenCalled();
+  describe('constructor', () => {
+    it('should call PassportStrategy with the passport-jwt Strategy', () => {
+      const mockPassportStrategy = PassportStrategy as jest.Mock;
+      expect(mockPassportStrategy).toHaveBeenCalledWith(Strategy);
+    });
 
-    const options = (jwtStrategy as any).options;
-    expect(options.ignoreExpiration).toBe(false);
-    expect(options.secretOrKey).toBe('test-secret');
-    expect(typeof options.jwtFromRequest).toBe('function');
+    it('should call ExtractJwt.fromAuthHeaderAsBearerToken', () => {
+      const mockFromAuthHeaderAsBearerToken =
+        ExtractJwt.fromAuthHeaderAsBearerToken as jest.Mock;
+      expect(mockFromAuthHeaderAsBearerToken).toHaveBeenCalled();
+    });
+
+    it('should pass the correct options to super', () => {
+      expect((strategy as any).options).toEqual({
+        jwtFromRequest: 'mockJwtFromRequest',
+        ignoreExpiration: false,
+        secretOrKey: 'test-secret',
+      });
+    });
   });
 
   describe('validate', () => {
-    it('should return an object with userId and email from payload', async () => {
-      const payload = { sub: 1, email: 'test@example.com' };
+    it('should return userId and email from payload', async () => {
+      const payload = { sub: 1, email: 'user@example.com' };
+      const result = await strategy.validate(payload);
 
-      const result = await jwtStrategy.validate(payload);
-
-      expect(result).toEqual({ userId: 1, email: 'test@example.com' });
+      expect(result).toEqual({
+        userId: 1,
+        email: 'user@example.com',
+      });
     });
 
-    it('should ignore extra payload properties', async () => {
-      const payload = { sub: 1, email: 'test@example.com', extra: 'ignored' };
-
-      const result = await jwtStrategy.validate(payload);
-
-      expect(result).toEqual({ userId: 1, email: 'test@example.com' });
-    });
-
-    it('should handle payload with undefined sub and email', async () => {
-      const payload = { sub: undefined, email: undefined };
-
-      const result = await jwtStrategy.validate(payload);
-
-      expect(result).toEqual({ userId: undefined, email: undefined });
-    });
-
-    it('should handle empty payload', async () => {
+    it('should return undefined userId and email when payload has no sub/email', async () => {
       const payload = {};
+      const result = await strategy.validate(payload);
 
-      const result = await jwtStrategy.validate(payload);
-
-      expect(result).toEqual({ userId: undefined, email: undefined });
+      expect(result).toEqual({
+        userId: undefined,
+        email: undefined,
+      });
     });
 
-    it('should throw if payload is null', async () => {
-      await expect(jwtStrategy.validate(null as any)).rejects.toThrow();
+    it('should return a new object and not mutate the payload', async () => {
+      const payload = { sub: 2, email: 'two@example.com' };
+      const result = await strategy.validate(payload);
+
+      expect(result).not.toBe(payload);
+      expect(payload).toEqual({ sub: 2, email: 'two@example.com' });
     });
 
-    it('should throw if payload is undefined', async () => {
-      await expect(jwtStrategy.validate(undefined as any)).rejects.toThrow();
+    it('should reject when payload is null', async () => {
+      await expect(strategy.validate(null as any)).rejects.toThrow();
+    });
+
+    it('should reject when payload is undefined', async () => {
+      await expect(strategy.validate(undefined as any)).rejects.toThrow();
     });
   });
 });

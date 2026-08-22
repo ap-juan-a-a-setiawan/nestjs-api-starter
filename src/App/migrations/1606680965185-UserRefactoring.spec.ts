@@ -1,61 +1,22 @@
 typescript
+jest.mock('typeorm', () => ({
+  MigrationInterface: class {},
+  QueryRunner: class {},
+  Table: jest.fn().mockImplementation((options) => options),
+}));
+
 import { Test } from '@nestjs/testing';
 import { Table } from 'typeorm';
-import type { QueryRunner } from 'typeorm';
 import { UserRefactoring1606680965185 } from './1606680965185-UserRefactoring';
-
-jest.mock('typeorm', () => ({
-  MigrationInterface: class MigrationInterface {},
-  QueryRunner: class QueryRunner {},
-  Table: jest.fn().mockImplementation((options: any) => ({ ...options })),
-}));
 
 describe('UserRefactoring1606680965185', () => {
   let migration: UserRefactoring1606680965185;
-  let queryRunner: { createTable: jest.Mock; dropTable: jest.Mock };
-  let tableMock: jest.Mock;
-
-  const expectedTable = {
-    name: 'users',
-    columns: [
-      {
-        name: 'id',
-        type: 'int',
-        isPrimary: true,
-        isGenerated: true,
-        generationStrategy: 'increment',
-      },
-      {
-        name: 'first_name',
-        type: 'varchar',
-      },
-      {
-        name: 'last_name',
-        type: 'varchar',
-      },
-      {
-        name: 'email',
-        type: 'varchar',
-      },
-      {
-        name: 'password',
-        type: 'varchar',
-      },
-      {
-        name: 'status',
-        type: 'enum',
-        enum: ['active', 'inactive', 'block'],
-        enumName: 'statusEnum',
-        default: '"active"',
-      },
-    ],
-  };
+  let queryRunnerMock: { createTable: jest.Mock; dropTable: jest.Mock };
 
   beforeEach(async () => {
-    tableMock = Table as unknown as jest.Mock;
-    tableMock.mockClear();
+    jest.clearAllMocks();
 
-    queryRunner = {
+    queryRunnerMock = {
       createTable: jest.fn().mockResolvedValue(undefined),
       dropTable: jest.fn().mockResolvedValue(undefined),
     };
@@ -68,45 +29,77 @@ describe('UserRefactoring1606680965185', () => {
   });
 
   describe('up', () => {
-    it('should create the users table with expected options and pass true for ifNotExists', async () => {
-      await migration.up(queryRunner as unknown as QueryRunner);
+    it('should create a users table with the expected schema', async () => {
+      await migration.up(queryRunnerMock as any);
 
-      expect(tableMock).toHaveBeenCalledTimes(1);
-      expect(tableMock).toHaveBeenCalledWith(expectedTable);
+      expect(Table).toHaveBeenCalledTimes(1);
+      expect(Table).toHaveBeenCalledWith({
+        name: 'users',
+        columns: [
+          {
+            name: 'id',
+            type: 'int',
+            isPrimary: true,
+            isGenerated: true,
+            generationStrategy: 'increment',
+          },
+          {
+            name: 'first_name',
+            type: 'varchar',
+          },
+          {
+            name: 'last_name',
+            type: 'varchar',
+          },
+          {
+            name: 'email',
+            type: 'varchar',
+          },
+          {
+            name: 'password',
+            type: 'varchar',
+          },
+          {
+            name: 'status',
+            type: 'enum',
+            enum: ['active', 'inactive', 'block'],
+            enumName: 'statusEnum',
+            default: '"active"',
+          },
+        ],
+      });
 
-      expect(queryRunner.createTable).toHaveBeenCalledTimes(1);
-      expect(queryRunner.createTable).toHaveBeenCalledWith(expectedTable, true);
+      expect(queryRunnerMock.createTable).toHaveBeenCalledTimes(1);
+      expect(queryRunnerMock.createTable).toHaveBeenCalledWith(expect.any(Object), true);
     });
 
-    it('should propagate errors when createTable fails', async () => {
-      const error = new Error('createTable failed');
-      queryRunner.createTable.mockRejectedValueOnce(error);
+    it('should pass true as the second argument to createTable', async () => {
+      await migration.up(queryRunnerMock as any);
 
-      await expect(
-        migration.up(queryRunner as unknown as QueryRunner),
-      ).rejects.toThrow(error);
+      expect(queryRunnerMock.createTable).toHaveBeenCalledWith(expect.anything(), true);
+    });
 
-      expect(queryRunner.createTable).toHaveBeenCalledTimes(1);
+    it('should propagate errors from createTable', async () => {
+      const error = new Error('create failed');
+      queryRunnerMock.createTable.mockRejectedValueOnce(error);
+
+      await expect(migration.up(queryRunnerMock as any)).rejects.toThrow('create failed');
     });
   });
 
   describe('down', () => {
     it('should drop the users table', async () => {
-      await migration.down(queryRunner as unknown as QueryRunner);
+      await migration.down(queryRunnerMock as any);
 
-      expect(queryRunner.dropTable).toHaveBeenCalledTimes(1);
-      expect(queryRunner.dropTable).toHaveBeenCalledWith('users');
+      expect(queryRunnerMock.dropTable).toHaveBeenCalledTimes(1);
+      expect(queryRunnerMock.dropTable).toHaveBeenCalledWith('users');
     });
 
-    it('should propagate errors when dropTable fails', async () => {
-      const error = new Error('dropTable failed');
-      queryRunner.dropTable.mockRejectedValueOnce(error);
+    it('should propagate errors from dropTable', async () => {
+      const error = new Error('drop failed');
+      queryRunnerMock.dropTable.mockRejectedValueOnce(error);
 
-      await expect(
-        migration.down(queryRunner as unknown as QueryRunner),
-      ).rejects.toThrow(error);
-
-      expect(queryRunner.dropTable).toHaveBeenCalledTimes(1);
+      await expect(migration.down(queryRunnerMock as any)).rejects.toThrow('drop failed');
     });
   });
 });

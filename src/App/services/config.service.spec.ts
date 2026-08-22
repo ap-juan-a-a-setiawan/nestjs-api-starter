@@ -1,4 +1,4 @@
-typescript
+import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import { configService } from './config.service';
 
@@ -6,151 +6,275 @@ jest.mock('dotenv', () => ({
   config: jest.fn(),
 }));
 
+jest.mock('@nestjs/typeorm', () => ({
+  TypeOrmModuleOptions: jest.fn(),
+}));
+
+const ConfigService = configService.constructor as any;
+const CONFIG_SERVICE = 'CONFIG_SERVICE';
+
 describe('ConfigService', () => {
   let service: any;
 
-  beforeAll(async () => {
+  const createService = async (env: Record<string, string | undefined>) => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         {
-          provide: 'CONFIG_SERVICE',
-          useValue: configService,
+          provide: CONFIG_SERVICE,
+          useFactory: () => new ConfigService(env),
         },
       ],
     }).compile();
 
-    service = moduleRef.get('CONFIG_SERVICE');
-  });
+    return moduleRef.get(CONFIG_SERVICE);
+  };
 
-  afterEach(() => {
-    delete process.env.PORT;
-    delete process.env.MODE;
-    delete process.env.DB_HOST;
-    delete process.env.DB_PORT;
-    delete process.env.DB_USERNAME;
-    delete process.env.DB_PASSWORD;
-    delete process.env.DB_DATABASE;
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('getPort', () => {
-    it('returns the PORT value from environment', () => {
-      process.env.PORT = '8080';
-      expect(service.getPort()).toBe('8080');
+    it('should return the PORT value', async () => {
+      service = await createService({ PORT: '3000' });
+      expect(service.getPort()).toBe('3000');
     });
 
-    it('returns "0" when PORT is "0"', () => {
-      process.env.PORT = '0';
-      expect(service.getPort()).toBe('0');
-    });
-
-    it('throws error if PORT is missing', () => {
-      delete process.env.PORT;
+    it('should throw if PORT is missing', async () => {
+      service = await createService({});
       expect(() => service.getPort()).toThrow('Config error missing env PORT.');
     });
 
-    it('throws error if PORT is an empty string', () => {
-      process.env.PORT = '';
+    it('should throw if PORT is an empty string', async () => {
+      service = await createService({ PORT: '' });
       expect(() => service.getPort()).toThrow('Config error missing env PORT.');
     });
   });
 
   describe('isProduction', () => {
-    it('returns false when MODE is DEV', () => {
-      process.env.MODE = 'DEV';
+    it('should return false when MODE is DEV', async () => {
+      service = await createService({ MODE: 'DEV' });
       expect(service.isProduction()).toBe(false);
     });
 
-    it('returns true when MODE is not DEV', () => {
-      process.env.MODE = 'PROD';
+    it('should return true when MODE is not DEV', async () => {
+      service = await createService({ MODE: 'PROD' });
       expect(service.isProduction()).toBe(true);
     });
 
-    it('returns true when MODE is missing', () => {
-      delete process.env.MODE;
+    it('should return true when MODE is missing', async () => {
+      service = await createService({});
       expect(service.isProduction()).toBe(true);
     });
 
-    it('returns true when MODE is lowercase dev', () => {
-      process.env.MODE = 'dev';
+    it('should return true when MODE is lowercase dev', async () => {
+      service = await createService({ MODE: 'dev' });
+      expect(service.isProduction()).toBe(true);
+    });
+
+    it('should return true when MODE is an empty string', async () => {
+      service = await createService({ MODE: '' });
       expect(service.isProduction()).toBe(true);
     });
   });
 
   describe('getTypeOrmConfig', () => {
-    beforeEach(() => {
-      process.env.MODE = 'DEV';
-      process.env.DB_HOST = 'localhost';
-      process.env.DB_PORT = '3306';
-      process.env.DB_USERNAME = 'root';
-      process.env.DB_PASSWORD = 'secret';
-      process.env.DB_DATABASE = 'test';
-    });
+    it('should return the TypeORM config with ssl true in production', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+        MODE: 'PROD',
+      });
 
-    it('returns the mysql connection config', () => {
       expect(service.getTypeOrmConfig()).toEqual({
         type: 'mysql',
         host: 'localhost',
         port: 3306,
-        username: 'root',
-        password: 'secret',
-        database: 'test',
-        entities: ['**/*.entity{.ts,.js}'],
+        username: 'user',
+        password: 'pass',
+        database: 'db',
+        entities: ["**/*.entity{.ts,.js}"],
         migrationsTableName: 'migrations',
         migrations: ['src/App/migrations/*.ts'],
-        cli: { migrationsDir: 'src/App/migrations' },
-        ssl: false,
+        cli: {
+          migrationsDir: 'src/App/migrations',
+        },
+        ssl: true,
       });
     });
 
-    it('sets ssl to true when in production', () => {
-      process.env.MODE = 'PROD';
+    it('should return ssl false when MODE is DEV', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+        MODE: 'DEV',
+      });
+
+      expect(service.getTypeOrmConfig().ssl).toBe(false);
+    });
+
+    it('should default ssl to true when MODE is missing', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
       expect(service.getTypeOrmConfig().ssl).toBe(true);
     });
 
-    it('throws error when DB_HOST is missing', () => {
-      delete process.env.DB_HOST;
-      expect(() => service.getTypeOrmConfig()).toThrow(
-        'Config error missing env DB_HOST.',
-      );
+    it('should parse DB_PORT as an integer', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3307',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
+      const config = service.getTypeOrmConfig();
+      expect(config.port).toBe(3307);
+      expect(typeof config.port).toBe('number');
     });
 
-    it('throws error when DB_PORT is missing', () => {
-      delete process.env.DB_PORT;
-      expect(() => service.getTypeOrmConfig()).toThrow(
-        'Config error missing env DB_PORT.',
-      );
-    });
+    it('should return NaN for non-numeric DB_PORT', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: 'abc',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
 
-    it('throws error when DB_USERNAME is missing', () => {
-      delete process.env.DB_USERNAME;
-      expect(() => service.getTypeOrmConfig()).toThrow(
-        'Config error missing env DB_USERNAME.',
-      );
-    });
-
-    it('throws error when DB_PASSWORD is missing', () => {
-      delete process.env.DB_PASSWORD;
-      expect(() => service.getTypeOrmConfig()).toThrow(
-        'Config error missing env DB_PASSWORD.',
-      );
-    });
-
-    it('throws error when DB_DATABASE is missing', () => {
-      delete process.env.DB_DATABASE;
-      expect(() => service.getTypeOrmConfig()).toThrow(
-        'Config error missing env DB_DATABASE.',
-      );
-    });
-
-    it('parses DB_PORT as an integer', () => {
-      process.env.DB_PORT = '3307';
-      expect(service.getTypeOrmConfig().port).toBe(3307);
-    });
-
-    it('returns NaN when DB_PORT is non-numeric', () => {
-      process.env.DB_PORT = 'not-a-number';
       expect(service.getTypeOrmConfig().port).toBeNaN();
+    });
+
+    it('should throw if DB_HOST is missing', async () => {
+      service = await createService({
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_HOST.');
+    });
+
+    it('should throw if DB_HOST is an empty string', async () => {
+      service = await createService({
+        DB_HOST: '',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_HOST.');
+    });
+
+    it('should throw if DB_PORT is missing', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_PORT.');
+    });
+
+    it('should throw if DB_PORT is an empty string', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_PORT.');
+    });
+
+    it('should throw if DB_USERNAME is missing', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_USERNAME.');
+    });
+
+    it('should throw if DB_USERNAME is an empty string', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: '',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_USERNAME.');
+    });
+
+    it('should throw if DB_PASSWORD is missing', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_PASSWORD.');
+    });
+
+    it('should throw if DB_PASSWORD is an empty string', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: '',
+        DB_DATABASE: 'db',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_PASSWORD.');
+    });
+
+    it('should throw if DB_DATABASE is missing', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_DATABASE.');
+    });
+
+    it('should throw if DB_DATABASE is an empty string', async () => {
+      service = await createService({
+        DB_HOST: 'localhost',
+        DB_PORT: '3306',
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'pass',
+        DB_DATABASE: '',
+      });
+
+      expect(() => service.getTypeOrmConfig()).toThrow('Config error missing env DB_DATABASE.');
+    });
+  });
+
+  describe('exported configService', () => {
+    it('should be an instance of ConfigService', () => {
+      expect(configService).toBeInstanceOf(ConfigService);
     });
   });
 });

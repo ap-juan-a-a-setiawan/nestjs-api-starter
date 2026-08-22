@@ -1,33 +1,32 @@
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../services/auth.service';
-import { LoginDto } from '../dto/login.dto';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
+import { LoginDto } from '../dto/login.dto';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: { login: jest.Mock };
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
+    authService = {
+      login: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         {
           provide: AuthService,
-          useValue: {
-            login: jest.fn(),
-          },
+          useValue: authService,
         },
       ],
     })
       .overrideGuard(LocalAuthGuard)
-      .useValue({ canActivate: jest.fn(() => true) })
+      .useGuard({ canActivate: () => true })
       .compile();
 
-    controller = moduleRef.get<AuthController>(AuthController);
-    authService = moduleRef.get<AuthService>(AuthService) as unknown as {
-      login: jest.Mock;
-    };
+    controller = module.get<AuthController>(AuthController);
   });
 
   afterEach(() => {
@@ -39,33 +38,44 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should return the result from authService.login', async () => {
-      const user = { username: 'test', password: 'secret' } as LoginDto;
-      const result = { accessToken: 'jwt-token' };
-      authService.login.mockResolvedValue(result);
+    it('should call authService.login with the user and return the result', async () => {
+      const user: LoginDto = {
+        username: 'testuser',
+        password: 'password123',
+      };
+      const expectedResult = { accessToken: 'jwt-token' };
 
-      await expect(controller.login(user)).resolves.toBe(result);
+      authService.login.mockResolvedValue(expectedResult);
+
+      const result = await controller.login(user);
+
       expect(authService.login).toHaveBeenCalledWith(user);
-      expect(authService.login).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(expectedResult);
     });
 
-    it('should propagate errors when authService.login rejects', async () => {
-      const user = { username: 'test', password: 'wrong' } as LoginDto;
+    it('should propagate errors from authService.login', async () => {
+      const user: LoginDto = {
+        username: 'testuser',
+        password: 'wrong-password',
+      };
       const error = new Error('Invalid credentials');
+
       authService.login.mockRejectedValue(error);
 
       await expect(controller.login(user)).rejects.toThrow('Invalid credentials');
       expect(authService.login).toHaveBeenCalledWith(user);
-      expect(authService.login).toHaveBeenCalledTimes(1);
     });
 
-    it('should pass undefined user when none is provided', async () => {
-      const user = undefined as unknown as LoginDto;
-      authService.login.mockResolvedValue(null);
+    it('should handle an empty user object', async () => {
+      const user = {} as LoginDto;
+      const expectedResult = { accessToken: 'token' };
 
-      await expect(controller.login(user)).resolves.toBeNull();
-      expect(authService.login).toHaveBeenCalledWith(undefined);
-      expect(authService.login).toHaveBeenCalledTimes(1);
+      authService.login.mockResolvedValue(expectedResult);
+
+      const result = await controller.login(user);
+
+      expect(authService.login).toHaveBeenCalledWith(user);
+      expect(result).toEqual(expectedResult);
     });
   });
 });
