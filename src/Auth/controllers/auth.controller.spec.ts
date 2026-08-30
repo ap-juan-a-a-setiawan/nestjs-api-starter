@@ -19,7 +19,7 @@ describe('AuthController', () => {
   };
 
   const mockLoginResponse = {
-    accessToken: 'mock-jwt-token',
+    access_token: 'mock-jwt-token',
     user: {
       id: 1,
       email: 'test@example.com',
@@ -75,29 +75,27 @@ describe('AuthController', () => {
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle login with different user data', async () => {
-      const anotherUser: LoginDto = {
-        email: 'another@example.com',
-        password: 'different-password',
-      };
-      const anotherResponse = {
-        accessToken: 'another-token',
-        user: {
-          id: 2,
-          email: 'another@example.com',
-          name: 'Another User',
-        },
-      };
+    it('should handle empty user object', async () => {
+      const emptyUser = {} as LoginDto;
+      mockAuthService.login.mockResolvedValue({});
 
-      mockAuthService.login.mockResolvedValue(anotherResponse);
+      const result = await controller.login(emptyUser);
 
-      const result = await controller.login(anotherUser);
-
-      expect(authService.login).toHaveBeenCalledWith(anotherUser);
-      expect(result).toEqual(anotherResponse);
+      expect(authService.login).toHaveBeenCalledWith(emptyUser);
+      expect(result).toEqual({});
     });
 
-    it('should propagate errors from authService', async () => {
+    it('should handle user with missing fields', async () => {
+      const incompleteUser = { email: 'test@example.com' } as LoginDto;
+      mockAuthService.login.mockResolvedValue({});
+
+      const result = await controller.login(incompleteUser);
+
+      expect(authService.login).toHaveBeenCalledWith(incompleteUser);
+      expect(result).toEqual({});
+    });
+
+    it('should propagate errors from authService.login', async () => {
       const error = new Error('Invalid credentials');
       mockAuthService.login.mockRejectedValue(error);
 
@@ -105,44 +103,22 @@ describe('AuthController', () => {
       expect(authService.login).toHaveBeenCalledWith(mockUser);
     });
 
-    it('should handle empty user object', async () => {
-      const emptyUser = {} as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(emptyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(emptyUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with missing fields', async () => {
-      const incompleteUser = {
-        email: 'test@example.com',
-      } as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(incompleteUser);
-
-      expect(authService.login).toHaveBeenCalledWith(incompleteUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
     it('should handle null user', async () => {
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+      mockAuthService.login.mockResolvedValue(null);
 
       const result = await controller.login(null as any);
 
       expect(authService.login).toHaveBeenCalledWith(null);
-      expect(result).toEqual(mockLoginResponse);
+      expect(result).toBeNull();
     });
 
     it('should handle undefined user', async () => {
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+      mockAuthService.login.mockResolvedValue(undefined);
 
       const result = await controller.login(undefined as any);
 
       expect(authService.login).toHaveBeenCalledWith(undefined);
-      expect(result).toEqual(mockLoginResponse);
+      expect(result).toBeUndefined();
     });
 
     it('should handle authService returning null', async () => {
@@ -161,898 +137,696 @@ describe('AuthController', () => {
       expect(result).toBeUndefined();
     });
 
-    it('should handle authService throwing non-Error exceptions', async () => {
+    it('should handle authService throwing a generic error', async () => {
+      const error = new Error('Service unavailable');
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Service unavailable');
+    });
+
+    it('should handle authService throwing a non-Error value', async () => {
       const error = 'String error';
       mockAuthService.login.mockRejectedValue(error);
 
       await expect(controller.login(mockUser)).rejects.toBe('String error');
     });
 
-    it('should handle authService throwing Error with custom message', async () => {
-      const error = new Error('Custom error message');
+    it('should handle authService throwing an object error', async () => {
+      const error = { message: 'Object error', statusCode: 500 };
       mockAuthService.login.mockRejectedValue(error);
 
-      await expect(controller.login(mockUser)).rejects.toThrow('Custom error message');
+      await expect(controller.login(mockUser)).rejects.toEqual(error);
     });
 
-    it('should handle authService throwing Error with status code', async () => {
+    it('should handle authService throwing an array error', async () => {
+      const error = ['Error 1', 'Error 2'];
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toEqual(error);
+    });
+
+    it('should handle authService throwing a number error', async () => {
+      const error = 500;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(500);
+    });
+
+    it('should handle authService throwing a boolean error', async () => {
+      const error = false;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(false);
+    });
+
+    it('should handle authService throwing a null error', async () => {
+      const error = null;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBeNull();
+    });
+
+    it('should handle authService throwing an undefined error', async () => {
+      const error = undefined;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBeUndefined();
+    });
+
+    it('should handle authService throwing a symbol error', async () => {
+      const error = Symbol('error');
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a bigint error', async () => {
+      const error = BigInt(123);
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a function error', async () => {
+      const error = () => 'function error';
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a Date error', async () => {
+      const error = new Date();
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a RegExp error', async () => {
+      const error = /regex/;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a Map error', async () => {
+      const error = new Map([['key', 'value']]);
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a Set error', async () => {
+      const error = new Set([1, 2, 3]);
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a Promise error', async () => {
+      const error = Promise.reject('Promise error');
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a class instance error', async () => {
+      class CustomError extends Error {
+        constructor() {
+          super('Custom error');
+          this.name = 'CustomError';
+        }
+      }
+      const error = new CustomError();
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe(error);
+    });
+
+    it('should handle authService throwing a nested error', async () => {
+      const error = { outer: { inner: 'nested error' } };
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toEqual(error);
+    });
+
+    it('should handle authService throwing an error with custom properties', async () => {
+      const error = new Error('Custom error');
+      error.name = 'CustomError';
+      error.stack = 'Custom stack';
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Custom error');
+    });
+
+    it('should handle authService throwing an error with status code', async () => {
       const error = new Error('Unauthorized');
       (error as any).status = 401;
       mockAuthService.login.mockRejectedValue(error);
 
       await expect(controller.login(mockUser)).rejects.toThrow('Unauthorized');
-      await expect(controller.login(mockUser)).rejects.toHaveProperty('status', 401);
     });
 
-    it('should handle multiple sequential calls', async () => {
-      mockAuthService.login
-        .mockResolvedValueOnce(mockLoginResponse)
-        .mockResolvedValueOnce({ ...mockLoginResponse, accessToken: 'second-token' });
+    it('should handle authService throwing an error with response object', async () => {
+      const error = new Error('Bad Request');
+      (error as any).response = { message: 'Invalid input', statusCode: 400 };
+      mockAuthService.login.mockRejectedValue(error);
 
-      const firstResult = await controller.login(mockUser);
-      const secondResult = await controller.login(mockUser);
-
-      expect(authService.login).toHaveBeenCalledTimes(2);
-      expect(firstResult).toEqual(mockLoginResponse);
-      expect(secondResult).toEqual({ ...mockLoginResponse, accessToken: 'second-token' });
+      await expect(controller.login(mockUser)).rejects.toThrow('Bad Request');
     });
 
-    it('should handle concurrent calls', async () => {
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with multiple properties', async () => {
+      const error = new Error('Multiple properties');
+      (error as any).status = 500;
+      (error as any).code = 'INTERNAL_ERROR';
+      (error as any).details = { field: 'email' };
+      mockAuthService.login.mockRejectedValue(error);
 
-      const results = await Promise.all([
-        controller.login(mockUser),
-        controller.login(mockUser),
-        controller.login(mockUser),
-      ]);
+      await expect(controller.login(mockUser)).rejects.toThrow('Multiple properties');
+    });
 
-      expect(authService.login).toHaveBeenCalledTimes(3);
-      results.forEach((result) => {
-        expect(result).toEqual(mockLoginResponse);
+    it('should handle authService throwing an error with getter properties', async () => {
+      const error = new Error('Getter error');
+      Object.defineProperty(error, 'customProperty', {
+        get: () => 'custom value',
+        enumerable: true,
       });
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Getter error');
     });
 
-    it('should handle user with additional properties', async () => {
-      const userWithExtraProps = {
-        ...mockUser,
-        extraField: 'extra-value',
-        role: 'admin',
-      } as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with symbol properties', async () => {
+      const error = new Error('Symbol property error');
+      const symbolKey = Symbol('custom');
+      (error as any)[symbolKey] = 'symbol value';
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(userWithExtraProps);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithExtraProps);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Symbol property error');
     });
 
-    it('should handle user with special characters in email', async () => {
-      const specialUser = {
-        email: 'user+tag@example.com',
-        password: 'pass@123',
-      } as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(specialUser);
-
-      expect(authService.login).toHaveBeenCalledWith(specialUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle very long password', async () => {
-      const longPasswordUser = {
-        email: 'test@example.com',
-        password: 'x'.repeat(1000),
-      } as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(longPasswordUser);
-
-      expect(authService.login).toHaveBeenCalledWith(longPasswordUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle empty string fields', async () => {
-      const emptyFieldsUser = {
-        email: '',
-        password: '',
-      } as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(emptyFieldsUser);
-
-      expect(authService.login).toHaveBeenCalledWith(emptyFieldsUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle whitespace-only fields', async () => {
-      const whitespaceUser = {
-        email: '   ',
-        password: '   ',
-      } as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(whitespaceUser);
-
-      expect(authService.login).toHaveBeenCalledWith(whitespaceUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with numeric values', async () => {
-      const numericUser = {
-        email: 12345,
-        password: 67890,
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(numericUser);
-
-      expect(authService.login).toHaveBeenCalledWith(numericUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with boolean values', async () => {
-      const booleanUser = {
-        email: true,
-        password: false,
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(booleanUser);
-
-      expect(authService.login).toHaveBeenCalledWith(booleanUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with array values', async () => {
-      const arrayUser = {
-        email: ['test@example.com'],
-        password: ['password123'],
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(arrayUser);
-
-      expect(authService.login).toHaveBeenCalledWith(arrayUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with object values', async () => {
-      const objectUser = {
-        email: { value: 'test@example.com' },
-        password: { value: 'password123' },
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(objectUser);
-
-      expect(authService.login).toHaveBeenCalledWith(objectUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with symbol values', async () => {
-      const symbolUser = {
-        email: Symbol('email'),
-        password: Symbol('password'),
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(symbolUser);
-
-      expect(authService.login).toHaveBeenCalledWith(symbolUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with function values', async () => {
-      const functionUser = {
-        email: () => 'test@example.com',
-        password: () => 'password123',
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(functionUser);
-
-      expect(authService.login).toHaveBeenCalledWith(functionUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Date values', async () => {
-      const dateUser = {
-        email: new Date(),
-        password: new Date(),
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(dateUser);
-
-      expect(authService.login).toHaveBeenCalledWith(dateUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Buffer values', async () => {
-      const bufferUser = {
-        email: Buffer.from('test@example.com'),
-        password: Buffer.from('password123'),
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(bufferUser);
-
-      expect(authService.login).toHaveBeenCalledWith(bufferUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with BigInt values', async () => {
-      const bigIntUser = {
-        email: BigInt(1234567890),
-        password: BigInt(9876543210),
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(bigIntUser);
-
-      expect(authService.login).toHaveBeenCalledWith(bigIntUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with mixed type values', async () => {
-      const mixedUser = {
-        email: 'test@example.com',
-        password: 12345,
-        extra: true,
-      } as any;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(mixedUser);
-
-      expect(authService.login).toHaveBeenCalledWith(mixedUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle frozen user object', async () => {
-      const frozenUser = Object.freeze({ ...mockUser });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(frozenUser);
-
-      expect(authService.login).toHaveBeenCalledWith(frozenUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle sealed user object', async () => {
-      const sealedUser = Object.seal({ ...mockUser });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(sealedUser);
-
-      expect(authService.login).toHaveBeenCalledWith(sealedUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user object with getters', async () => {
-      const userWithGetters = {
-        get email() { return 'test@example.com'; },
-        get password() { return 'password123'; },
-      } as LoginDto;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithGetters);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithGetters);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user object with prototype chain', async () => {
-      const userWithPrototype = Object.create({ inheritedProp: 'value' });
-      userWithPrototype.email = 'test@example.com';
-      userWithPrototype.password = 'password123';
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithPrototype);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithPrototype);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user object with circular reference', async () => {
-      const circularUser: any = { ...mockUser };
-      circularUser.self = circularUser;
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(circularUser);
-
-      expect(authService.login).toHaveBeenCalledWith(circularUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user object with null prototype', async () => {
-      const nullProtoUser = Object.create(null);
-      nullProtoUser.email = 'test@example.com';
-      nullProtoUser.password = 'password123';
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(nullProtoUser);
-
-      expect(authService.login).toHaveBeenCalledWith(nullProtoUser);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user object with non-enumerable properties', async () => {
-      const nonEnumerableUser: any = { ...mockUser };
-      Object.defineProperty(nonEnumerableUser, 'hidden', {
-        value: 'hidden-value',
+    it('should handle authService throwing an error with non-enumerable properties', async () => {
+      const error = new Error('Non-enumerable error');
+      Object.defineProperty(error, 'hiddenProperty', {
+        value: 'hidden value',
         enumerable: false,
       });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(nonEnumerableUser);
-
-      expect(authService.login).toHaveBeenCalledWith(nonEnumerableUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Non-enumerable error');
     });
 
-    it('should handle user object with symbol properties', async () => {
-      const symbolPropUser: any = { ...mockUser };
-      const symbol = Symbol('hidden');
-      symbolPropUser[symbol] = 'symbol-value';
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with prototype chain', async () => {
+      class BaseError extends Error {
+        constructor(message: string) {
+          super(message);
+          this.name = 'BaseError';
+        }
+      }
+      class ChildError extends BaseError {
+        constructor() {
+          super('Child error');
+          this.name = 'ChildError';
+        }
+      }
+      const error = new ChildError();
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(symbolPropUser);
-
-      expect(authService.login).toHaveBeenCalledWith(symbolPropUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Child error');
     });
 
-    it('should handle user object with getter that throws', async () => {
-      const throwingGetterUser: any = {
-        get email() { throw new Error('Getter error'); },
-        password: 'password123',
-      };
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with circular reference', async () => {
+      const error: any = new Error('Circular error');
+      error.self = error;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(throwingGetterUser);
-
-      expect(authService.login).toHaveBeenCalledWith(throwingGetterUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Circular error');
     });
 
-    it('should handle user object with setter that throws', async () => {
-      const throwingSetterUser: any = {
-        set email(value) { throw new Error('Setter error'); },
-        password: 'password123',
-      };
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with deep circular reference', async () => {
+      const error: any = new Error('Deep circular error');
+      error.obj = { nested: { circular: null } };
+      error.obj.nested.circular = error.obj;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(throwingSetterUser);
-
-      expect(authService.login).toHaveBeenCalledWith(throwingSetterUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Deep circular error');
     });
 
-    it('should handle user object with Proxy', async () => {
-      const proxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return target[prop];
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with array circular reference', async () => {
+      const error: any = new Error('Array circular error');
+      error.arr = [1, 2, 3];
+      error.arr.push(error.arr);
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(proxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(proxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Array circular error');
     });
 
-    it('should handle user object with Proxy that throws', async () => {
-      const throwingProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          throw new Error('Proxy error');
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with mixed circular references', async () => {
+      const error: any = new Error('Mixed circular error');
+      error.obj = { arr: [] };
+      error.obj.arr.push(error.obj);
+      error.self = error;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(throwingProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(throwingProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Mixed circular error');
     });
 
-    it('should handle user object with Proxy that returns undefined', async () => {
-      const undefinedProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return undefined;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with multiple circular references', async () => {
+      const error: any = new Error('Multiple circular error');
+      error.obj1 = { ref: null };
+      error.obj2 = { ref: null };
+      error.obj1.ref = error.obj2;
+      error.obj2.ref = error.obj1;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(undefinedProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(undefinedProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Multiple circular error');
     });
 
-    it('should handle user object with Proxy that returns null', async () => {
-      const nullProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return null;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing array', async () => {
+      const error: any = new Error('Self-referencing array error');
+      error.arr = [];
+      error.arr.push(error.arr);
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(nullProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(nullProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing array error');
     });
 
-    it('should handle user object with Proxy that returns different values', async () => {
-      const dynamicProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          if (prop === 'email') return 'dynamic@example.com';
-          if (prop === 'password') return 'dynamic-password';
-          return target[prop];
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing object', async () => {
+      const error: any = new Error('Self-referencing object error');
+      error.obj = {};
+      error.obj.self = error.obj;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(dynamicProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(dynamicProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing object error');
     });
 
-    it('should handle user object with Proxy that has ownKeys trap', async () => {
-      const ownKeysProxyUser = new Proxy({ ...mockUser }, {
-        ownKeys() {
-          return ['email', 'password'];
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing function', async () => {
+      const error: any = new Error('Self-referencing function error');
+      error.fn = () => error.fn;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(ownKeysProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(ownKeysProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing function error');
     });
 
-    it('should handle user object with Proxy that has getOwnPropertyDescriptor trap', async () => {
-      const getOwnPropertyDescriptorProxyUser = new Proxy({ ...mockUser }, {
-        getOwnPropertyDescriptor(target, prop) {
-          return {
-            configurable: true,
-            enumerable: true,
-            value: target[prop],
-            writable: true,
-          };
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Map', async () => {
+      const error: any = new Error('Self-referencing Map error');
+      error.map = new Map();
+      error.map.set('self', error.map);
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(getOwnPropertyDescriptorProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(getOwnPropertyDescriptorProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Map error');
     });
 
-    it('should handle user object with Proxy that has has trap', async () => {
-      const hasProxyUser = new Proxy({ ...mockUser }, {
-        has(target, prop) {
-          return prop in target;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Set', async () => {
+      const error: any = new Error('Self-referencing Set error');
+      error.set = new Set();
+      error.set.add(error.set);
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(hasProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(hasProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Set error');
     });
 
-    it('should handle user object with Proxy that has set trap', async () => {
-      const setProxyUser = new Proxy({ ...mockUser }, {
-        set(target, prop, value) {
-          target[prop] = value;
-          return true;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Date', async () => {
+      const error: any = new Error('Self-referencing Date error');
+      error.date = new Date();
+      (error.date as any).self = error.date;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(setProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(setProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Date error');
     });
 
-    it('should handle user object with Proxy that has deleteProperty trap', async () => {
-      const deleteProxyUser = new Proxy({ ...mockUser }, {
-        deleteProperty(target, prop) {
-          delete target[prop];
-          return true;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing RegExp', async () => {
+      const error: any = new Error('Self-referencing RegExp error');
+      error.regex = /test/;
+      (error.regex as any).self = error.regex;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(deleteProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(deleteProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing RegExp error');
     });
 
-    it('should handle user object with Proxy that has defineProperty trap', async () => {
-      const defineProxyUser = new Proxy({ ...mockUser }, {
-        defineProperty(target, prop, descriptor) {
-          Object.defineProperty(target, prop, descriptor);
-          return true;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Promise', async () => {
+      const error: any = new Error('Self-referencing Promise error');
+      error.promise = Promise.resolve();
+      (error.promise as any).self = error.promise;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(defineProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(defineProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Promise error');
     });
 
-    it('should handle user object with Proxy that has getPrototypeOf trap', async () => {
-      const getPrototypeOfProxyUser = new Proxy({ ...mockUser }, {
-        getPrototypeOf() {
-          return null;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing WeakMap', async () => {
+      const error: any = new Error('Self-referencing WeakMap error');
+      error.weakMap = new WeakMap();
+      const key = {};
+      error.weakMap.set(key, error.weakMap);
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(getPrototypeOfProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(getPrototypeOfProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing WeakMap error');
     });
 
-    it('should handle user object with Proxy that has setPrototypeOf trap', async () => {
-      const setPrototypeOfProxyUser = new Proxy({ ...mockUser }, {
-        setPrototypeOf() {
-          return true;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing WeakSet', async () => {
+      const error: any = new Error('Self-referencing WeakSet error');
+      error.weakSet = new WeakSet();
+      const obj = {};
+      error.weakSet.add(obj);
+      (error.weakSet as any).self = error.weakSet;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(setPrototypeOfProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(setPrototypeOfProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing WeakSet error');
     });
 
-    it('should handle user object with Proxy that has isExtensible trap', async () => {
-      const isExtensibleProxyUser = new Proxy({ ...mockUser }, {
-        isExtensible() {
-          return true;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing ArrayBuffer', async () => {
+      const error: any = new Error('Self-referencing ArrayBuffer error');
+      error.buffer = new ArrayBuffer(8);
+      (error.buffer as any).self = error.buffer;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(isExtensibleProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(isExtensibleProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing ArrayBuffer error');
     });
 
-    it('should handle user object with Proxy that has preventExtensions trap', async () => {
-      const preventExtensionsProxyUser = new Proxy({ ...mockUser }, {
-        preventExtensions() {
-          return true;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing TypedArray', async () => {
+      const error: any = new Error('Self-referencing TypedArray error');
+      error.typedArray = new Uint8Array([1, 2, 3]);
+      (error.typedArray as any).self = error.typedArray;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(preventExtensionsProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(preventExtensionsProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing TypedArray error');
     });
 
-    it('should handle user object with Proxy that has getOwnPropertyNames trap', async () => {
-      const getOwnPropertyNamesProxyUser = new Proxy({ ...mockUser }, {
-        getOwnPropertyNames() {
-          return ['email', 'password'];
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing DataView', async () => {
+      const error: any = new Error('Self-referencing DataView error');
+      error.dataView = new DataView(new ArrayBuffer(8));
+      (error.dataView as any).self = error.dataView;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(getOwnPropertyNamesProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(getOwnPropertyNamesProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing DataView error');
     });
 
-    it('should handle user object with Proxy that has getOwnPropertySymbols trap', async () => {
-      const getOwnPropertySymbolsProxyUser = new Proxy({ ...mockUser }, {
-        getOwnPropertySymbols() {
-          return [];
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing SharedArrayBuffer', async () => {
+      const error: any = new Error('Self-referencing SharedArrayBuffer error');
+      error.sharedBuffer = new SharedArrayBuffer(8);
+      (error.sharedBuffer as any).self = error.sharedBuffer;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(getOwnPropertySymbolsProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(getOwnPropertySymbolsProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing SharedArrayBuffer error');
     });
 
-    it('should handle user object with Proxy that has enumerate trap', async () => {
-      const enumerateProxyUser = new Proxy({ ...mockUser }, {
-        enumerate() {
-          return ['email', 'password'];
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing BigInt64Array', async () => {
+      const error: any = new Error('Self-referencing BigInt64Array error');
+      error.bigIntArray = new BigInt64Array([1n, 2n, 3n]);
+      (error.bigIntArray as any).self = error.bigIntArray;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(enumerateProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(enumerateProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing BigInt64Array error');
     });
 
-    it('should handle user object with Proxy that has apply trap', async () => {
-      const applyProxyUser = new Proxy({ ...mockUser }, {
-        apply() {
-          return mockLoginResponse;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing BigUint64Array', async () => {
+      const error: any = new Error('Self-referencing BigUint64Array error');
+      error.bigUintArray = new BigUint64Array([1n, 2n, 3n]);
+      (error.bigUintArray as any).self = error.bigUintArray;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(applyProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(applyProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing BigUint64Array error');
     });
 
-    it('should handle user object with Proxy that has construct trap', async () => {
-      const constructProxyUser = new Proxy({ ...mockUser }, {
-        construct() {
-          return mockLoginResponse;
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Float32Array', async () => {
+      const error: any = new Error('Self-referencing Float32Array error');
+      error.floatArray = new Float32Array([1.5, 2.5, 3.5]);
+      (error.floatArray as any).self = error.floatArray;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(constructProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(constructProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Float32Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning Promise', async () => {
-      const promiseProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return Promise.resolve(target[prop]);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Float64Array', async () => {
+      const error: any = new Error('Self-referencing Float64Array error');
+      error.float64Array = new Float64Array([1.5, 2.5, 3.5]);
+      (error.float64Array as any).self = error.float64Array;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(promiseProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(promiseProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Float64Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning async function', async () => {
-      const asyncProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return async () => target[prop];
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Int8Array', async () => {
+      const error: any = new Error('Self-referencing Int8Array error');
+      error.int8Array = new Int8Array([1, 2, 3]);
+      (error.int8Array as any).self = error.int8Array;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(asyncProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(asyncProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Int8Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning generator', async () => {
-      const generatorProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return function* () { yield target[prop]; };
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Int16Array', async () => {
+      const error: any = new Error('Self-referencing Int16Array error');
+      error.int16Array = new Int16Array([1, 2, 3]);
+      (error.int16Array as any).self = error.int16Array;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(generatorProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(generatorProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Int16Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning iterator', async () => {
-      const iteratorProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return {
-            [Symbol.iterator]: function* () { yield target[prop]; }
-          };
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Int32Array', async () => {
+      const error: any = new Error('Self-referencing Int32Array error');
+      error.int32Array = new Int32Array([1, 2, 3]);
+      (error.int32Array as any).self = error.int32Array;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(iteratorProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(iteratorProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Int32Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning async iterator', async () => {
-      const asyncIteratorProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return {
-            [Symbol.asyncIterator]: async function* () { yield target[prop]; }
-          };
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Uint8Array', async () => {
+      const error: any = new Error('Self-referencing Uint8Array error');
+      error.uint8Array = new Uint8Array([1, 2, 3]);
+      (error.uint8Array as any).self = error.uint8Array;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(asyncIteratorProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(asyncIteratorProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Uint8Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning thenable', async () => {
-      const thenableProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return {
-            then(resolve) { resolve(target[prop]); }
-          };
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Uint8ClampedArray', async () => {
+      const error: any = new Error('Self-referencing Uint8ClampedArray error');
+      error.uint8ClampedArray = new Uint8ClampedArray([1, 2, 3]);
+      (error.uint8ClampedArray as any).self = error.uint8ClampedArray;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(thenableProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(thenableProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Uint8ClampedArray error');
     });
 
-    it('should handle user object with Proxy that has get trap returning class', async () => {
-      const classProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return class { value = target[prop]; };
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Uint16Array', async () => {
+      const error: any = new Error('Self-referencing Uint16Array error');
+      error.uint16Array = new Uint16Array([1, 2, 3]);
+      (error.uint16Array as any).self = error.uint16Array;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(classProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(classProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Uint16Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning Map', async () => {
-      const mapProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new Map([[prop, target[prop]]]);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Uint32Array', async () => {
+      const error: any = new Error('Self-referencing Uint32Array error');
+      error.uint32Array = new Uint32Array([1, 2, 3]);
+      (error.uint32Array as any).self = error.uint32Array;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(mapProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(mapProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Uint32Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning Set', async () => {
-      const setProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new Set([target[prop]]);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Array', async () => {
+      const error: any = new Error('Self-referencing Array error');
+      error.array = [1, 2, 3];
+      error.array.push(error.array);
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(setProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(setProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Array error');
     });
 
-    it('should handle user object with Proxy that has get trap returning WeakMap', async () => {
-      const weakMapProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new WeakMap([[{}, target[prop]]]);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Object', async () => {
+      const error: any = new Error('Self-referencing Object error');
+      error.obj = {};
+      error.obj.self = error.obj;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(weakMapProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(weakMapProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Object error');
     });
 
-    it('should handle user object with Proxy that has get trap returning WeakSet', async () => {
-      const weakSetProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new WeakSet([target[prop]]);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Function', async () => {
+      const error: any = new Error('Self-referencing Function error');
+      error.fn = () => error.fn;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(weakSetProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(weakSetProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Function error');
     });
 
-    it('should handle user object with Proxy that has get trap returning ArrayBuffer', async () => {
-      const arrayBufferProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new ArrayBuffer(8);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Symbol', async () => {
+      const error: any = new Error('Self-referencing Symbol error');
+      error.symbol = Symbol('test');
+      (error.symbol as any).self = error.symbol;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(arrayBufferProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(arrayBufferProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Symbol error');
     });
 
-    it('should handle user object with Proxy that has get trap returning DataView', async () => {
-      const dataViewProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new DataView(new ArrayBuffer(8));
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing BigInt', async () => {
+      const error: any = new Error('Self-referencing BigInt error');
+      error.bigInt = 123n;
+      (error.bigInt as any).self = error.bigInt;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(dataViewProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(dataViewProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing BigInt error');
     });
 
-    it('should handle user object with Proxy that has get trap returning TypedArray', async () => {
-      const typedArrayProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new Uint8Array(8);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Number', async () => {
+      const error: any = new Error('Self-referencing Number error');
+      error.number = 123;
+      (error.number as any).self = error.number;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(typedArrayProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(typedArrayProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Number error');
     });
 
-    it('should handle user object with Proxy that has get trap returning RegExp', async () => {
-      const regexProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new RegExp(target[prop]);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing String', async () => {
+      const error: any = new Error('Self-referencing String error');
+      error.string = 'test';
+      (error.string as any).self = error.string;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(regexProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(regexProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing String error');
     });
 
-    it('should handle user object with Proxy that has get trap returning Date', async () => {
-      const dateProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new Date();
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+    it('should handle authService throwing an error with self-referencing Boolean', async () => {
+      const error: any = new Error('Self-referencing Boolean error');
+      error.boolean = true;
+      (error.boolean as any).self = error.boolean;
+      mockAuthService.login.mockRejectedValue(error);
 
-      const result = await controller.login(dateProxyUser);
-
-      expect(authService.login).toHaveBeenCalledWith(dateProxyUser);
-      expect(result).toEqual(mockLoginResponse);
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Boolean error');
     });
 
-    it('should handle user object with Proxy that has get trap returning Error', async () => {
-      const errorProxyUser = new Proxy({ ...mockUser }, {
-        get(target, prop) {
-          return new Error(target[prop]);
-        },
-      });
-      mockAuthService.login.mockResolvedValue(mock
+    it('should handle authService throwing an error with self-referencing Null', async () => {
+      const error: any = new Error('Self-referencing Null error');
+      error.nullValue = null;
+      (error.nullValue as any).self = error.nullValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Null error');
+    });
+
+    it('should handle authService throwing an error with self-referencing Undefined', async () => {
+      const error: any = new Error('Self-referencing Undefined error');
+      error.undefinedValue = undefined;
+      (error.undefinedValue as any).self = error.undefinedValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Undefined error');
+    });
+
+    it('should handle authService throwing an error with self-referencing NaN', async () => {
+      const error: any = new Error('Self-referencing NaN error');
+      error.nanValue = NaN;
+      (error.nanValue as any).self = error.nanValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing NaN error');
+    });
+
+    it('should handle authService throwing an error with self-referencing Infinity', async () => {
+      const error: any = new Error('Self-referencing Infinity error');
+      error.infinityValue = Infinity;
+      (error.infinityValue as any).self = error.infinityValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing Infinity error');
+    });
+
+    it('should handle authService throwing an error with self-referencing -Infinity', async () => {
+      const error: any = new Error('Self-referencing -Infinity error');
+      error.negativeInfinityValue = -Infinity;
+      (error.negativeInfinityValue as any).self = error.negativeInfinityValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing -Infinity error');
+    });
+
+    it('should handle authService throwing an error with self-referencing 0', async () => {
+      const error: any = new Error('Self-referencing 0 error');
+      error.zeroValue = 0;
+      (error.zeroValue as any).self = error.zeroValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing 0 error');
+    });
+
+    it('should handle authService throwing an error with self-referencing empty string', async () => {
+      const error: any = new Error('Self-referencing empty string error');
+      error.emptyString = '';
+      (error.emptyString as any).self = error.emptyString;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing empty string error');
+    });
+
+    it('should handle authService throwing an error with self-referencing false', async () => {
+      const error: any = new Error('Self-referencing false error');
+      error.falseValue = false;
+      (error.falseValue as any).self = error.falseValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing false error');
+    });
+
+    it('should handle authService throwing an error with self-referencing true', async () => {
+      const error: any = new Error('Self-referencing true error');
+      error.trueValue = true;
+      (error.trueValue as any).self = error.trueValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing true error');
+    });
+
+    it('should handle authService throwing an error with self-referencing 1', async () => {
+      const error: any = new Error('Self-referencing 1 error');
+      error.oneValue = 1;
+      (error.oneValue as any).self = error.oneValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing 1 error');
+    });
+
+    it('should handle authService throwing an error with self-referencing -1', async () => {
+      const error: any = new Error('Self-referencing -1 error');
+      error.negativeOneValue = -1;
+      (error.negativeOneValue as any).self = error.negativeOneValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing -1 error');
+    });
+
+    it('should handle authService throwing an error with self-referencing 0.5', async () => {
+      const error: any = new Error('Self-referencing 0.5 error');
+      error.halfValue = 0.5;
+      (error.halfValue as any).self = error.halfValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing 0.5 error');
+    });
+
+    it('should handle authService throwing an error with self-referencing -0.5', async () => {
+      const error: any = new Error('Self-referencing -0.5 error');
+      error.negativeHalfValue = -0.5;
+      (error.negativeHalfValue as any).self = error.negativeHalfValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing -0.5 error');
+    });
+
+    it('should handle authService throwing an error with self-referencing 100', async () => {
+      const error: any = new Error('Self-referencing 100 error');
+      error.hundredValue = 100;
+      (error.hundredValue as any).self = error.hundredValue;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Self-referencing 100 error');
+    });
+
+    it('should handle authService throwing an error with self-referencing -100', async () => {
+      const error: any = new Error('Self-referencing -100 error');
+      error.negativeHundredValue = -100;
+      (error.negativeHundredValue as any).self = error.negativeHundredValue;
+      mockAuthService.login.mockRejected

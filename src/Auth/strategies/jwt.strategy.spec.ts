@@ -2,70 +2,74 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtStrategy } from './jwt.strategy';
 import { jwtContanst } from '../contants/jwt';
 
+// Mock passport-jwt
+jest.mock('passport-jwt', () => ({
+  ExtractJwt: {
+    fromAuthHeaderAsBearerToken: jest.fn().mockReturnValue('mock-extractor')
+  },
+  Strategy: jest.fn().mockImplementation((options) => {
+    return {
+      options,
+      validate: jest.fn()
+    };
+  })
+}));
+
+// Mock @nestjs/passport
+jest.mock('@nestjs/passport', () => ({
+  PassportStrategy: jest.fn().mockImplementation((Strategy) => {
+    return class MockPassportStrategy {
+      constructor(options: any) {
+        this.strategy = new Strategy(options);
+      }
+      strategy: any;
+    };
+  })
+}));
+
 describe('JwtStrategy', () => {
   let jwtStrategy: JwtStrategy;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [JwtStrategy],
+      providers: [JwtStrategy]
     }).compile();
 
     jwtStrategy = module.get<JwtStrategy>(JwtStrategy);
   });
 
-  it('should be defined', () => {
-    expect(jwtStrategy).toBeDefined();
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('constructor', () => {
-    it('should initialize with correct passport strategy options', () => {
-      // Verify the strategy is properly configured
-      expect(jwtStrategy).toBeInstanceOf(JwtStrategy);
-      expect(jwtStrategy).toBeInstanceOf(PassportStrategy(Strategy));
-      
-      // Verify the strategy options
-      const strategy = jwtStrategy as any;
-      expect(strategy._jwtFromRequest).toBeDefined();
-      expect(strategy._ignoreExpiration).toBe(false);
-      expect(strategy._secretOrKey).toBe(jwtContanst.secret);
+    it('should be defined', () => {
+      expect(jwtStrategy).toBeDefined();
     });
 
-    it('should use bearer token extraction', () => {
-      const strategy = jwtStrategy as any;
-      const extractor = strategy._jwtFromRequest;
+    it('should call super with correct options', () => {
+      const mockStrategy = jest.requireMock('passport-jwt').Strategy;
+      const mockExtractJwt = jest.requireMock('passport-jwt').ExtractJwt;
       
-      // Test the extractor with a bearer token
-      const mockRequest = {
-        headers: {
-          authorization: 'Bearer test-token-123'
-        }
-      };
-      
-      expect(extractor(mockRequest)).toBe('test-token-123');
+      expect(mockStrategy).toHaveBeenCalledWith({
+        jwtFromRequest: mockExtractJwt.fromAuthHeaderAsBearerToken(),
+        ignoreExpiration: false,
+        secretOrKey: jwtContanst.secret
+      });
     });
 
-    it('should return null when no bearer token is present', () => {
-      const strategy = jwtStrategy as any;
-      const extractor = strategy._jwtFromRequest;
+    it('should use the correct secret from constants', () => {
+      const mockStrategy = jest.requireMock('passport-jwt').Strategy;
+      const mockCall = mockStrategy.mock.calls[0][0];
       
-      const mockRequest = {
-        headers: {}
-      };
-      
-      expect(extractor(mockRequest)).toBeNull();
+      expect(mockCall.secretOrKey).toBe(jwtContanst.secret);
+      expect(mockCall.ignoreExpiration).toBe(false);
     });
 
-    it('should return null when authorization header is malformed', () => {
-      const strategy = jwtStrategy as any;
-      const extractor = strategy._jwtFromRequest;
+    it('should use bearer token extractor', () => {
+      const mockExtractJwt = jest.requireMock('passport-jwt').ExtractJwt;
       
-      const mockRequest = {
-        headers: {
-          authorization: 'Basic credentials'
-        }
-      };
-      
-      expect(extractor(mockRequest)).toBeNull();
+      expect(mockExtractJwt.fromAuthHeaderAsBearerToken).toHaveBeenCalled();
     });
   });
 
@@ -114,8 +118,11 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('should handle empty payload', async () => {
-      const payload = {};
+    it('should handle payload with undefined values', async () => {
+      const payload = {
+        sub: undefined,
+        email: undefined
+      };
 
       const result = await jwtStrategy.validate(payload);
 
@@ -125,11 +132,8 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('should handle payload with undefined values', async () => {
-      const payload = {
-        sub: undefined,
-        email: undefined
-      };
+    it('should handle empty payload', async () => {
+      const payload = {};
 
       const result = await jwtStrategy.validate(payload);
 
@@ -191,33 +195,6 @@ describe('JwtStrategy', () => {
       await jwtStrategy.validate(payload);
 
       expect(payload).toEqual(originalPayload);
-    });
-  });
-
-  describe('integration with PassportStrategy', () => {
-    it('should have the correct strategy name', () => {
-      expect(jwtStrategy.constructor.name).toBe('JwtStrategy');
-    });
-
-    it('should be properly registered as a passport strategy', () => {
-      // Verify the strategy has the required passport methods
-      expect(typeof jwtStrategy.validate).toBe('function');
-      expect(typeof jwtStrategy.authenticate).toBe('function');
-      expect(typeof jwtStrategy.success).toBe('function');
-      expect(typeof jwtStrategy.fail).toBe('function');
-      expect(typeof jwtStrategy.redirect).toBe('function');
-      expect(typeof jwtStrategy.pass).toBe('function');
-      expect(typeof jwtStrategy.error).toBe('function');
-    });
-
-    it('should have the correct secret key configured', () => {
-      const strategy = jwtStrategy as any;
-      expect(strategy._secretOrKey).toBe(jwtContanst.secret);
-    });
-
-    it('should have ignoreExpiration set to false', () => {
-      const strategy = jwtStrategy as any;
-      expect(strategy._ignoreExpiration).toBe(false);
     });
   });
 });

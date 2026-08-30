@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { UserRefactoring1606680965185 } from './1606680965185-UserRefactoring';
 import { QueryRunner, Table } from 'typeorm';
 
@@ -12,7 +12,7 @@ describe('UserRefactoring1606680965185', () => {
       dropTable: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<QueryRunner>;
 
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       providers: [
         UserRefactoring1606680965185,
         {
@@ -22,7 +22,7 @@ describe('UserRefactoring1606680965185', () => {
       ],
     }).compile();
 
-    migration = module.get<UserRefactoring1606680965185>(UserRefactoring1606680965185);
+    migration = moduleRef.get<UserRefactoring1606680965185>(UserRefactoring1606680965185);
   });
 
   afterEach(() => {
@@ -30,7 +30,7 @@ describe('UserRefactoring1606680965185', () => {
   });
 
   describe('up', () => {
-    it('should create the users table with correct schema', async () => {
+    it('should create users table with all required columns', async () => {
       await migration.up(mockQueryRunner);
 
       expect(mockQueryRunner.createTable).toHaveBeenCalledTimes(1);
@@ -86,7 +86,22 @@ describe('UserRefactoring1606680965185', () => {
       });
     });
 
-    it('should create table with ifNotExists flag set to true', async () => {
+    it('should create table with correct column order', async () => {
+      await migration.up(mockQueryRunner);
+
+      const tableArg = mockQueryRunner.createTable.mock.calls[0][0] as Table;
+      const columnNames = tableArg.columns.map(col => col.name);
+      expect(columnNames).toEqual([
+        'id',
+        'first_name',
+        'last_name',
+        'email',
+        'password',
+        'status'
+      ]);
+    });
+
+    it('should pass true as second argument to createTable', async () => {
       await migration.up(mockQueryRunner);
 
       expect(mockQueryRunner.createTable).toHaveBeenCalledWith(
@@ -95,7 +110,7 @@ describe('UserRefactoring1606680965185', () => {
       );
     });
 
-    it('should handle errors when creating table fails', async () => {
+    it('should handle createTable errors', async () => {
       const error = new Error('Database connection failed');
       mockQueryRunner.createTable.mockRejectedValueOnce(error);
 
@@ -103,37 +118,38 @@ describe('UserRefactoring1606680965185', () => {
       expect(mockQueryRunner.createTable).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle empty query runner gracefully', async () => {
-      const emptyQueryRunner = {} as QueryRunner;
-      await expect(migration.up(emptyQueryRunner)).rejects.toThrow();
+    it('should not call dropTable during up migration', async () => {
+      await migration.up(mockQueryRunner);
+
+      expect(mockQueryRunner.dropTable).not.toHaveBeenCalled();
     });
   });
 
   describe('down', () => {
-    it('should drop the users table', async () => {
+    it('should drop users table', async () => {
       await migration.down(mockQueryRunner);
 
       expect(mockQueryRunner.dropTable).toHaveBeenCalledTimes(1);
       expect(mockQueryRunner.dropTable).toHaveBeenCalledWith('users');
     });
 
-    it('should handle errors when dropping table fails', async () => {
+    it('should handle dropTable errors', async () => {
       const error = new Error('Table does not exist');
       mockQueryRunner.dropTable.mockRejectedValueOnce(error);
 
       await expect(migration.down(mockQueryRunner)).rejects.toThrow(error);
       expect(mockQueryRunner.dropTable).toHaveBeenCalledTimes(1);
-      expect(mockQueryRunner.dropTable).toHaveBeenCalledWith('users');
     });
 
-    it('should handle empty query runner gracefully', async () => {
-      const emptyQueryRunner = {} as QueryRunner;
-      await expect(migration.down(emptyQueryRunner)).rejects.toThrow();
+    it('should not call createTable during down migration', async () => {
+      await migration.down(mockQueryRunner);
+
+      expect(mockQueryRunner.createTable).not.toHaveBeenCalled();
     });
   });
 
   describe('migration integrity', () => {
-    it('should have the correct class name', () => {
+    it('should have correct class name', () => {
       expect(migration.constructor.name).toBe('UserRefactoring1606680965185');
     });
 
@@ -142,12 +158,14 @@ describe('UserRefactoring1606680965185', () => {
       expect(typeof migration.down).toBe('function');
     });
 
-    it('should return promises from up and down methods', () => {
-      const upResult = migration.up(mockQueryRunner);
-      const downResult = migration.down(mockQueryRunner);
+    it('should return Promise from up method', () => {
+      const result = migration.up(mockQueryRunner);
+      expect(result).toBeInstanceOf(Promise);
+    });
 
-      expect(upResult).toBeInstanceOf(Promise);
-      expect(downResult).toBeInstanceOf(Promise);
+    it('should return Promise from down method', () => {
+      const result = migration.down(mockQueryRunner);
+      expect(result).toBeInstanceOf(Promise);
     });
   });
 });

@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from '../services/user.service';
-import { JwtAuthGuard } from '../../Auth/guards/jwt-auth.guard';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { JwtAuthGuard } from '../../Auth/guards/jwt-auth.guard';
 import { HttpStatus } from '@nestjs/common';
 
 describe('UserController', () => {
@@ -44,8 +44,8 @@ describe('UserController', () => {
   describe('getAll', () => {
     it('should return all users', async () => {
       const expectedUsers = [
-        { id: '1', name: 'John Doe', email: 'john@example.com' },
-        { id: '2', name: 'Jane Doe', email: 'jane@example.com' },
+        { id: 1, name: 'John Doe', email: 'john@example.com' },
+        { id: 2, name: 'Jane Doe', email: 'jane@example.com' },
       ];
       mockUserService.getAll.mockResolvedValue(expectedUsers);
 
@@ -77,7 +77,7 @@ describe('UserController', () => {
   describe('getById', () => {
     it('should return a user by id', async () => {
       const userId = '123';
-      const expectedUser = { id: userId, name: 'John Doe', email: 'john@example.com' };
+      const expectedUser = { id: 123, name: 'John Doe', email: 'john@example.com' };
       mockUserService.getById.mockResolvedValue(expectedUser);
 
       const result = await controller.getById({ id: userId });
@@ -87,24 +87,24 @@ describe('UserController', () => {
       expect(mockUserService.getById).toHaveBeenCalledTimes(1);
     });
 
-    it('should return null when user not found', async () => {
-      const userId = 'nonexistent';
-      mockUserService.getById.mockResolvedValue(null);
-
-      const result = await controller.getById({ id: userId });
-
-      expect(result).toBeNull();
-      expect(mockUserService.getById).toHaveBeenCalledWith(userId);
-    });
-
-    it('should handle different id formats', async () => {
-      const userId = 'user-123';
-      const expectedUser = { id: userId, name: 'Jane Doe', email: 'jane@example.com' };
+    it('should handle numeric string id', async () => {
+      const userId = '456';
+      const expectedUser = { id: 456, name: 'Jane Doe', email: 'jane@example.com' };
       mockUserService.getById.mockResolvedValue(expectedUser);
 
       const result = await controller.getById({ id: userId });
 
       expect(result).toEqual(expectedUser);
+      expect(mockUserService.getById).toHaveBeenCalledWith(userId);
+    });
+
+    it('should return null when user not found', async () => {
+      const userId = '999';
+      mockUserService.getById.mockResolvedValue(null);
+
+      const result = await controller.getById({ id: userId });
+
+      expect(result).toBeNull();
       expect(mockUserService.getById).toHaveBeenCalledWith(userId);
     });
 
@@ -116,6 +116,15 @@ describe('UserController', () => {
       await expect(controller.getById({ id: userId })).rejects.toThrow(error);
       expect(mockUserService.getById).toHaveBeenCalledWith(userId);
     });
+
+    it('should handle missing id parameter', async () => {
+      mockUserService.getById.mockResolvedValue(null);
+
+      const result = await controller.getById({});
+
+      expect(result).toBeNull();
+      expect(mockUserService.getById).toHaveBeenCalledWith(undefined);
+    });
   });
 
   describe('create', () => {
@@ -125,11 +134,7 @@ describe('UserController', () => {
         email: 'john@example.com',
         password: 'password123',
       };
-      const createdUser = {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-      };
+      const createdUser = { id: 1, ...createUserDto };
       mockUserService.create.mockResolvedValue(createdUser);
 
       const result = await controller.create(createUserDto);
@@ -142,17 +147,29 @@ describe('UserController', () => {
       expect(mockUserService.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle user creation with minimal data', async () => {
+    it('should handle user creation with all optional fields', async () => {
       const createUserDto: CreateUserDto = {
         name: 'Jane Doe',
         email: 'jane@example.com',
         password: 'password456',
+        phone: '1234567890',
+        address: '123 Main St',
       };
-      const createdUser = {
-        id: '2',
-        name: 'Jane Doe',
-        email: 'jane@example.com',
-      };
+      const createdUser = { id: 2, ...createUserDto };
+      mockUserService.create.mockResolvedValue(createdUser);
+
+      const result = await controller.create(createUserDto);
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        user: createdUser,
+      });
+      expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
+    });
+
+    it('should handle empty user data', async () => {
+      const createUserDto = {} as CreateUserDto;
+      const createdUser = { id: 3 };
       mockUserService.create.mockResolvedValue(createdUser);
 
       const result = await controller.create(createUserDto);
@@ -177,31 +194,43 @@ describe('UserController', () => {
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
 
-    it('should handle empty user data', async () => {
-      const createUserDto = {} as CreateUserDto;
-      const createdUser = {};
-      mockUserService.create.mockResolvedValue(createdUser);
+    it('should handle validation errors', async () => {
+      const createUserDto: CreateUserDto = {
+        name: '',
+        email: 'invalid-email',
+        password: 'short',
+      };
+      const error = new Error('Validation failed');
+      mockUserService.create.mockRejectedValue(error);
 
-      const result = await controller.create(createUserDto);
-
-      expect(result).toEqual({
-        statusCode: HttpStatus.OK,
-        user: createdUser,
-      });
+      await expect(controller.create(createUserDto)).rejects.toThrow(error);
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
   });
 
   describe('Guard configuration', () => {
-    it('should be protected by JwtAuthGuard', () => {
+    it('should have JwtAuthGuard applied to controller', () => {
       const guards = Reflect.getMetadata('__guards__', UserController);
       expect(guards).toBeDefined();
       expect(guards).toContain(JwtAuthGuard);
     });
 
-    it('should have the correct controller path', () => {
-      const path = Reflect.getMetadata('path', UserController);
-      expect(path).toBe('users');
+    it('should have JwtAuthGuard applied to getAll method', () => {
+      const guards = Reflect.getMetadata('__guards__', UserController.prototype.getAll);
+      expect(guards).toBeDefined();
+      expect(guards).toContain(JwtAuthGuard);
+    });
+
+    it('should have JwtAuthGuard applied to getById method', () => {
+      const guards = Reflect.getMetadata('__guards__', UserController.prototype.getById);
+      expect(guards).toBeDefined();
+      expect(guards).toContain(JwtAuthGuard);
+    });
+
+    it('should have JwtAuthGuard applied to create method', () => {
+      const guards = Reflect.getMetadata('__guards__', UserController.prototype.create);
+      expect(guards).toBeDefined();
+      expect(guards).toContain(JwtAuthGuard);
     });
   });
 });

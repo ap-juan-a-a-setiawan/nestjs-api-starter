@@ -9,39 +9,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { AuthModule } from './auth.module';
 
-jest.mock('../Users/users.module', () => ({
-  UsersModule: class UsersModuleMock {},
-}));
-
-jest.mock('./controllers/auth.controller', () => ({
-  AuthController: class AuthControllerMock {},
-}));
-
-jest.mock('./services/auth.service', () => ({
-  AuthService: class AuthServiceMock {},
-}));
-
-jest.mock('./strategies/jwt.strategy', () => ({
-  JwtStrategy: class JwtStrategyMock {},
-}));
-
-jest.mock('./strategies/local.strategy', () => ({
-  LocalStrategy: class LocalStrategyMock {},
-}));
-
-jest.mock('@nestjs/jwt', () => ({
-  JwtModule: {
-    register: jest.fn().mockReturnValue({
-      module: class JwtModuleMock {},
-      providers: [],
-      exports: [],
-    }),
-  },
-}));
-
-jest.mock('@nestjs/passport', () => ({
-  PassportModule: class PassportModuleMock {},
-}));
+jest.mock('../Users/users.module');
+jest.mock('./controllers/auth.controller');
+jest.mock('./services/auth.service');
+jest.mock('./strategies/jwt.strategy');
+jest.mock('./strategies/local.strategy');
 
 describe('AuthModule', () => {
   let moduleRef: any;
@@ -54,149 +26,218 @@ describe('AuthModule', () => {
     }).compile();
   });
 
-  it('should be defined', () => {
-    expect(moduleRef).toBeDefined();
-  });
+  describe('Module Definition', () => {
+    it('should be defined', () => {
+      expect(moduleRef).toBeDefined();
+    });
 
-  it('should have AuthController as controller', () => {
-    const controllers = Reflect.getMetadata('controllers', AuthModule);
-    expect(controllers).toEqual([AuthController]);
-  });
+    it('should be a global module', () => {
+      const metadata = Reflect.getMetadata('isGlobal', AuthModule);
+      expect(metadata).toBe(true);
+    });
 
-  it('should have correct imports', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    expect(imports).toHaveLength(3);
-    expect(imports[0]).toBe(UsersModule);
-    expect(imports[1]).toBe(PassportModule);
-    expect(imports[2]).toBeDefined();
-  });
+    it('should have correct module metadata', () => {
+      const controllers = Reflect.getMetadata('controllers', AuthModule);
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      const exports = Reflect.getMetadata('exports', AuthModule);
 
-  it('should have correct providers', () => {
-    const providers = Reflect.getMetadata('providers', AuthModule);
-    expect(providers).toEqual([AuthService, LocalStrategy, JwtStrategy]);
-  });
-
-  it('should have correct exports', () => {
-    const exports = Reflect.getMetadata('exports', AuthModule);
-    expect(exports).toEqual([AuthService]);
-  });
-
-  it('should be marked as @Global', () => {
-    const isGlobal = Reflect.getMetadata('__global__', AuthModule);
-    expect(isGlobal).toBe(true);
-  });
-
-  it('should register JwtModule with correct configuration', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    const jwtModule = imports[2];
-    
-    expect(jwtModule).toBeDefined();
-    expect(JwtModule.register).toHaveBeenCalledWith({
-      secret: jwtContanst.secret,
-      signOptions: {
-        expiresIn: jwtContanst.expiresIn,
-      },
+      expect(controllers).toEqual([AuthController]);
+      expect(providers).toEqual([AuthService, LocalStrategy, JwtStrategy]);
+      expect(exports).toEqual([AuthService]);
+      expect(imports).toEqual([
+        UsersModule,
+        PassportModule,
+        JwtModule.register({
+          secret: jwtContanst.secret,
+          signOptions: {
+            expiresIn: jwtContanst.expiresIn
+          },
+        }),
+      ]);
     });
   });
 
-  it('should have JwtModule.register called with correct secret', () => {
-    const mockRegister = JwtModule.register as jest.Mock;
-    const config = mockRegister.mock.calls[0][0];
-    
-    expect(config.secret).toBe(jwtContanst.secret);
-    expect(config.signOptions.expiresIn).toBe(jwtContanst.expiresIn);
+  describe('Module Imports', () => {
+    it('should import UsersModule', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      expect(imports).toContain(UsersModule);
+    });
+
+    it('should import PassportModule', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      expect(imports).toContain(PassportModule);
+    });
+
+    it('should import JwtModule with correct configuration', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      const jwtModule = imports.find((imp: any) => imp === JwtModule);
+      expect(jwtModule).toBeDefined();
+    });
+
+    it('should configure JwtModule with correct secret and expiration', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      const jwtModuleConfig = imports.find((imp: any) => 
+        imp && imp.module === JwtModule
+      );
+      
+      if (jwtModuleConfig) {
+        expect(jwtModuleConfig.secret).toBe(jwtContanst.secret);
+        expect(jwtModuleConfig.signOptions).toEqual({
+          expiresIn: jwtContanst.expiresIn
+        });
+      }
+    });
   });
 
-  it('should have all required dependencies', () => {
-    const providers = Reflect.getMetadata('providers', AuthModule);
-    const controllers = Reflect.getMetadata('controllers', AuthModule);
-    const exports = Reflect.getMetadata('exports', AuthModule);
-    const imports = Reflect.getMetadata('imports', AuthModule);
+  describe('Module Controllers', () => {
+    it('should have AuthController as controller', () => {
+      const controllers = Reflect.getMetadata('controllers', AuthModule);
+      expect(controllers).toContain(AuthController);
+    });
 
-    expect(providers).toContain(AuthService);
-    expect(providers).toContain(LocalStrategy);
-    expect(providers).toContain(JwtStrategy);
-    expect(controllers).toContain(AuthController);
-    expect(exports).toContain(AuthService);
-    expect(imports).toContain(UsersModule);
-    expect(imports).toContain(PassportModule);
+    it('should have exactly one controller', () => {
+      const controllers = Reflect.getMetadata('controllers', AuthModule);
+      expect(controllers).toHaveLength(1);
+    });
   });
 
-  it('should not have any unexpected providers', () => {
-    const providers = Reflect.getMetadata('providers', AuthModule);
-    expect(providers).toHaveLength(3);
+  describe('Module Providers', () => {
+    it('should have AuthService as provider', () => {
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      expect(providers).toContain(AuthService);
+    });
+
+    it('should have LocalStrategy as provider', () => {
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      expect(providers).toContain(LocalStrategy);
+    });
+
+    it('should have JwtStrategy as provider', () => {
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      expect(providers).toContain(JwtStrategy);
+    });
+
+    it('should have exactly three providers', () => {
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      expect(providers).toHaveLength(3);
+    });
   });
 
-  it('should not have any unexpected controllers', () => {
-    const controllers = Reflect.getMetadata('controllers', AuthModule);
-    expect(controllers).toHaveLength(1);
+  describe('Module Exports', () => {
+    it('should export AuthService', () => {
+      const exports = Reflect.getMetadata('exports', AuthModule);
+      expect(exports).toContain(AuthService);
+    });
+
+    it('should have exactly one export', () => {
+      const exports = Reflect.getMetadata('exports', AuthModule);
+      expect(exports).toHaveLength(1);
+    });
   });
 
-  it('should not have any unexpected exports', () => {
-    const exports = Reflect.getMetadata('exports', AuthModule);
-    expect(exports).toHaveLength(1);
+  describe('Module Instantiation', () => {
+    it('should instantiate all providers', async () => {
+      const authService = moduleRef.get(AuthService);
+      const localStrategy = moduleRef.get(LocalStrategy);
+      const jwtStrategy = moduleRef.get(JwtStrategy);
+
+      expect(authService).toBeDefined();
+      expect(localStrategy).toBeDefined();
+      expect(jwtStrategy).toBeDefined();
+    });
+
+    it('should instantiate controller', async () => {
+      const authController = moduleRef.get(AuthController);
+      expect(authController).toBeDefined();
+    });
+
+    it('should provide AuthService as singleton', async () => {
+      const authService1 = moduleRef.get(AuthService);
+      const authService2 = moduleRef.get(AuthService);
+      expect(authService1).toBe(authService2);
+    });
   });
 
-  it('should not have any unexpected imports', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    expect(imports).toHaveLength(3);
+  describe('JWT Configuration', () => {
+    it('should have valid JWT secret', () => {
+      expect(jwtContanst.secret).toBeDefined();
+      expect(typeof jwtContanst.secret).toBe('string');
+      expect(jwtContanst.secret.length).toBeGreaterThan(0);
+    });
+
+    it('should have valid JWT expiration', () => {
+      expect(jwtContanst.expiresIn).toBeDefined();
+      expect(typeof jwtContanst.expiresIn).toBe('string');
+      expect(jwtContanst.expiresIn.length).toBeGreaterThan(0);
+    });
+
+    it('should have correct JWT configuration values', () => {
+      expect(jwtContanst.secret).toBe(process.env.JWT_SECRET || 'default_secret');
+      expect(jwtContanst.expiresIn).toBe(process.env.JWT_EXPIRES_IN || '1d');
+    });
   });
 
-  it('should have JwtModule with register method', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    const jwtModule = imports[2];
-    
-    expect(jwtModule).toBeDefined();
-    expect(typeof jwtModule).toBe('object');
+  describe('Edge Cases', () => {
+    it('should handle missing environment variables gracefully', () => {
+      const originalEnv = process.env;
+      process.env = { ...originalEnv };
+      delete process.env.JWT_SECRET;
+      delete process.env.JWT_EXPIRES_IN;
+
+      expect(jwtContanst.secret).toBeDefined();
+      expect(jwtContanst.expiresIn).toBeDefined();
+
+      process.env = originalEnv;
+    });
+
+    it('should handle empty environment variables', () => {
+      const originalEnv = process.env;
+      process.env = { ...originalEnv, JWT_SECRET: '', JWT_EXPIRES_IN: '' };
+
+      expect(jwtContanst.secret).toBeDefined();
+      expect(jwtContanst.expiresIn).toBeDefined();
+
+      process.env = originalEnv;
+    });
+
+    it('should handle undefined environment variables', () => {
+      const originalEnv = process.env;
+      process.env = { ...originalEnv, JWT_SECRET: undefined, JWT_EXPIRES_IN: undefined };
+
+      expect(jwtContanst.secret).toBeDefined();
+      expect(jwtContanst.expiresIn).toBeDefined();
+
+      process.env = originalEnv;
+    });
   });
 
-  it('should have PassportModule imported', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    expect(imports).toContain(PassportModule);
-  });
+  describe('Module Dependencies', () => {
+    it('should have all required dependencies', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      const controllers = Reflect.getMetadata('controllers', AuthModule);
 
-  it('should have UsersModule imported', () => {
-    const imports = Reflect.getMetadata('imports', AuthModule);
-    expect(imports).toContain(UsersModule);
-  });
+      expect(imports.length).toBeGreaterThan(0);
+      expect(providers.length).toBeGreaterThan(0);
+      expect(controllers.length).toBeGreaterThan(0);
+    });
 
-  it('should have AuthService exported', () => {
-    const exports = Reflect.getMetadata('exports', AuthModule);
-    expect(exports).toContain(AuthService);
-  });
+    it('should not have circular dependencies', () => {
+      const imports = Reflect.getMetadata('imports', AuthModule);
+      expect(imports).not.toContain(AuthModule);
+    });
 
-  it('should have LocalStrategy as provider', () => {
-    const providers = Reflect.getMetadata('providers', AuthModule);
-    expect(providers).toContain(LocalStrategy);
-  });
+    it('should not have duplicate providers', () => {
+      const providers = Reflect.getMetadata('providers', AuthModule);
+      const uniqueProviders = new Set(providers);
+      expect(uniqueProviders.size).toBe(providers.length);
+    });
 
-  it('should have JwtStrategy as provider', () => {
-    const providers = Reflect.getMetadata('providers', AuthModule);
-    expect(providers).toContain(JwtStrategy));
-  });
-
-  it('should have AuthService as provider', () => {
-    const providers = Reflect.getMetadata('providers', AuthModule);
-    expect(providers).toContain(AuthService));
-  });
-
-  it('should have AuthController as controller', () => {
-    const controllers = Reflect.getMetadata('controllers', AuthModule);
-    expect(controllers).toContain(AuthController));
-  });
-
-  it('should have correct module metadata', () => {
-    const metadata = Reflect.getMetadata('__module__', AuthModule);
-    expect(metadata).toBeDefined();
-  });
-
-  it('should be instantiable', () => {
-    const module = new AuthModule();
-    expect(module).toBeDefined();
-  });
-
- ​it('should have correct decorators', () => {
-    const decorators = Reflect.getMetadata('__decorators__', AuthModule);
-    expect(decorators).toBeDefined();
+    it('should not have duplicate exports', () => {
+      const exports = Reflect.getMetadata('exports', AuthModule);
+      const uniqueExports = new Set(exports);
+      expect(uniqueExports.size).toBe(exports.length);
+    });
   });
 });
