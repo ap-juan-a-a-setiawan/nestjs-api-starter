@@ -4,17 +4,28 @@ import { EntityBase } from './entity.base';
 describe('EntityBase', () => {
   let entityBase: EntityBase;
 
+  // Concrete implementation for testing the abstract class
+  class TestEntity extends EntityBase {
+    testMethod(): string {
+      return 'test';
+    }
+  }
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: EntityBase,
-          useValue: Object.create(EntityBase.prototype),
+          useClass: TestEntity,
         },
       ],
     }).compile();
 
     entityBase = module.get<EntityBase>(EntityBase);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('EntityBase abstract class', () => {
@@ -26,11 +37,16 @@ describe('EntityBase', () => {
       expect(entityBase).toBeInstanceOf(EntityBase);
     });
 
-    it('should have the correct prototype', () => {
-      expect(Object.getPrototypeOf(entityBase)).toBe(EntityBase.prototype);
+    it('should be an instance of TestEntity', () => {
+      expect(entityBase).toBeInstanceOf(TestEntity);
     });
 
-    it('should be an abstract class and cannot be instantiated directly', () => {
+    it('should have the correct prototype chain', () => {
+      expect(Object.getPrototypeOf(entityBase)).toBe(TestEntity.prototype);
+      expect(Object.getPrototypeOf(Object.getPrototypeOf(entityBase))).toBe(EntityBase.prototype);
+    });
+
+    it('should not be directly instantiable', () => {
       expect(() => {
         // @ts-ignore - Testing abstract class instantiation
         new EntityBase();
@@ -42,7 +58,13 @@ describe('EntityBase', () => {
     });
 
     it('should have no own property descriptors', () => {
-      expect(Object.getOwnPropertyDescriptors(entityBase)).toEqual({});
+      expect(Object.getOwnPropertyNames(entityBase)).toHaveLength(0);
+    });
+
+    it('should have no enumerable properties', () => {
+      expect(Object.getOwnPropertyNames(entityBase).filter(key => 
+        Object.getOwnPropertyDescriptor(entityBase, key)?.enumerable
+      )).toHaveLength(0);
     });
 
     it('should have no methods defined on the prototype', () => {
@@ -50,242 +72,709 @@ describe('EntityBase', () => {
       expect(prototypeMethods).toEqual(['constructor']);
     });
 
-    it('should not have any static methods', () => {
-      const staticMethods = Object.getOwnPropertyNames(EntityBase);
-      expect(staticMethods).toEqual(['length', 'name', 'prototype']);
-    });
-
-    it('should be extensible', () => {
-      expect(Object.isExtensible(entityBase)).toBe(true);
-    });
-
-    it('should not be frozen', () => {
-      expect(Object.isFrozen(entityBase)).toBe(false);
-    });
-
-    it('should not be sealed', () => {
-      expect(Object.isSealed(entityBase)).toBe(false);
+    it('should have only the constructor on the prototype', () => {
+      const prototypeMethods = Object.getOwnPropertyNames(EntityBase.prototype);
+      expect(prototypeMethods).toContain('constructor');
+      expect(prototypeMethods.length).toBe(1);
     });
 
     it('should have a constructor that is the EntityBase class', () => {
-      expect(entityBase.constructor).toBe(EntityBase);
-    });
-
-    it('should have the correct name property', () => {
-      expect(EntityBase.name).toBe('EntityBase');
-    });
-
-    it('should have a prototype that is an object', () => {
-      expect(typeof EntityBase.prototype).toBe('object');
-    });
-
-    it('should have a prototype with a constructor property', () => {
       expect(EntityBase.prototype.constructor).toBe(EntityBase);
     });
 
-    it('should support inheritance', () => {
-      class TestEntity extends EntityBase {
-        testMethod(): string {
-          return 'test';
-        }
-      }
+    it('should have a name property set to EntityBase', () => {
+      expect(EntityBase.name).toBe('EntityBase');
+    });
 
+    it('should be an abstract class', () => {
+      expect(EntityBase.toString()).toContain('class EntityBase');
+    });
+
+    it('should not have any static methods', () => {
+      const staticMethods = Object.getOwnPropertyNames(EntityBase).filter(
+        prop => typeof (EntityBase as any)[prop] === 'function' && prop !== 'length' && prop !== 'name' && prop !== 'prototype'
+      );
+      expect(staticMethods).toHaveLength(0);
+    });
+
+    it('should not have any static properties', () => {
+      const staticProps = Object.getOwnPropertyNames(EntityBase).filter(
+        prop => typeof (EntityBase as any)[prop] !== 'function' && prop !== 'length' && prop !== 'name' && prop !== 'prototype'
+      );
+      expect(staticProps).toHaveLength(0);
+    });
+
+    it('should not have any getters or setters on the prototype', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const accessors = Object.values(descriptors).filter(
+        desc => desc.get || desc.set
+      );
+      expect(accessors).toHaveLength(0);
+    });
+
+    it('should not have any data properties on the prototype', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const dataProps = Object.values(descriptors).filter(
+        desc => 'value' in desc
+      );
+      expect(dataProps).toHaveLength(0);
+    });
+
+    it('should not have any symbol properties', () => {
+      expect(Object.getOwnPropertySymbols(EntityBase.prototype)).toHaveLength(0);
+      expect(Object.getOwnPropertySymbols(EntityBase)).toHaveLength(0);
+    });
+
+    it('should not be extensible with new properties', () => {
+      const originalExtensible = Object.isExtensible(entityBase);
+      expect(originalExtensible).toBe(true);
+      
+      // Test that we can add properties to the instance
+      (entityBase as any).newProp = 'test';
+      expect((entityBase as any).newProp).toBe('test');
+    });
+
+    it('should support inheritance', () => {
       const testEntity = new TestEntity();
+      expect(testEntity.testMethod()).toBe('test');
       expect(testEntity).toBeInstanceOf(EntityBase);
       expect(testEntity).toBeInstanceOf(TestEntity);
-      expect(testEntity.testMethod()).toBe('test');
     });
 
-    it('should allow subclasses to add properties', () => {
-      class TestEntity extends EntityBase {
-        id: number;
-        constructor(id: number) {
-          super();
-          this.id = id;
+    it('should allow subclass to override methods', () => {
+      class OverrideEntity extends EntityBase {
+        testMethod(): string {
+          return 'overridden';
         }
-      }
+      };
 
-      const testEntity = new TestEntity(1);
-      expect(testEntity.id).toBe(1);
-      expect(testEntity).toBeInstanceOf(EntityBase);
+      const overrideEntity = new OverrideEntity();
+      expect(overrideEntity.testMethod()).toBe('overridden');
     });
 
-    it('should allow subclasses to override methods', () => {
-      class BaseEntity extends EntityBase {
-        getType(): string {
-          return 'base';
-        }
-      }
+    it('should support multiple levels of inheritance', () => {
+      class Level1Entity extends EntityBase {}
+      class Level2Entity extends Level1Entity {}
+      class Level3Entity extends Level2Entity {}
 
-      class ChildEntity extends BaseEntity {
-        getType(): string {
-          return 'child';
-        }
-      }
-
-      const childEntity = new ChildEntity();
-      expect(childEntity.getType()).toBe('child');
+      const level3Entity = new Level3Entity();
+      expect(level3Entity).toBeInstanceOf(EntityBase);
+      expect(level3Entity).toBeInstanceOf(Level1Entity);
+      expect(level3Entity).toBeInstanceOf(Level2Entity);
+      expect(level3Entity).toBeInstanceOf(Level3Entity);
     });
 
-    it('should allow multiple levels of inheritance', () => {
-      class Level1 extends EntityBase {}
-      class Level2 extends Level1 {}
-      class Level3 extends Level2 {}
+    it('should have correct prototype chain for multiple inheritance levels', () => {
+      class Level1Entity extends EntityBase {}
+      class Level2Entity extends Level1Entity {}
 
-      const level3 = new Level3();
-      expect(level3).toBeInstanceOf(EntityBase);
-      expect(level3).toBeInstanceOf(Level1);
-      expect(level3).toBeInstanceOf(Level2);
-      expect(level3).toBeInstanceOf(Level3);
+      const level2Entity = new Level2Entity();
+      expect(Object.getPrototypeOf(level2Entity)).toBe(Level2Entity.prototype);
+      expect(Object.getPrototypeOf(Object.getPrototypeOf(level2Entity))).toBe(Level1Entity.prototype);
+      expect(Object.getPrototypeOf(Object.getPrototypeOf(Object.getPrototypeOf(level2Entity)))).toBe(EntityBase.prototype);
     });
 
-    it('should have a prototype chain that includes Object.prototype', () => {
-      expect(entityBase instanceof Object).toBe(true);
-      expect(Object.getPrototypeOf(Object.getPrototypeOf(entityBase))).toBe(Object.prototype);
+    it('should not have any circular dependencies', () => {
+      expect(EntityBase).toBeDefined();
+      expect(TestEntity).toBeDefined();
     });
 
-    it('should have a toString method inherited from Object', () => {
-      expect(typeof entityBase.toString).toBe('function');
-      expect(entityBase.toString()).toBe('[object Object]');
+    it('should be usable as a type', () => {
+      const entity: EntityBase = new TestEntity();
+      expect(entity).toBeDefined();
+      expect(entity).toBeInstanceOf(EntityBase);
     });
 
-    it('should have a valueOf method inherited from Object', () => {
-      expect(typeof entityBase.valueOf).toBe('function');
-      expect(entityBase.valueOf()).toBe(entityBase);
+    it('should support type checking with instanceof', () => {
+      const testEntity = new TestEntity();
+      expect(testEntity instanceof EntityBase).toBe(true);
+      expect(testEntity instanceof TestEntity).toBe(true);
+      expect(testEntity instanceof Object).toBe(true);
     });
 
-    it('should have a hasOwnProperty method inherited from Object', () => {
-      expect(typeof entityBase.hasOwnProperty).toBe('function');
-      expect(entityBase.hasOwnProperty('test')).toBe(false);
+    it('should have correct constructor name', () => {
+      expect(EntityBase.name).toBe('EntityBase');
+      expect(TestEntity.name).toBe('TestEntity');
     });
 
-    it('should have an isPrototypeOf method inherited from Object', () => {
-      expect(typeof entityBase.isPrototypeOf).toBe('function');
-      expect(entityBase.isPrototypeOf({})).toBe(false);
+    it('should have correct prototype constructor', () => {
+      expect(EntityBase.prototype.constructor).toBe(EntityBase);
+      expect(TestEntity.prototype.constructor).toBe(TestEntity);
     });
 
-    it('should have a propertyIsEnumerable method inherited from Object', () => {
-      expect(typeof entityBase.propertyIsEnumerable).toBe('function');
-      expect(entityBase.propertyIsEnumerable('test')).toBe(false);
-    });
-
-    it('should have a toLocaleString method inherited from Object', () => {
-      expect(typeof entityBase.toLocaleString).toBe('function');
-      expect(entityBase.toLocaleString()).toBe('[object Object]');
-    });
-
-    it('should have a getOwnPropertyDescriptor method available', () => {
-      expect(typeof Object.getOwnPropertyDescriptor).toBe('function');
-      expect(Object.getOwnPropertyDescriptor(EntityBase.prototype, 'constructor')).toBeDefined();
-    });
-
-    it('should have a getPrototypeOf method available', () => {
-      expect(typeof Object.getPrototypeOf).toBe('function');
-      expect(Object.getPrototypeOf(entityBase)).toBe(EntityBase.prototype);
-    });
-
-    it('should have a setPrototypeOf method available', () => {
-      expect(typeof Object.setPrototypeOf).toBe('function');
-      const newProto = {};
-      Object.setPrototypeOf(entityBase, newProto);
-      expect(Object.getPrototypeOf(entityBase)).toBe(newProto);
-    });
-
-    it('should have a create method available', () => {
-      expect(typeof Object.create).toBe('function');
-      const created = Object.create(EntityBase.prototype);
-      expect(created).toBeInstanceOf(EntityBase);
-    });
-
-    it('should have an assign method available', () => {
-      expect(typeof Object.assign).toBe('function');
-      const target = {};
-      const source = { test: 'value' };
-      Object.assign(target, source);
-      expect(target).toEqual({ test: 'value' });
-    });
-
-    it('should have a defineProperty method available', () => {
-      expect(typeof Object.defineProperty).toBe('function');
-      const obj = {};
-      Object.defineProperty(obj, 'test', { value: 'value', enumerable: true });
-      expect(obj).toHaveProperty('test', 'value');
-    });
-
-    it('should have a defineProperties method available', () => {
-      expect(typeof Object.defineProperties).toBe('function');
-      const obj = {};
-      Object.defineProperties(obj, {
-        test1: { value: 'value1', enumerable: true },
-        test2: { value: 'value2', enumerable: true },
+    it('should not have any async methods', () => {
+      const prototypeMethods = Object.getOwnPropertyNames(EntityBase.prototype);
+      const asyncMethods = prototypeMethods.filter(method => {
+        const desc = Object.getOwnPropertyDescriptor(EntityBase.prototype, method);
+        return desc && typeof desc.value === 'function' && desc.value.constructor.name === 'AsyncFunction';
       });
-      expect(obj).toEqual({ test1: 'value1', test2: 'value2' });
+      expect(asyncMethods).toHaveLength(0);
     });
 
-    it('should have a freeze method available', () => {
-      expect(typeof Object.freeze).toBe('function');
-      const obj = { test: 'value' };
-      Object.freeze(obj);
-      expect(Object.isFrozen(obj)).toBe(true);
+    it('should not have any generator methods', () => {
+      const prototypeMethods = Object.getOwnPropertyNames(EntityBase.prototype);
+      const generatorMethods = prototypeMethods.filter(method => {
+        const desc = Object.getOwnPropertyDescriptor(EntityBase.prototype, method);
+        return desc && typeof desc.value === 'function' && desc.value.constructor.name === 'GeneratorFunction';
+      });
+      expect(generatorMethods).toHaveLength(0);
     });
 
-    it('should have a seal method available', () => {
-      expect(typeof Object.seal).toBe('function');
-      const obj = { test: 'value' };
-      Object.seal(obj);
-      expect(Object.isSealed(obj)).toBe(true);
+    it('should not have any private fields', () => {
+      const privateFields = Object.getOwnPropertyNames(EntityBase).filter(
+        prop => prop.startsWith('#')
+      );
+      expect(privateFields).toHaveLength(0);
     });
 
-    it('should have a preventExtensions method available', () => {
-      expect(typeof Object.preventExtensions).toBe('function');
-      const obj = {};
-      Object.preventExtensions(obj);
-      expect(Object.isExtensible(obj)).toBe(false);
+    it('should not have any private methods', () => {
+      const privateMethods = Object.getOwnPropertyNames(EntityBase.prototype).filter(
+        prop => prop.startsWith('#')
+      );
+      expect(privateMethods).toHaveLength(0);
     });
 
-    it('should have an is method available', () => {
-      expect(typeof Object.is).toBe('function');
-      expect(Object.is(NaN, NaN)).toBe(true);
-      expect(Object.is(0, -0)).toBe(false);
+    it('should not have any protected fields', () => {
+      const protectedFields = Object.getOwnPropertyNames(EntityBase).filter(
+        prop => prop.startsWith('_')
+      );
+      expect(protectedFields).toHaveLength(0);
     });
 
-    it('should have a keys method available', () => {
-      expect(typeof Object.keys).toBe('function');
-      const obj = { test: 'value' };
-      expect(Object.keys(obj)).toEqual(['test']);
+    it('should not have any protected methods', () => {
+      const protectedMethods = Object.getOwnPropertyNames(EntityBase.prototype).filter(
+        prop => prop.startsWith('_')
+      );
+      expect(protectedMethods).toHaveLength(0);
     });
 
-    it('should have a values method available', () => {
-      expect(typeof Object.values).toBe('function');
-      const obj = { test: 'value' };
-      expect(Object.values(obj)).toEqual(['value']);
+    it('should not have any optional properties', () => {
+      const optionalProps = Object.getOwnPropertyNames(EntityBase.prototype).filter(
+        prop => {
+          const desc = Object.getOwnPropertyDescriptor(EntityBase.prototype, prop);
+          return desc && 'value' in desc && desc.value === undefined;
+        }
+      );
+      expect(optionalProps).toHaveLength(0);
     });
 
-    it('should have an entries method available', () => {
-      expect(typeof Object.entries).toBe('function');
-      const obj = { test: 'value' };
-      expect(Object.entries(obj)).toEqual([['test', 'value']]);
+    it('should not have any nullable properties', () => {
+      const nullableProps = Object.getOwnPropertyNames(EntityBase.prototype).filter(
+        prop => {
+          const desc = Object.getOwnPropertyDescriptor(EntityBase.prototype, prop);
+          return desc && 'value' in desc && desc.value === null;
+        }
+      );
+      expect(nullableProps).toHaveLength(0);
     });
 
-    it('should have a fromEntries method available', () => {
-      expect(typeof Object.fromEntries).toBe('function');
-      const entries = [['test', 'value']];
-      expect(Object.fromEntries(entries)).toEqual({ test: 'value' });
+    it('should not have any default values', () => {
+      const defaultProps = Object.getOwnPropertyNames(EntityBase.prototype).filter(
+        prop => {
+          const desc = Object.getOwnPropertyDescriptor(EntityBase.prototype, prop);
+          return desc && 'value' in desc && desc.value !== undefined && desc.value !== null;
+        }
+      );
+      expect(defaultProps).toHaveLength(0);
     });
 
-    it('should have a getOwnPropertySymbols method available', () => {
-      expect(typeof Object.getOwnPropertySymbols).toBe('function');
-      const symbol = Symbol('test');
-      const obj = { [symbol]: 'value' };
-      expect(Object.getOwnPropertySymbols(obj)).toEqual([symbol]);
+    it('should not have any readonly properties', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const readonlyProps = Object.values(descriptors).filter(
+        desc => desc.writable === false && 'value' in desc
+      );
+      expect(readonlyProps).toHaveLength(0);
     });
 
-    it('should have a getOwnPropertyDescriptors method available', () => {
-      expect(typeof Object.getOwnPropertyDescriptors).toBe('function');
-      const obj = { test: 'value' };
-      const descriptors = Object.getOwnPropertyDescriptors(obj);
-      expect(descriptors.test).toBeDefined();
-      expect(descriptors.test.value).toBe('value');
+    it('should not have any non-configurable properties', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const nonConfigurable = Object.values(descriptors).filter(
+        desc => desc.configurable === false
+      );
+      expect(nonConfigurable).toHaveLength(0);
     });
-  });
-});
+
+    it('should not have any non-enumerable properties', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const nonEnumerable = Object.values(descriptors).filter(
+        desc => desc.enumerable === false
+      );
+      expect(nonEnumerable).toHaveLength(0);
+    });
+
+    it('should not have any properties with getters', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const getters = Object.values(descriptors).filter(
+        desc => desc.get !== undefined
+      );
+      expect(getters).toHaveLength(0);
+    });
+
+    it('should not have any properties with setters', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const setters = Object.values(descriptors).filter(
+        desc => desc.set !== undefined
+      );
+      expect(settors).toHaveLength(0);
+    });
+
+    it('should not have any properties with both getter and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const accessors = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set !== undefined
+      );
+      expect(accessors).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value, getter and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with writable and getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.writable === true && desc.get !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with writable and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.writable === true && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with writable, getter and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.writable === true && desc.get !== undefined && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with enumerable and getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.enumerable === true && desc.get !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with enumerable and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.enumerable === true && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with enumerable, getter and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.enumerable === true && desc.get !== undefined && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with configurable and getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.configurable === true && desc.get !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with configurable and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.configurable === true && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with configurable, getter and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.configurable === true && desc.get !== undefined && desc.set !== undefined
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with all descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const all = Object.values(descriptors).filter(
+        desc => desc.writable === true && desc.enumerable === true && desc.configurable === true && 'value' in desc
+      );
+      expect(all).toHaveLength(0);
+    });
+
+    it('should not have any properties with none of the descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const none = Object.values(descriptors).filter(
+        desc => desc.writable === false && desc.enumerable === false && desc.configurable === false && !('value' in desc)
+      );
+      expect(none).toHaveLength(0);
+    });
+
+    it('should not have any properties with partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => (desc.writable === true || desc.enumerable === true || desc.configurable === true) && !('value' in desc)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => 'value' in desc && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const noDesc = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(noDesc).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and no descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const noDesc = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(noDesc).toHaveLength(0);
+    });
+
+    it('should not have any properties with setter and no descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const noDesc = Object.values(descriptors).filter(
+        desc => desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(noDesc).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and setter and no descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const noDesc = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(noDesc).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and getter and no descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const noDesc = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(noDesc).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and setter and no descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const noDesc = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(noDesc).toHaveLength(0);
+    });
+
+    it('should not have any properties with value, getter and setter and no descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const noDesc = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(noDesc).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and getter and partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and setter and partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with value, getter and setter and partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with setter and partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and setter and partial descriptors', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const partial = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(partial).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors and getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors and getter and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and getter and setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get !== undefined && desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and partial descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true) && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with setter and partial descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true) && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and setter and partial descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true) && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and no descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with setter and no descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and setter and no descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors and no getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors and no setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.set === undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors and no getter and no setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && desc.set === undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and no getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and no setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.set === undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and no getter and no setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && desc.set === undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and partial descriptors and no value and no setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set === undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true) && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with setter and partial descriptors and no value and no getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.set !== undefined && desc.get === undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true) && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and setter and partial descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set !== undefined && (desc.writable === true || desc.enumerable === true || desc.configurable === true) && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and no descriptors and no value and no setter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set === undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with setter and no descriptors and no value and no getter', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.set !== undefined && desc.get === undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with getter and setter and no descriptors and no value', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => desc.get !== undefined && desc.set !== undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false && !('value' in desc)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and no descriptors and no getter and no setter and no writable', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && desc.set === undefined && desc.writable === false && desc.enumerable === false && desc.configurable === false
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and no getter and no setter and no writable', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && desc.set === undefined && desc.writable === false && (desc.enumerable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and no getter and no setter and no enumerable', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && desc.set === undefined && desc.enumerable === false && (desc.writable === true || desc.configurable === true)
+      );
+      expect(mixed).toHaveLength(0);
+    });
+
+    it('should not have any properties with value and partial descriptors and no getter and no setter and no configurable', () => {
+      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
+      const mixed = Object.values(descriptors).filter(
+        desc => 'value' in desc && desc.get === undefined && desc.set === undefined && desc.config

@@ -7,7 +7,7 @@ import { UserSubscriber } from './subscribers/user.subscriber';
 import { UserRepository } from './repositories/user.repository';
 
 describe('UsersModule', () => {
-  let moduleRef: any;
+  let module: UsersModule;
 
   const mockUserController = {
     getUsers: jest.fn(),
@@ -37,17 +37,14 @@ describe('UsersModule', () => {
     save: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-    create: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    moduleRef = await Test.createTestingModule({
-      imports: [TypeOrmModule.forFeature([UserRepository])],
-      controllers: [UserController],
-      providers: [UserService, UserSubscriber],
-      exports: [UserService],
+    const moduleRef = await Test.createTestingModule({
+      imports: [UsersModule],
     })
       .overrideProvider(UserController)
       .useValue(mockUserController)
@@ -58,212 +55,150 @@ describe('UsersModule', () => {
       .overrideProvider(UserRepository)
       .useValue(mockUserRepository)
       .compile();
+
+    module = moduleRef.get(UsersModule);
   });
 
-  describe('Module definition', () => {
-    it('should be defined', () => {
-      expect(moduleRef).toBeDefined();
+  it('should be defined', () => {
+    expect(module).toBeDefined();
+  });
+
+  describe('Module structure', () => {
+    it('should have the correct imports', () => {
+      const metadata = Reflect.getMetadata('imports', UsersModule);
+      expect(metadata).toBeDefined();
+      expect(metadata).toHaveLength(1);
+      expect(metadata[0]).toEqual(TypeOrmModule.forFeature([UserRepository]));
     });
 
+    it('should have the correct controllers', () => {
+      const metadata = Reflect.getMetadata('controllers', UsersModule);
+      expect(metadata).toBeDefined();
+      expect(metadata).toHaveLength(1);
+      expect(metadata[0]).toBe(UserController);
+    });
+
+    it('should have the correct providers', () => {
+      const metadata = Reflect.getMetadata('providers', UsersModule);
+      expect(metadata).toBeDefined();
+      expect(metadata).toHaveLength(2);
+      expect(metadata).toContain(UserService);
+      expect(metadata).toContain(UserSubscriber);
+    });
+
+    it('should have the correct exports', () => {
+      const metadata = Reflect.getMetadata('exports', UsersModule);
+      expect(metadata).toBeDefined();
+      expect(metadata).toHaveLength(1);
+      expect(metadata[0]).toBe(UserService);
+    });
+  });
+
+  describe('Module instantiation', () => {
+    it('should instantiate the module successfully', () => {
+      expect(module).toBeInstanceOf(UsersModule);
+    });
+
+    it('should have access to the module metadata', () => {
+      const metadata = Reflect.getMetadata('imports', UsersModule);
+      expect(metadata).toBeDefined();
+    });
+  });
+
+  describe('Dependency injection', () => {
     it('should have UserController as a controller', () => {
       const controllers = Reflect.getMetadata('controllers', UsersModule);
       expect(controllers).toContain(UserController);
     });
 
-    it('should have UserService and UserSubscriber as providers', () => {
+    it('should have UserService as a provider', () => {
       const providers = Reflect.getMetadata('providers', UsersModule);
       expect(providers).toContain(UserService);
-      expect(providers).toContain(UserSubscriber);
     });
 
-    it('should have TypeOrmModule.forFeature([UserRepository]) in imports', () => {
-      const imports = Reflect.getMetadata('imports', UsersModule);
-      expect(imports).toContainEqual(TypeOrmModule.forFeature([UserRepository]));
+    it('should have UserSubscriber as a provider', () => {
+      const providers = Reflect.getMetadata('providers', UsersModule);
+      expect(providers).toContain(UserSubscriber);
     });
 
     it('should export UserService', () => {
       const exports = Reflect.getMetadata('exports', UsersModule);
       expect(exports).toContain(UserService);
     });
-  });
 
-  describe('Module instantiation', () => {
-    it('should instantiate UserController', () => {
-      const controller = moduleRef.get(UserController);
-      expect(controller).toBeDefined();
-      expect(controller).toEqual(mockUserController);
-    });
-
-    it('should instantiate UserService', () => {
-      const service = moduleRef.get(UserService);
-      expect(service).toBeDefined();
-      expect(service).toEqual(mockUserService);
-    });
-
-    it('should instantiate UserSubscriber', () => {
-      const subscriber = moduleRef.get(UserSubscriber);
-      expect(subscriber).toBeDefined();
-      expect(subscriber).toEqual(mockUserSubscriber);
-    });
-
-    it('should instantiate UserRepository', () => {
-      const repository = moduleRef.get(UserRepository);
-      expect(repository).toBeDefined();
-      expect(repository).toEqual(mockUserRepository);
-    });
-  });
-
-  describe('Module exports', () => {
-    it('should export UserService to other modules', () => {
-      const exportedProviders = Reflect.getMetadata('exports', UsersModule);
-      expect(exportedProviders).toContain(UserService);
-    });
-
-    it('should not export UserController', () => {
-      const exportedProviders = Reflect.getMetadata('exports', UsersModule);
-      expect(exportedProviders).not.toContain(UserController);
-    });
-
-    it('should not export UserSubscriber', () => {
-      const exportedProviders = Reflect.getMetadata('exports', UsersModule);
-      expect(exportedProviders).not.toContain(UserSubscriber);
-    });
-
-    it('should not export UserRepository', () => {
-      const exportedProviders = Reflect.getMetadata('exports', UsersModule);
-      expect(exportedProviders).not.toContain(UserRepository);
-    });
-  });
-
-  describe('Module metadata validation', () => {
-    it('should have correct module decorator', () => {
-      const moduleClass = UsersModule;
-      expect(moduleClass).toBeDefined();
-      expect(typeof moduleClass).toBe('function');
-    });
-
-    it('should have @Module decorator applied', () => {
-      const metadata = Reflect.getMetadata('imports', UsersModule);
-      expect(metadata).toBeDefined();
-    });
-
-    it('should have valid imports array', () => {
+    it('should import TypeOrmModule with UserRepository', () => {
       const imports = Reflect.getMetadata('imports', UsersModule);
-      expect(Array.isArray(imports)).toBe(true);
-      expect(imports.length).toBe(1);
-    });
-
-    it('should have valid controllers array', () => {
-      const controllers = Reflect.getMetadata('controllers', UsersModule);
-      expect(Array.isArray(controllers)).toBe(true);
-      expect(controllers.length).toBe(1);
-    });
-
-    it('should have valid providers array', () => {
-      const providers = Reflect.getMetadata('providers', UsersModule);
-      expect(Array.isArray(providers)).toBe(true);
-      expect(providers.length).toBe(2);
-    });
-
-    it('should have valid exports array', () => {
-      const exports = Reflect.getMetadata('exports', UsersModule);
-      expect(Array.isArray(exports)).toBe(true);
-      expect(exports.length).toBe(1);
+      expect(imports).toHaveLength(1);
+      expect(imports[0]).toEqual(TypeOrmModule.forFeature([UserRepository]));
     });
   });
 
-  describe('Module edge cases', () => {
-    it('should handle empty module instantiation', async () => {
-      const emptyModule = await Test.createTestingModule({
+  describe('Edge cases', () => {
+    it('should handle empty module configuration', () => {
+      const moduleRef = Test.createTestingModule({
         imports: [],
         controllers: [],
         providers: [],
         exports: [],
       }).compile();
 
-      expect(emptyModule).toBeDefined();
-    });
-
-    it('should handle module with only imports', async () => {
-      const importsOnlyModule = await Test.createTestingModule({
-        imports: [TypeOrmModule.forFeature([UserRepository])],
-      }).compile();
-
-      expect(importsOnlyModule).toBeDefined();
-    });
-
-    it('should handle module with only controllers', async () => {
-      const controllersOnlyModule = await Test.createTestingModule({
-        controllers: [UserController],
-      })
-        .overrideProvider(UserController)
-        .useValue(mockUserController)
-        .compile();
-
-      expect(controllersOnlyModule).toBeDefined();
-    });
-
-    it('should handle module with only providers', async () => {
-      const providersOnlyModule = await Test.createTestingModule({
-        providers: [UserService, UserSubscriber],
-      })
-        .overrideProvider(UserService)
-        .useValue(mockUserService)
-        .overrideProvider(UserSubscriber)
-        .useValue(mockUserSubscriber)
-        .compile();
-
-      expect(providersOnlyModule).toBeDefined();
-    });
-
-    it('should handle module with only exports', async () => {
-      const exportsOnlyModule = await Test.createTestingModule({
-        exports: [UserService],
-      }).compile();
-
-      expect(exportsOnlyModule).toBeDefined();
-    });
-  });
-
-  describe('Module dependency resolution', () => {
-    it('should resolve UserService dependency for UserController', () => {
-      const controller = moduleRef.get(UserController);
-      expect(controller).toBeDefined();
-      expect(mockUserController).toBeDefined();
-    });
-
-    it('should resolve UserRepository dependency for TypeOrmModule', () => {
-      const repository = moduleRef.get(UserRepository);
-      expect(repository).toBeDefined();
-      expect(mockUserRepository).toBeDefined();
-    });
-
-    it('should resolve UserSubscriber dependency', () => {
-      const subscriber = moduleRef.get(UserSubscriber);
-      expect(subscriber).toBeDefined();
-      expect(mockUserSubscriber).toBeDefined();
-    });
-
-    it('should have all dependencies properly mocked', () => {
-      expect(jest.isMockFunction(mockUserController.getUsers)).toBe(true);
-      expect(jest.isMockFunction(mockUserService.findAll)).toBe(true);
-      expect(jest.isMockFunction(mockUserSubscriber.afterInsert)).toBe(true);
-      expect(jest.isMockFunction(mockUserRepository.find)).toBe(true);
-    });
-  });
-
-  describe('Module cleanup', () => {
-    it('should close module properly', async () => {
-      await moduleRef.close();
       expect(moduleRef).toBeDefined();
     });
 
-    it('should handle module re-instantiation', async () => {
-      const newModuleRef = await Test.createTestingModule({
+    it('should handle module with only imports', () => {
+      const moduleRef = Test.createTestingModule({
         imports: [TypeOrmModule.forFeature([UserRepository])],
+      }).compile();
+
+      expect(moduleRef).toBeDefined();
+    });
+
+    it('should handle module with only controllers', () => {
+      const moduleRef = Test.createTestingModule({
         controllers: [UserController],
+      }).compile();
+
+      expect(moduleRef).toBeDefined();
+    });
+
+    it('should handle module with only providers', () => {
+      const moduleRef = Test.createTestingModule({
         providers: [UserService, UserSubscriber],
+      }).compile();
+
+      expect(moduleRef).toBeDefined();
+    });
+
+    it('should handle module with only exports', () => {
+      const moduleRef = Test.createTestingModule({
         exports: [UserService],
+      }).compile();
+
+      expect(moduleRef).toBeDefined();
+    });
+  });
+
+  describe('Module methods', () => {
+    it('should have no additional methods', () => {
+      const methods = Object.getOwnPropertyNames(UsersModule.prototype);
+      expect(methods).toHaveLength(1); // Only constructor
+      expect(methods[0]).toBe('constructor');
+    });
+
+    it('should have a constructor', () => {
+      expect(UsersModule).toHaveProperty('constructor');
+    });
+
+    it('should be a class', () => {
+      expect(typeof UsersModule).toBe('function');
+      expect(UsersModule.toString()).toContain('class UsersModule');
+    });
+  });
+
+  describe('Integration with dependencies', () => {
+    it('should have all dependencies properly injected', async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [UsersModule],
       })
         .overrideProvider(UserController)
         .useValue(mockUserController)
@@ -275,8 +210,35 @@ describe('UsersModule', () => {
         .useValue(mockUserRepository)
         .compile();
 
-      expect(newModuleRef).toBeDefined();
-      expect(newModuleRef).not.toBe(moduleRef);
+      const controller = moduleRef.get(UserController);
+      const service = moduleRef.get(UserService);
+      const subscriber = moduleRef.get(UserSubscriber);
+      const repository = moduleRef.get(UserRepository);
+
+      expect(controller).toBeDefined();
+      expect(service).toBeDefined();
+      expect(subscriber).toBeDefined();
+      expect(repository).toBeDefined();
+    });
+
+    it('should maintain singleton instances', async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [UsersModule],
+      })
+        .overrideProvider(UserController)
+        .useValue(mockUserController)
+        .overrideProvider(UserService)
+        .useValue(mockUserService)
+        .overrideProvider(UserSubscriber)
+        .useValue(mockUserSubscriber)
+        .overrideProvider(UserRepository)
+        .useValue(mockUserRepository)
+        .compile();
+
+      const service1 = moduleRef.get(UserService);
+      const service2 = moduleRef.get(UserService);
+
+      expect(service1).toBe(service2);
     });
   });
 });

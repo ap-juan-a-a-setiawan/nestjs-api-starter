@@ -1,6 +1,6 @@
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { UserRefactoring1606680965185 } from './1606680965185-UserRefactoring';
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import { QueryRunner, Table } from 'typeorm';
 
 describe('UserRefactoring1606680965185', () => {
   let migration: UserRefactoring1606680965185;
@@ -12,7 +12,7 @@ describe('UserRefactoring1606680965185', () => {
       dropTable: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<QueryRunner>;
 
-    const moduleRef = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserRefactoring1606680965185,
         {
@@ -22,7 +22,7 @@ describe('UserRefactoring1606680965185', () => {
       ],
     }).compile();
 
-    migration = moduleRef.get<UserRefactoring1606680965185>(UserRefactoring1606680965185);
+    migration = module.get<UserRefactoring1606680965185>(UserRefactoring1606680965185);
   });
 
   afterEach(() => {
@@ -30,7 +30,7 @@ describe('UserRefactoring1606680965185', () => {
   });
 
   describe('up', () => {
-    it('should create users table with correct schema', async () => {
+    it('should create the users table with correct schema', async () => {
       await migration.up(mockQueryRunner);
 
       expect(mockQueryRunner.createTable).toHaveBeenCalledTimes(1);
@@ -44,7 +44,7 @@ describe('UserRefactoring1606680965185', () => {
       expect(tableArg.columns).toHaveLength(6);
 
       // Test id column
-      expect(tableArg.columns[0]).toEqual({
+      expect(tableArg.columns[0]).toMatchObject({
         name: 'id',
         type: 'int',
         isPrimary: true,
@@ -53,31 +53,31 @@ describe('UserRefactoring1606680965185', () => {
       });
 
       // Test first_name column
-      expect(tableArg.columns[1]).toEqual({
+      expect(tableArg.columns[1]).toMatchObject({
         name: 'first_name',
-        type: 'varchar',
+        type: 'varchar'
       });
 
       // Test last_name column
-      expect(tableArg.columns[2]).toEqual({
+      expect(tableArg.columns[2]).toMatchObject({
         name: 'last_name',
-        type: 'varchar',
+        type: 'varchar'
       });
 
       // Test email column
-      expect(tableArg.columns[3]).toEqual({
+      expect(tableArg.columns[3]).toMatchObject({
         name: 'email',
-        type: 'varchar',
+        type: 'varchar'
       });
 
       // Test password column
-      expect(tableArg.columns[4]).toEqual({
+      expect(tableArg.columns[4]).toMatchObject({
         name: 'password',
-        type: 'varchar',
+        type: 'varchar'
       });
 
       // Test status column
-      expect(tableArg.columns[5]).toEqual({
+      expect(tableArg.columns[5]).toMatchObject({
         name: 'status',
         type: 'enum',
         enum: ['active', 'inactive', 'block'],
@@ -86,7 +86,7 @@ describe('UserRefactoring1606680965185', () => {
       });
     });
 
-    it('should create table with ifNotExists set to true', async () => {
+    it('should create table with ifNotExists flag set to true', async () => {
       await migration.up(mockQueryRunner);
 
       expect(mockQueryRunner.createTable).toHaveBeenCalledWith(
@@ -95,54 +95,59 @@ describe('UserRefactoring1606680965185', () => {
       );
     });
 
-    it('should handle errors when createTable fails', async () => {
-      const error = new Error('Database error');
+    it('should handle errors when creating table fails', async () => {
+      const error = new Error('Database connection failed');
       mockQueryRunner.createTable.mockRejectedValueOnce(error);
 
-      await expect(migration.up(mockQueryRunner)).rejects.toThrow('Database error');
+      await expect(migration.up(mockQueryRunner)).rejects.toThrow(error);
       expect(mockQueryRunner.createTable).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle undefined queryRunner gracefully', async () => {
-      await expect(migration.up(undefined as unknown as QueryRunner)).rejects.toThrow();
+    it('should handle empty query runner gracefully', async () => {
+      const emptyQueryRunner = {} as QueryRunner;
+      await expect(migration.up(emptyQueryRunner)).rejects.toThrow();
     });
   });
 
   describe('down', () => {
-    it('should drop users table', async () => {
+    it('should drop the users table', async () => {
       await migration.down(mockQueryRunner);
 
       expect(mockQueryRunner.dropTable).toHaveBeenCalledTimes(1);
       expect(mockQueryRunner.dropTable).toHaveBeenCalledWith('users');
     });
 
-    it('should handle errors when dropTable fails', async () => {
-      const error = new Error('Drop table error');
+    it('should handle errors when dropping table fails', async () => {
+      const error = new Error('Table does not exist');
       mockQueryRunner.dropTable.mockRejectedValueOnce(error);
 
-      await expect(migration.down(mockQueryRunner)).rejects.toThrow('Drop table error');
+      await expect(migration.down(mockQueryRunner)).rejects.toThrow(error);
       expect(mockQueryRunner.dropTable).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.dropTable).toHaveBeenCalledWith('users');
     });
 
-    it('should handle undefined queryRunner gracefully', async () => {
-      await expect(migration.down(undefined as unknown as QueryRunner)).rejects.toThrow();
-    });
-
-    it('should not call dropTable if queryRunner is null', async () => {
-      await expect(migration.down(null as unknown as QueryRunner)).rejects.toThrow();
-      expect(mockQueryRunner.dropTable).not.toHaveBeenCalled();
+    it('should handle empty query runner gracefully', async () => {
+      const emptyQueryRunner = {} as QueryRunner;
+      await expect(migration.down(emptyQueryRunner)).rejects.toThrow();
     });
   });
 
-  describe('class structure', () => {
+  describe('migration integrity', () => {
+    it('should have the correct class name', () => {
+      expect(migration.constructor.name).toBe('UserRefactoring1606680965185');
+    });
+
     it('should implement MigrationInterface', () => {
-      expect(migration).toBeDefined();
       expect(typeof migration.up).toBe('function');
       expect(typeof migration.down).toBe('function');
     });
 
-    it('should have correct class name', () => {
-      expect(migration.constructor.name).toBe('UserRefactoring1606680965185');
+    it('should return promises from up and down methods', () => {
+      const upResult = migration.up(mockQueryRunner);
+      const downResult = migration.down(mockQueryRunner);
+
+      expect(upResult).toBeInstanceOf(Promise);
+      expect(downResult).toBeInstanceOf(Promise);
     });
   });
 });

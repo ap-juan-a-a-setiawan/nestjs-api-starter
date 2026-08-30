@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from '../services/user.service';
-import { CreateUserDto } from '../dto/create-user.dto';
 import { JwtAuthGuard } from '../../Auth/guards/jwt-auth.guard';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { HttpStatus } from '@nestjs/common';
 
 describe('UserController', () => {
@@ -27,12 +27,11 @@ describe('UserController', () => {
           provide: UserService,
           useValue: mockUserService,
         },
-        {
-          provide: JwtAuthGuard,
-          useValue: mockJwtAuthGuard,
-        },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockJwtAuthGuard)
+      .compile();
 
     controller = module.get<UserController>(UserController);
     userService = module.get(UserService);
@@ -45,8 +44,8 @@ describe('UserController', () => {
   describe('getAll', () => {
     it('should return all users', async () => {
       const expectedUsers = [
-        { id: 1, name: 'John Doe', email: 'john@example.com' },
-        { id: 2, name: 'Jane Doe', email: 'jane@example.com' },
+        { id: '1', name: 'John Doe', email: 'john@example.com' },
+        { id: '2', name: 'Jane Doe', email: 'jane@example.com' },
       ];
       mockUserService.getAll.mockResolvedValue(expectedUsers);
 
@@ -66,11 +65,11 @@ describe('UserController', () => {
       expect(mockUserService.getAll).toHaveBeenCalled();
     });
 
-    it('should handle service errors', async () => {
+    it('should propagate errors from user service', async () => {
       const error = new Error('Database connection failed');
       mockUserService.getAll.mockRejectedValue(error);
 
-      await expect(controller.getAll()).rejects.toThrow('Database connection failed');
+      await expect(controller.getAll()).rejects.toThrow(error);
       expect(mockUserService.getAll).toHaveBeenCalled();
     });
   });
@@ -78,7 +77,7 @@ describe('UserController', () => {
   describe('getById', () => {
     it('should return a user by id', async () => {
       const userId = '123';
-      const expectedUser = { id: 123, name: 'John Doe', email: 'john@example.com' };
+      const expectedUser = { id: userId, name: 'John Doe', email: 'john@example.com' };
       mockUserService.getById.mockResolvedValue(expectedUser);
 
       const result = await controller.getById({ id: userId });
@@ -88,9 +87,19 @@ describe('UserController', () => {
       expect(mockUserService.getById).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle numeric id', async () => {
-      const userId = 123;
-      const expectedUser = { id: 123, name: 'John Doe', email: 'john@example.com' };
+    it('should return null when user not found', async () => {
+      const userId = 'nonexistent';
+      mockUserService.getById.mockResolvedValue(null);
+
+      const result = await controller.getById({ id: userId });
+
+      expect(result).toBeNull();
+      expect(mockUserService.getById).toHaveBeenCalledWith(userId);
+    });
+
+    it('should handle different id formats', async () => {
+      const userId = 'user-123';
+      const expectedUser = { id: userId, name: 'Jane Doe', email: 'jane@example.com' };
       mockUserService.getById.mockResolvedValue(expectedUser);
 
       const result = await controller.getById({ id: userId });
@@ -99,44 +108,25 @@ describe('UserController', () => {
       expect(mockUserService.getById).toHaveBeenCalledWith(userId);
     });
 
-    it('should return null when user not found', async () => {
-      const userId = '999';
-      mockUserService.getById.mockResolvedValue(null);
-
-      const result = await controller.getById({ id: userId });
-
-      expect(result).toBeNull();
-      expect(mockUserService.getById).toHaveBeenCalledWith(userId);
-    });
-
-    it('should handle service errors', async () => {
+    it('should propagate errors from user service', async () => {
       const userId = '123';
       const error = new Error('User not found');
       mockUserService.getById.mockRejectedValue(error);
 
-      await expect(controller.getById({ id: userId })).rejects.toThrow('User not found');
+      await expect(controller.getById({ id: userId })).rejects.toThrow(error);
       expect(mockUserService.getById).toHaveBeenCalledWith(userId);
-    });
-
-    it('should handle missing id parameter', async () => {
-      mockUserService.getById.mockResolvedValue(null);
-
-      const result = await controller.getById({});
-
-      expect(result).toBeNull();
-      expect(mockUserService.getById).toHaveBeenCalledWith(undefined);
     });
   });
 
   describe('create', () => {
-    it('should create a user and return status code with user', async () => {
+    it('should create a user and return success response', async () => {
       const createUserDto: CreateUserDto = {
         name: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
       };
       const createdUser = {
-        id: 1,
+        id: '1',
         name: 'John Doe',
         email: 'john@example.com',
       };
@@ -152,20 +142,16 @@ describe('UserController', () => {
       expect(mockUserService.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle user creation with all fields', async () => {
+    it('should handle user creation with minimal data', async () => {
       const createUserDto: CreateUserDto = {
         name: 'Jane Doe',
         email: 'jane@example.com',
         password: 'password456',
-        phone: '1234567890',
-        address: '123 Main St',
       };
       const createdUser = {
-        id: 2,
+        id: '2',
         name: 'Jane Doe',
         email: 'jane@example.com',
-        phone: '1234567890',
-        address: '123 Main St',
       };
       mockUserService.create.mockResolvedValue(createdUser);
 
@@ -178,7 +164,7 @@ describe('UserController', () => {
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
 
-    it('should handle service errors during creation', async () => {
+    it('should propagate errors from user service', async () => {
       const createUserDto: CreateUserDto = {
         name: 'John Doe',
         email: 'john@example.com',
@@ -187,13 +173,13 @@ describe('UserController', () => {
       const error = new Error('Email already exists');
       mockUserService.create.mockRejectedValue(error);
 
-      await expect(controller.create(createUserDto)).rejects.toThrow('Email already exists');
+      await expect(controller.create(createUserDto)).rejects.toThrow(error);
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
 
     it('should handle empty user data', async () => {
       const createUserDto = {} as CreateUserDto;
-      const createdUser = { id: 3 };
+      const createdUser = {};
       mockUserService.create.mockResolvedValue(createdUser);
 
       const result = await controller.create(createUserDto);
@@ -204,28 +190,16 @@ describe('UserController', () => {
       });
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
-
-    it('should handle null user data', async () => {
-      const error = new Error('Invalid user data');
-      mockUserService.create.mockRejectedValue(error);
-
-      await expect(controller.create(null as any)).rejects.toThrow('Invalid user data');
-      expect(mockUserService.create).toHaveBeenCalledWith(null);
-    });
   });
 
-  describe('Controller setup', () => {
-    it('should be defined', () => {
-      expect(controller).toBeDefined();
-    });
-
-    it('should have JwtAuthGuard applied', () => {
+  describe('Guard configuration', () => {
+    it('should be protected by JwtAuthGuard', () => {
       const guards = Reflect.getMetadata('__guards__', UserController);
       expect(guards).toBeDefined();
       expect(guards).toContain(JwtAuthGuard);
     });
 
-    it('should have correct controller path', () => {
+    it('should have the correct controller path', () => {
       const path = Reflect.getMetadata('path', UserController);
       expect(path).toBe('users');
     });

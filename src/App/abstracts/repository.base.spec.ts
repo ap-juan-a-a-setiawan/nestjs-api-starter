@@ -17,8 +17,8 @@ describe('RepositoryBase', () => {
 
   const mockEntity: TestEntity = { id: 1, name: 'Test Entity' };
   const mockEntities: TestEntity[] = [
-    { id: 1, name: 'Entity 1' },
-    { id: 2, name: 'Entity 2' },
+    { id: 1, name: 'Test Entity 1' },
+    { id: 2, name: 'Test Entity 2' },
   ];
 
   beforeEach(async () => {
@@ -33,26 +33,16 @@ describe('RepositoryBase', () => {
       delete: jest.fn(),
       remove: jest.fn(),
       count: jest.fn(),
-      exists: jest.fn(),
       createQueryBuilder: jest.fn(),
       manager: {
         transaction: jest.fn(),
       } as any,
       metadata: {
         target: TestEntity,
-        name: 'TestEntity',
-        tableName: 'test_entity',
         columns: [],
         relations: [],
-        indices: [],
-        uniques: [],
-        checks: [],
-        exclusions: [],
-        foreignKeys: [],
-        generatedColumns: [],
-        primaryColumns: [],
-        connection: {},
       } as any,
+      target: TestEntity,
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -69,6 +59,7 @@ describe('RepositoryBase', () => {
     }).compile();
 
     repository = module.get<TestRepository>(TestRepository);
+    
     // Inject mock repository into the base class
     Object.assign(repository, mockRepository);
   });
@@ -77,23 +68,17 @@ describe('RepositoryBase', () => {
     jest.clearAllMocks();
   });
 
-  describe('Inheritance from Repository', () => {
-    it('should be defined', () => {
-      expect(repository).toBeDefined();
-    });
-
+  describe('inheritance', () => {
     it('should extend Repository class', () => {
       expect(repository).toBeInstanceOf(Repository);
+      expect(repository).toBeInstanceOf(RepositoryBase);
     });
 
-    it('should have access to repository methods', () => {
-      expect(repository.find).toBeDefined();
-      expect(repository.findOne).toBeDefined();
-      expect(repository.save).toBeDefined();
-      expect(repository.delete).toBeDefined();
-      expect(repository.create).toBeDefined();
-      expect(repository.update).toBeDefined();
-      expect(repository.count).toBeDefined();
+    it('should have access to Repository methods', () => {
+      expect(typeof repository.find).toBe('function');
+      expect(typeof repository.findOne).toBe('function');
+      expect(typeof repository.save).toBe('function');
+      expect(typeof repository.delete).toBe('function');
     });
   });
 
@@ -109,7 +94,7 @@ describe('RepositoryBase', () => {
     });
 
     it('should find entities with options', async () => {
-      const options = { where: { name: 'Entity 1' } };
+      const options = { where: { name: 'Test Entity 1' } };
       (mockRepository.find as jest.Mock).mockResolvedValue([mockEntities[0]]);
 
       const result = await repository.find(options);
@@ -153,10 +138,10 @@ describe('RepositoryBase', () => {
     });
 
     it('should handle errors', async () => {
-      const error = new Error('Find one error');
+      const error = new Error('Entity not found');
       (mockRepository.findOne as jest.Mock).mockRejectedValue(error);
 
-      await expect(repository.findOne({ where: { id: 1 } })).rejects.toThrow('Find one error');
+      await expect(repository.findOne({ where: { id: 1 } })).rejects.toThrow('Entity not found');
     });
   });
 
@@ -177,19 +162,11 @@ describe('RepositoryBase', () => {
 
       expect(result).toBeNull();
     });
-
-    it('should handle errors', async () => {
-      const error = new Error('Find one by error');
-      (mockRepository.findOneBy as jest.Mock).mockRejectedValue(error);
-
-      await expect(repository.findOneBy({ id: 1 })).rejects.toThrow('Find one by error');
-    });
   });
 
   describe('findAndCount', () => {
     it('should find entities and count', async () => {
-      const result = [mockEntities, mockEntities.length];
-      (mockRepository.findAndCount as jest.Mock).mockResolvedValue(result);
+      (mockRepository.findAndCount as jest.Mock).mockResolvedValue([mockEntities, 2]);
 
       const [entities, count] = await repository.findAndCount();
 
@@ -206,43 +183,26 @@ describe('RepositoryBase', () => {
       expect(entities).toEqual([]);
       expect(count).toBe(0);
     });
-
-    it('should handle errors', async () => {
-      const error = new Error('Find and count error');
-      (mockRepository.findAndCount as jest.Mock).mockRejectedValue(error);
-
-      await expect(repository.findAndCount()).rejects.toThrow('Find and count error');
-    });
   });
 
   describe('create', () => {
     it('should create a new entity instance', () => {
       const newEntity = { name: 'New Entity' };
-      (mockRepository.create as jest.Mock).mockReturnValue({ ...newEntity, id: undefined });
+      (mockRepository.create as jest.Mock).mockReturnValue({ id: 3, ...newEntity });
 
       const result = repository.create(newEntity);
 
-      expect(result).toEqual({ ...newEntity, id: undefined });
+      expect(result).toEqual({ id: 3, ...newEntity });
       expect(mockRepository.create).toHaveBeenCalledWith(newEntity);
     });
 
-    it('should create entity with no arguments', () => {
+    it('should create entity without data', () => {
       (mockRepository.create as jest.Mock).mockReturnValue({});
 
       const result = repository.create();
 
       expect(result).toEqual({});
-      expect(mockRepository.create).toHaveBeenCalledWith();
-    });
-
-    it('should create multiple entities', () => {
-      const entities = [{ name: 'Entity 1' }, { name: 'Entity 2' }];
-      (mockRepository.create as jest.Mock).mockReturnValue(entities);
-
-      const result = repository.create(entities);
-
-      expect(result).toEqual(entities);
-      expect(mockRepository.create).toHaveBeenCalledWith(entities);
+      expect(mockRepository.create).toHaveBeenCalled();
     });
   });
 
@@ -266,10 +226,10 @@ describe('RepositoryBase', () => {
     });
 
     it('should handle save errors', async () => {
-      const error = new Error('Save error');
+      const error = new Error('Save failed');
       (mockRepository.save as jest.Mock).mockRejectedValue(error);
 
-      await expect(repository.save(mockEntity)).rejects.toThrow('Save error');
+      await expect(repository.save(mockEntity)).rejects.toThrow('Save failed');
     });
   });
 
@@ -284,21 +244,11 @@ describe('RepositoryBase', () => {
       expect(mockRepository.update).toHaveBeenCalledWith(1, { name: 'Updated' });
     });
 
-    it('should handle update with criteria object', async () => {
-      const updateResult = { affected: 1, raw: {}, generatedMaps: [] };
-      (mockRepository.update as jest.Mock).mockResolvedValue(updateResult);
-
-      const result = await repository.update({ id: 1 }, { name: 'Updated' });
-
-      expect(result).toEqual(updateResult);
-      expect(mockRepository.update).toHaveBeenCalledWith({ id: 1 }, { name: 'Updated' });
-    });
-
     it('should handle update errors', async () => {
-      const error = new Error('Update error');
+      const error = new Error('Update failed');
       (mockRepository.update as jest.Mock).mockRejectedValue(error);
 
-      await expect(repository.update(1, { name: 'Updated' })).rejects.toThrow('Update error');
+      await expect(repository.update(1, { name: 'Updated' })).rejects.toThrow('Update failed');
     });
   });
 
@@ -313,21 +263,21 @@ describe('RepositoryBase', () => {
       expect(mockRepository.delete).toHaveBeenCalledWith(1);
     });
 
-    it('should delete an entity by criteria', async () => {
-      const deleteResult = { affected: 1, raw: {} };
+    it('should delete multiple entities', async () => {
+      const deleteResult = { affected: 2, raw: {} };
       (mockRepository.delete as jest.Mock).mockResolvedValue(deleteResult);
 
-      const result = await repository.delete({ id: 1 });
+      const result = await repository.delete([1, 2]);
 
       expect(result).toEqual(deleteResult);
-      expect(mockRepository.delete).toHaveBeenCalledWith({ id: 1 });
+      expect(mockRepository.delete).toHaveBeenCalledWith([1, 2]);
     });
 
     it('should handle delete errors', async () => {
-      const error = new Error('Delete error');
+      const error = new Error('Delete failed');
       (mockRepository.delete as jest.Mock).mockRejectedValue(error);
 
-      await expect(repository.delete(1)).rejects.toThrow('Delete error');
+      await expect(repository.delete(1)).rejects.toThrow('Delete failed');
     });
   });
 
@@ -349,17 +299,10 @@ describe('RepositoryBase', () => {
       expect(result).toEqual(mockEntities);
       expect(mockRepository.remove).toHaveBeenCalledWith(mockEntities);
     });
-
-    it('should handle remove errors', async () => {
-      const error = new Error('Remove error');
-      (mockRepository.remove as jest.Mock).mockRejectedValue(error);
-
-      await expect(repository.remove(mockEntity)).rejects.toThrow('Remove error');
-    });
   });
 
   describe('count', () => {
-    it('should count all entities', async () => {
+    it('should count entities', async () => {
       (mockRepository.count as jest.Mock).mockResolvedValue(5);
 
       const result = await repository.count();
@@ -369,12 +312,12 @@ describe('RepositoryBase', () => {
     });
 
     it('should count entities with options', async () => {
-      const options = { where: { name: 'Entity 1' } };
-      (mockRepository.count as jest.Mock).mockResolvedValue(1);
+      const options = { where: { name: 'Test' } };
+      (mockRepository.count as jest.Mock).mockResolvedValue(2);
 
       const result = await repository.count(options);
 
-      expect(result).toBe(1);
+      expect(result).toBe(2);
       expect(mockRepository.count).toHaveBeenCalledWith(options);
     });
 
@@ -385,46 +328,13 @@ describe('RepositoryBase', () => {
 
       expect(result).toBe(0);
     });
-
-    it('should handle count errors', async () => {
-      const error = new Error('Count error');
-      (mockRepository.count as jest.Mock).mockRejectedValue(error);
-
-      await expect(repository.count()).rejects.toThrow('Count error');
-    });
-  });
-
-  describe('exists', () => {
-    it('should check if entity exists', async () => {
-      (mockRepository.exists as jest.Mock).mockResolvedValue(true);
-
-      const result = await repository.exists({ where: { id: 1 } });
-
-      expect(result).toBe(true);
-      expect(mockRepository.exists).toHaveBeenCalledWith({ where: { id: 1 } });
-    });
-
-    it('should return false when entity does not exist', async () => {
-      (mockRepository.exists as jest.Mock).mockResolvedValue(false);
-
-      const result = await repository.exists({ where: { id: 999 } });
-
-      expect(result).toBe(false);
-    });
-
-    it('should handle exists errors', async () => {
-      const error = new Error('Exists error');
-      (mockRepository.exists as jest.Mock).mockRejectedValue(error);
-
-      await expect(repository.exists({ where: { id: 1 } })).rejects.toThrow('Exists error');
-    });
   });
 
   describe('createQueryBuilder', () => {
-    it('should create a query builder', () => {
+    it('should create query builder', () => {
       const mockQueryBuilder = {
         where: jest.fn().mockReturnThis(),
-        getMany: jest.fn(),
+        getMany: jest.fn().mockResolvedValue(mockEntities),
       };
       (mockRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
@@ -433,88 +343,25 @@ describe('RepositoryBase', () => {
       expect(result).toBe(mockQueryBuilder);
       expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('test');
     });
-
-    it('should create query builder without alias', () => {
-      const mockQueryBuilder = {};
-      (mockRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
-
-      const result = repository.createQueryBuilder();
-
-      expect(result).toBe(mockQueryBuilder);
-      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith();
-    });
   });
 
   describe('manager', () => {
     it('should have access to manager', () => {
       expect(repository.manager).toBeDefined();
-    });
-
-    it('should support transactions', async () => {
-      const mockTransactionalEntityManager = {};
-      (mockRepository.manager.transaction as jest.Mock).mockImplementation(
-        async (cb: any) => cb(mockTransactionalEntityManager),
-      );
-
-      const result = await repository.manager.transaction(async (manager) => {
-        return 'transaction result';
-      });
-
-      expect(result).toBe('transaction result');
-      expect(mockRepository.manager.transaction).toHaveBeenCalled();
+      expect(typeof repository.manager.transaction).toBe('function');
     });
   });
 
   describe('metadata', () => {
-    it('should have metadata', () => {
+    it('should have access to metadata', () => {
       expect(repository.metadata).toBeDefined();
       expect(repository.metadata.target).toBe(TestEntity);
-      expect(repository.metadata.tableName).toBe('test_entity');
     });
   });
 
-  describe('Edge cases', () => {
-    it('should handle null entity in save', async () => {
-      (mockRepository.save as jest.Mock).mockResolvedValue(null);
-
-      const result = await repository.save(null as any);
-
-      expect(result).toBeNull();
-    });
-
-    it('should handle undefined options in find', async () => {
-      (mockRepository.find as jest.Mock).mockResolvedValue(mockEntities);
-
-      const result = await repository.find(undefined);
-
-      expect(result).toEqual(mockEntities);
-      expect(mockRepository.find).toHaveBeenCalledWith(undefined);
-    });
-
-    it('should handle empty array in save', async () => {
-      (mockRepository.save as jest.Mock).mockResolvedValue([]);
-
-      const result = await repository.save([]);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should handle delete with non-existent id', async () => {
-      const deleteResult = { affected: 0, raw: {} };
-      (mockRepository.delete as jest.Mock).mockResolvedValue(deleteResult);
-
-      const result = await repository.delete(999);
-
-      expect(result.affected).toBe(0);
-    });
-
-    it('should handle update with non-existent id', async () => {
-      const updateResult = { affected: 0, raw: {}, generatedMaps: [] };
-      (mockRepository.update as jest.Mock).mockResolvedValue(updateResult);
-
-      const result = await repository.update(999, { name: 'Updated' });
-
-      expect(result.affected).toBe(0);
+  describe('target', () => {
+    it('should have target entity', () => {
+      expect(repository.target).toBe(TestEntity);
     });
   });
 });

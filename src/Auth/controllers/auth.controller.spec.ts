@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../services/auth.service';
-import { LocalAuthGuard } from '../guards/local-auth.guard';
 import { LoginDto } from '../dto/login.dto';
+import { LocalAuthGuard } from '../guards/local-auth.guard';
+import { User } from '../../Users/decorators/user.decorator';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -12,8 +13,18 @@ describe('AuthController', () => {
     login: jest.fn(),
   };
 
-  const mockLocalAuthGuard = {
-    canActivate: jest.fn(() => true),
+  const mockUser: LoginDto = {
+    email: 'test@example.com',
+    password: 'password123',
+  };
+
+  const mockLoginResponse = {
+    accessToken: 'mock-jwt-token',
+    user: {
+      id: 1,
+      email: 'test@example.com',
+      name: 'Test User',
+    },
   };
 
   beforeEach(async () => {
@@ -26,7 +37,9 @@ describe('AuthController', () => {
         },
         {
           provide: LocalAuthGuard,
-          useValue: mockLocalAuthGuard,
+          useValue: {
+            canActivate: jest.fn().mockReturnValue(true),
+          },
         },
       ],
     }).compile();
@@ -40,21 +53,8 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    const mockUser: LoginDto = {
-      email: 'test@example.com',
-      password: 'password123',
-    };
-
-    const mockLoginResponse = {
-      accessToken: 'mock-jwt-token',
-      user: {
-        id: 1,
-        email: 'test@example.com',
-      },
-    };
-
     it('should be defined', () => {
-      expect(controller).toBeDefined();
+      expect(controller.login).toBeDefined();
     });
 
     it('should call authService.login with the user object', async () => {
@@ -67,34 +67,37 @@ describe('AuthController', () => {
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should return the result from authService.login', async () => {
+    it('should return the login response from authService', async () => {
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
       const result = await controller.login(mockUser);
 
-      expect(result).toBe(mockLoginResponse);
+      expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle empty user object', async () => {
-      const emptyUser = {} as LoginDto;
-      mockAuthService.login.mockResolvedValue({});
+    it('should handle login with different user data', async () => {
+      const anotherUser: LoginDto = {
+        email: 'another@example.com',
+        password: 'different-password',
+      };
+      const anotherResponse = {
+        accessToken: 'another-token',
+        user: {
+          id: 2,
+          email: 'another@example.com',
+          name: 'Another User',
+        },
+      };
 
-      const result = await controller.login(emptyUser);
+      mockAuthService.login.mockResolvedValue(anotherResponse);
 
-      expect(authService.login).toHaveBeenCalledWith(emptyUser);
-      expect(result).toEqual({});
+      const result = await controller.login(anotherUser);
+
+      expect(authService.login).toHaveBeenCalledWith(anotherUser);
+      expect(result).toEqual(anotherResponse);
     });
 
-    it('should handle null user', async () => {
-      mockAuthService.login.mockResolvedValue(null);
-
-      const result = await controller.login(null as any);
-
-      expect(authService.login).toHaveBeenCalledWith(null);
-      expect(result).toBeNull();
-    });
-
-    it('should propagate errors from authService.login', async () => {
+    it('should propagate errors from authService', async () => {
       const error = new Error('Invalid credentials');
       mockAuthService.login.mockRejectedValue(error);
 
@@ -102,22 +105,119 @@ describe('AuthController', () => {
       expect(authService.login).toHaveBeenCalledWith(mockUser);
     });
 
+    it('should handle empty user object', async () => {
+      const emptyUser = {} as LoginDto;
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(emptyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(emptyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user with missing fields', async () => {
+      const incompleteUser = {
+        email: 'test@example.com',
+      } as LoginDto;
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(incompleteUser);
+
+      expect(authService.login).toHaveBeenCalledWith(incompleteUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle null user', async () => {
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(null as any);
+
+      expect(authService.login).toHaveBeenCalledWith(null);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
     it('should handle undefined user', async () => {
-      mockAuthService.login.mockResolvedValue(undefined);
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
       const result = await controller.login(undefined as any);
 
       expect(authService.login).toHaveBeenCalledWith(undefined);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle authService returning null', async () => {
+      mockAuthService.login.mockResolvedValue(null);
+
+      const result = await controller.login(mockUser);
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle authService returning undefined', async () => {
+      mockAuthService.login.mockResolvedValue(undefined);
+
+      const result = await controller.login(mockUser);
+
       expect(result).toBeUndefined();
+    });
+
+    it('should handle authService throwing non-Error exceptions', async () => {
+      const error = 'String error';
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toBe('String error');
+    });
+
+    it('should handle authService throwing Error with custom message', async () => {
+      const error = new Error('Custom error message');
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Custom error message');
+    });
+
+    it('should handle authService throwing Error with status code', async () => {
+      const error = new Error('Unauthorized');
+      (error as any).status = 401;
+      mockAuthService.login.mockRejectedValue(error);
+
+      await expect(controller.login(mockUser)).rejects.toThrow('Unauthorized');
+      await expect(controller.login(mockUser)).rejects.toHaveProperty('status', 401);
+    });
+
+    it('should handle multiple sequential calls', async () => {
+      mockAuthService.login
+        .mockResolvedValueOnce(mockLoginResponse)
+        .mockResolvedValueOnce({ ...mockLoginResponse, accessToken: 'second-token' });
+
+      const firstResult = await controller.login(mockUser);
+      const secondResult = await controller.login(mockUser);
+
+      expect(authService.login).toHaveBeenCalledTimes(2);
+      expect(firstResult).toEqual(mockLoginResponse);
+      expect(secondResult).toEqual({ ...mockLoginResponse, accessToken: 'second-token' });
+    });
+
+    it('should handle concurrent calls', async () => {
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const results = await Promise.all([
+        controller.login(mockUser),
+        controller.login(mockUser),
+        controller.login(mockUser),
+      ]);
+
+      expect(authService.login).toHaveBeenCalledTimes(3);
+      results.forEach((result) => {
+        expect(result).toEqual(mockLoginResponse);
+      });
     });
 
     it('should handle user with additional properties', async () => {
       const userWithExtraProps = {
         ...mockUser,
+        extraField: 'extra-value',
         role: 'admin',
-        createdAt: new Date(),
-      };
-
+      } as LoginDto;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
       const result = await controller.login(userWithExtraProps);
@@ -126,249 +226,214 @@ describe('AuthController', () => {
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with missing optional fields', async () => {
-      const userWithoutPassword = {
-        email: 'test@example.com',
+    it('should handle user with special characters in email', async () => {
+      const specialUser = {
+        email: 'user+tag@example.com',
+        password: 'pass@123',
       } as LoginDto;
-
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithoutPassword);
+      const result = await controller.login(specialUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithoutPassword);
+      expect(authService.login).toHaveBeenCalledWith(specialUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with empty string fields', async () => {
-      const userWithEmptyStrings = {
+    it('should handle very long password', async () => {
+      const longPasswordUser = {
+        email: 'test@example.com',
+        password: 'x'.repeat(1000),
+      } as LoginDto;
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(longPasswordUser);
+
+      expect(authService.login).toHaveBeenCalledWith(longPasswordUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle empty string fields', async () => {
+      const emptyFieldsUser = {
         email: '',
         password: '',
-      };
-
+      } as LoginDto;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithEmptyStrings);
+      const result = await controller.login(emptyFieldsUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithEmptyStrings);
+      expect(authService.login).toHaveBeenCalledWith(emptyFieldsUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with special characters in fields', async () => {
-      const userWithSpecialChars = {
-        email: 'test+special@example.com',
-        password: 'p@ssw0rd!$#',
-      };
-
+    it('should handle whitespace-only fields', async () => {
+      const whitespaceUser = {
+        email: '   ',
+        password: '   ',
+      } as LoginDto;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithSpecialChars);
+      const result = await controller.login(whitespaceUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithSpecialChars);
+      expect(authService.login).toHaveBeenCalledWith(whitespaceUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with long strings', async () => {
-      const userWithLongStrings = {
-        email: 'a'.repeat(255) + '@example.com',
-        password: 'b'.repeat(1000),
-      };
-
+    it('should handle user with numeric values', async () => {
+      const numericUser = {
+        email: 12345,
+        password: 67890,
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithLongStrings);
+      const result = await controller.login(numericUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithLongStrings);
+      expect(authService.login).toHaveBeenCalledWith(numericUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with unicode characters', async () => {
-      const userWithUnicode = {
-        email: 'tést@example.com',
-        password: 'pässwörd',
-      };
-
+    it('should handle user with boolean values', async () => {
+      const booleanUser = {
+        email: true,
+        password: false,
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithUnicode);
+      const result = await controller.login(booleanUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithUnicode);
+      expect(authService.login).toHaveBeenCalledWith(booleanUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with numeric values in fields', async () => {
-      const userWithNumericValues = {
-        email: '123@example.com',
-        password: '123456',
-      };
-
+    it('should handle user with array values', async () => {
+      const arrayUser = {
+        email: ['test@example.com'],
+        password: ['password123'],
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithNumericValues);
+      const result = await controller.login(arrayUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithNumericValues);
+      expect(authService.login).toHaveBeenCalledWith(arrayUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with boolean values in fields', async () => {
-      const userWithBooleanValues = {
-        email: 'true@example.com',
-        password: 'false',
-      };
-
+    it('should handle user with object values', async () => {
+      const objectUser = {
+        email: { value: 'test@example.com' },
+        password: { value: 'password123' },
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithBooleanValues);
+      const result = await controller.login(objectUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithBooleanValues);
+      expect(authService.login).toHaveBeenCalledWith(objectUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with null values in fields', async () => {
-      const userWithNullValues = {
-        email: null,
-        password: null,
-      };
-
+    it('should handle user with symbol values', async () => {
+      const symbolUser = {
+        email: Symbol('email'),
+        password: Symbol('password'),
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithNullValues);
+      const result = await controller.login(symbolUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithNullValues);
+      expect(authService.login).toHaveBeenCalledWith(symbolUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with undefined values in fields', async () => {
-      const userWithUndefinedValues = {
-        email: undefined,
-        password: undefined,
-      };
-
+    it('should handle user with function values', async () => {
+      const functionUser = {
+        email: () => 'test@example.com',
+        password: () => 'password123',
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithUndefinedValues);
+      const result = await controller.login(functionUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithUndefinedValues);
+      expect(authService.login).toHaveBeenCalledWith(functionUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with nested objects', async () => {
-      const userWithNestedObjects = {
-        email: 'test@example.com',
-        password: 'password123',
-        metadata: {
-          device: 'mobile',
-          location: 'US',
-        },
-      };
-
+    it('should handle user with Date values', async () => {
+      const dateUser = {
+        email: new Date(),
+        password: new Date(),
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithNestedObjects);
+      const result = await controller.login(dateUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithNestedObjects);
+      expect(authService.login).toHaveBeenCalledWith(dateUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with arrays', async () => {
-      const userWithArrays = {
-        email: 'test@example.com',
-        password: 'password123',
-        roles: ['admin', 'user'],
-      };
-
+    it('should handle user with Buffer values', async () => {
+      const bufferUser = {
+        email: Buffer.from('test@example.com'),
+        password: Buffer.from('password123'),
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithArrays);
+      const result = await controller.login(bufferUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithArrays);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Date objects', async () => {
-      const userWithDates = {
-        email: 'test@example.com',
-        password: 'password123',
-        lastLogin: new Date('2024-01-01'),
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithDates);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithDates);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Buffer objects', async () => {
-      const userWithBuffers = {
-        email: 'test@example.com',
-        password: 'password123',
-        token: Buffer.from('mock-token'),
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithBuffers);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithBuffers);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Symbol values', async () => {
-      const symbolKey = Symbol('test');
-      const userWithSymbols = {
-        email: 'test@example.com',
-        password: 'password123',
-        [symbolKey]: 'symbol-value',
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithSymbols);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithSymbols);
+      expect(authService.login).toHaveBeenCalledWith(bufferUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
     it('should handle user with BigInt values', async () => {
-      const userWithBigInt = {
-        email: 'test@example.com',
-        password: 'password123',
-        id: BigInt(123456789),
-      };
-
+      const bigIntUser = {
+        email: BigInt(1234567890),
+        password: BigInt(9876543210),
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithBigInt);
+      const result = await controller.login(bigIntUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithBigInt);
+      expect(authService.login).toHaveBeenCalledWith(bigIntUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with function properties', async () => {
-      const userWithFunctions = {
+    it('should handle user with mixed type values', async () => {
+      const mixedUser = {
         email: 'test@example.com',
-        password: 'password123',
-        getFullName: () => 'Test User',
-      };
-
+        password: 12345,
+        extra: true,
+      } as any;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithFunctions);
+      const result = await controller.login(mixedUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithFunctions);
+      expect(authService.login).toHaveBeenCalledWith(mixedUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with getter properties', async () => {
+    it('should handle frozen user object', async () => {
+      const frozenUser = Object.freeze({ ...mockUser });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(frozenUser);
+
+      expect(authService.login).toHaveBeenCalledWith(frozenUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle sealed user object', async () => {
+      const sealedUser = Object.seal({ ...mockUser });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(sealedUser);
+
+      expect(authService.login).toHaveBeenCalledWith(sealedUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with getters', async () => {
       const userWithGetters = {
-        email: 'test@example.com',
-        password: 'password123',
-        get fullName() {
-          return 'Test User';
-        },
-      };
-
+        get email() { return 'test@example.com'; },
+        get password() { return 'password123'; },
+      } as LoginDto;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
       const result = await controller.login(userWithGetters);
@@ -377,802 +442,617 @@ describe('AuthController', () => {
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with setter properties', async () => {
-      const userWithSetters = {
-        email: 'test@example.com',
-        password: 'password123',
-        set fullName(value: string) {
-          this._fullName = value;
-        },
-      };
-
+    it('should handle user object with prototype chain', async () => {
+      const userWithPrototype = Object.create({ inheritedProp: 'value' });
+      userWithPrototype.email = 'test@example.com';
+      userWithPrototype.password = 'password123';
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithSetters);
+      const result = await controller.login(userWithPrototype);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithSetters);
+      expect(authService.login).toHaveBeenCalledWith(userWithPrototype);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with prototype methods', async () => {
-      class CustomUser extends LoginDto {
-        getFullName(): string {
-          return `${this.email} - ${this.password}`;
-        }
-      }
-
-      const customUser = new CustomUser();
-      customUser.email = 'test@example.com';
-      customUser.password = 'password123';
-
+    it('should handle user object with circular reference', async () => {
+      const circularUser: any = { ...mockUser };
+      circularUser.self = circularUser;
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(customUser);
+      const result = await controller.login(circularUser);
 
-      expect(authService.login).toHaveBeenCalledWith(customUser);
+      expect(authService.login).toHaveBeenCalledWith(circularUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with circular references', async () => {
-      const userWithCircularRef: any = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-      userWithCircularRef.self = userWithCircularRef;
-
+    it('should handle user object with null prototype', async () => {
+      const nullProtoUser = Object.create(null);
+      nullProtoUser.email = 'test@example.com';
+      nullProtoUser.password = 'password123';
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithCircularRef);
+      const result = await controller.login(nullProtoUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithCircularRef);
+      expect(authService.login).toHaveBeenCalledWith(nullProtoUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with frozen objects', async () => {
-      const userWithFrozen = Object.freeze({
-        email: 'test@example.com',
-        password: 'password123',
-      });
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithFrozen);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithFrozen);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with sealed objects', async () => {
-      const userWithSealed = Object.seal({
-        email: 'test@example.com',
-        password: 'password123',
-      });
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithSealed);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithSealed);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with non-extensible objects', async () => {
-      const userWithNonExtensible = Object.preventExtensions({
-        email: 'test@example.com',
-        password: 'password123',
-      });
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithNonExtensible);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithNonExtensible);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Proxy objects', async () => {
-      const target = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      const userWithProxy = new Proxy(target, {
-        get: (obj, prop) => {
-          if (prop === 'email') return 'proxied@example.com';
-          return obj[prop];
-        },
-      });
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithProxy);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithProxy);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with WeakMap and WeakSet', async () => {
-      const weakMap = new WeakMap();
-      const weakSet = new WeakSet();
-      const key = { id: 1 };
-      weakMap.set(key, 'value');
-      weakSet.add(key);
-
-      const userWithWeakCollections = {
-        email: 'test@example.com',
-        password: 'password123',
-        weakMap,
-        weakSet,
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithWeakCollections);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithWeakCollections);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Map and Set', async () => {
-      const map = new Map([['key', 'value']]);
-      const set = new Set(['value1', 'value2']);
-
-      const userWithCollections = {
-        email: 'test@example.com',
-        password: 'password123',
-        map,
-        set,
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithCollections);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithCollections);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with RegExp objects', async () => {
-      const userWithRegExp = {
-        email: 'test@example.com',
-        password: 'password123',
-        pattern: /^[a-z]+$/i,
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithRegExp);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithRegExp);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Error objects', async () => {
-      const userWithError = {
-        email: 'test@example.com',
-        password: 'password123',
-        error: new Error('test error'),
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithError);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithError);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Promise objects', async () => {
-      const userWithPromise = {
-        email: 'test@example.com',
-        password: 'password123',
-        promise: Promise.resolve('resolved'),
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithPromise);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithPromise);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with async functions', async () => {
-      const userWithAsyncFn = {
-        email: 'test@example.com',
-        password: 'password123',
-        async getData() {
-          return 'data';
-        },
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithAsyncFn);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithAsyncFn);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with generator functions', async () => {
-      const userWithGenerator = {
-        email: 'test@example.com',
-        password: 'password123',
-        *generate() {
-          yield 1;
-          yield 2;
-        },
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithGenerator);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithGenerator);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with class instances', async () => {
-      class CustomClass {
-        constructor(public email: string, public password: string) {}
-      }
-
-      const userWithClassInstance = new CustomClass('test@example.com', 'password123');
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithClassInstance);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithClassInstance);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with multiple nested levels', async () => {
-      const userWithDeepNesting = {
-        email: 'test@example.com',
-        password: 'password123',
-        profile: {
-          personal: {
-            name: {
-              first: 'John',
-              last: 'Doe',
-            },
-          },
-          professional: {
-            company: {
-              name: 'Tech Corp',
-              address: {
-                street: '123 Main St',
-                city: 'New York',
-                country: 'USA',
-              },
-            },
-          },
-        },
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithDeepNesting);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithDeepNesting);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with mixed data types', async () => {
-      const userWithMixedTypes = {
-        email: 'test@example.com',
-        password: 'password123',
-        age: 30,
-        isActive: true,
-        score: 95.5,
-        tags: ['admin', 'user'],
-        metadata: {
-          lastLogin: new Date(),
-          attempts: 3,
-        },
-        nullable: null,
-        undefined: undefined,
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithMixedTypes);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithMixedTypes);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with inherited properties', async () => {
-      class BaseUser {
-        email: string = 'base@example.com';
-        password: string = 'base-password';
-      }
-
-      class ExtendedUser extends BaseUser {
-        role: string = 'admin';
-      }
-
-      const userWithInheritedProps = new ExtendedUser();
-      userWithInheritedProps.email = 'test@example.com';
-      userWithInheritedProps.password = 'password123';
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithInheritedProps);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithInheritedProps);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with non-enumerable properties', async () => {
-      const userWithNonEnumerable = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      Object.defineProperty(userWithNonEnumerable, 'hidden', {
+    it('should handle user object with non-enumerable properties', async () => {
+      const nonEnumerableUser: any = { ...mockUser };
+      Object.defineProperty(nonEnumerableUser, 'hidden', {
         value: 'hidden-value',
         enumerable: false,
       });
-
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithNonEnumerable);
+      const result = await controller.login(nonEnumerableUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithNonEnumerable);
+      expect(authService.login).toHaveBeenCalledWith(nonEnumerableUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with symbol properties', async () => {
-      const symbolProp = Symbol('symbolProp');
-      const userWithSymbolProps = {
-        email: 'test@example.com',
+    it('should handle user object with symbol properties', async () => {
+      const symbolPropUser: any = { ...mockUser };
+      const symbol = Symbol('hidden');
+      symbolPropUser[symbol] = 'symbol-value';
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(symbolPropUser);
+
+      expect(authService.login).toHaveBeenCalledWith(symbolPropUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with getter that throws', async () => {
+      const throwingGetterUser: any = {
+        get email() { throw new Error('Getter error'); },
         password: 'password123',
-        [symbolProp]: 'symbol-value',
       };
-
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithSymbolProps);
+      const result = await controller.login(throwingGetterUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithSymbolProps);
+      expect(authService.login).toHaveBeenCalledWith(throwingGetterUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with getter and setter properties', async () => {
-      const userWithGetSet = {
-        _email: 'test@example.com',
+    it('should handle user object with setter that throws', async () => {
+      const throwingSetterUser: any = {
+        set email(value) { throw new Error('Setter error'); },
         password: 'password123',
-        get email() {
-          return this._email;
+      };
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(throwingSetterUser);
+
+      expect(authService.login).toHaveBeenCalledWith(throwingSetterUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy', async () => {
+      const proxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return target[prop];
         },
-        set email(value: string) {
-          this._email = value;
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(proxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(proxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that throws', async () => {
+      const throwingProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          throw new Error('Proxy error');
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithGetSet);
+      const result = await controller.login(throwingProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithGetSet);
+      expect(authService.login).toHaveBeenCalledWith(throwingProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with computed property names', async () => {
-      const propName = 'email';
-      const userWithComputedProps = {
-        [propName]: 'test@example.com',
-        password: 'password123',
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithComputedProps);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithComputedProps);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with spread operator', async () => {
-      const baseUser = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      const userWithSpread = {
-        ...baseUser,
-        role: 'admin',
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithSpread);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithSpread);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Object.assign', async () => {
-      const baseUser = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      const userWithAssign = Object.assign({}, baseUser, { role: 'admin' });
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithAssign);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithAssign);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Object.create', async () => {
-      const prototype = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      const userWithCreate = Object.create(prototype);
-      userWithCreate.role = 'admin';
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithCreate);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithCreate);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with JSON serialization', async () => {
-      const userWithJSON = {
-        email: 'test@example.com',
-        password: 'password123',
-        toJSON() {
-          return {
-            email: this.email,
-            password: this.password,
-          };
+    it('should handle user object with Proxy that returns undefined', async () => {
+      const undefinedProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return undefined;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithJSON);
+      const result = await controller.login(undefinedProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithJSON);
+      expect(authService.login).toHaveBeenCalledWith(undefinedProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with toString method', async () => {
-      const userWithToString = {
-        email: 'test@example.com',
-        password: 'password123',
-        toString() {
-          return `${this.email}:${this.password}`;
-        },
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithToString);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithToString);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with valueOf method', async () => {
-      const userWithValueOf = {
-        email: 'test@example.com',
-        password: 'password123',
-        valueOf() {
-          return this.email;
-        },
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithValueOf);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithValueOf);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Symbol.toPrimitive', async () => {
-      const userWithToPrimitive = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.toPrimitive](hint: string) {
-          if (hint === 'string') return this.email;
-          if (hint === 'number') return 42;
+    it('should handle user object with Proxy that returns null', async () => {
+      const nullProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
           return null;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithToPrimitive);
+      const result = await controller.login(nullProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithToPrimitive);
+      expect(authService.login).toHaveBeenCalledWith(nullProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.iterator', async () => {
-      const userWithIterator = {
-        email: 'test@example.com',
-        password: 'password123',
-        *[Symbol.iterator]() {
-          yield this.email;
-          yield this.password;
+    it('should handle user object with Proxy that returns different values', async () => {
+      const dynamicProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          if (prop === 'email') return 'dynamic@example.com';
+          if (prop === 'password') return 'dynamic-password';
+          return target[prop];
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithIterator);
+      const result = await controller.login(dynamicProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithIterator);
+      expect(authService.login).toHaveBeenCalledWith(dynamicProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.asyncIterator', async () => {
-      const userWithAsyncIterator = {
-        email: 'test@example.com',
-        password: 'password123',
-        async *[Symbol.asyncIterator]() {
-          yield this.email;
-          yield this.password;
+    it('should handle user object with Proxy that has ownKeys trap', async () => {
+      const ownKeysProxyUser = new Proxy({ ...mockUser }, {
+        ownKeys() {
+          return ['email', 'password'];
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithAsyncIterator);
+      const result = await controller.login(ownKeysProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithAsyncIterator);
+      expect(authService.login).toHaveBeenCalledWith(ownKeysProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.hasInstance', async () => {
-      const userWithHasInstance = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.hasInstance](instance: any) {
-          return instance instanceof Object;
+    it('should handle user object with Proxy that has getOwnPropertyDescriptor trap', async () => {
+      const getOwnPropertyDescriptorProxyUser = new Proxy({ ...mockUser }, {
+        getOwnPropertyDescriptor(target, prop) {
+          return {
+            configurable: true,
+            enumerable: true,
+            value: target[prop],
+            writable: true,
+          };
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithHasInstance);
+      const result = await controller.login(getOwnPropertyDescriptorProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithHasInstance);
+      expect(authService.login).toHaveBeenCalledWith(getOwnPropertyDescriptorProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.isConcatSpreadable', async () => {
-      const userWithConcatSpreadable = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.isConcatSpreadable]: true,
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithConcatSpreadable);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithConcatSpreadable);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Symbol.match', async () => {
-      const userWithMatch = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.match](string: string) {
-          return string.includes(this.email);
+    it('should handle user object with Proxy that has has trap', async () => {
+      const hasProxyUser = new Proxy({ ...mockUser }, {
+        has(target, prop) {
+          return prop in target;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithMatch);
+      const result = await controller.login(hasProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithMatch);
+      expect(authService.login).toHaveBeenCalledWith(hasProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.replace', async () => {
-      const userWithReplace = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.replace](string: string, replacement: string) {
-          return string.replace(this.email, replacement);
+    it('should handle user object with Proxy that has set trap', async () => {
+      const setProxyUser = new Proxy({ ...mockUser }, {
+        set(target, prop, value) {
+          target[prop] = value;
+          return true;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithReplace);
+      const result = await controller.login(setProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithReplace);
+      expect(authService.login).toHaveBeenCalledWith(setProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.search', async () => {
-      const userWithSearch = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.search](string: string) {
-          return string.indexOf(this.email);
+    it('should handle user object with Proxy that has deleteProperty trap', async () => {
+      const deleteProxyUser = new Proxy({ ...mockUser }, {
+        deleteProperty(target, prop) {
+          delete target[prop];
+          return true;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithSearch);
+      const result = await controller.login(deleteProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithSearch);
+      expect(authService.login).toHaveBeenCalledWith(deleteProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.split', async () => {
-      const userWithSplit = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.split](string: string) {
-          return string.split(this.email);
+    it('should handle user object with Proxy that has defineProperty trap', async () => {
+      const defineProxyUser = new Proxy({ ...mockUser }, {
+        defineProperty(target, prop, descriptor) {
+          Object.defineProperty(target, prop, descriptor);
+          return true;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithSplit);
+      const result = await controller.login(defineProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithSplit);
+      expect(authService.login).toHaveBeenCalledWith(defineProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with Symbol.species', async () => {
-      const userWithSpecies = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.species]: Array,
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithSpecies);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithSpecies);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with Symbol.toPrimitive and Symbol.toStringTag', async () => {
-      const userWithMultipleSymbols = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.toPrimitive](hint: string) {
-          return hint === 'string' ? this.email : 42;
+    it('should handle user object with Proxy that has getPrototypeOf trap', async () => {
+      const getPrototypeOfProxyUser = new Proxy({ ...mockUser }, {
+        getPrototypeOf() {
+          return null;
         },
-        [Symbol.toStringTag]: 'CustomUser',
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithMultipleSymbols);
+      const result = await controller.login(getPrototypeOfProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithMultipleSymbols);
+      expect(authService.login).toHaveBeenCalledWith(getPrototypeOfProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with all possible symbol properties', async () => {
-      const userWithAllSymbols = {
-        email: 'test@example.com',
-        password: 'password123',
-        [Symbol.asyncIterator]: async function* () {},
-        [Symbol.hasInstance]: function () { return true; },
-        [Symbol.isConcatSpreadable]: true,
-        [Symbol.iterator]: function* () {},
-        [Symbol.match]: function () { return true; },
-        [Symbol.matchAll]: function* () {},
-        [Symbol.replace]: function () { return ''; },
-        [Symbol.search]: function () { return 0; },
-        [Symbol.species]: Array,
-        [Symbol.split]: function () { return []; },
-        [Symbol.toPrimitive]: function () { return ''; },
-        [Symbol.toStringTag]: 'CustomUser',
-        [Symbol.unscopables]: {},
-      };
-
-      mockAuthService.login.mockResolvedValue(mockLoginResponse);
-
-      const result = await controller.login(userWithAllSymbols);
-
-      expect(authService.login).toHaveBeenCalledWith(userWithAllSymbols);
-      expect(result).toEqual(mockLoginResponse);
-    });
-
-    it('should handle user with getter that throws', async () => {
-      const userWithThrowingGetter = {
-        email: 'test@example.com',
-        password: 'password123',
-        get invalid() {
-          throw new Error('Getter error');
+    it('should handle user object with Proxy that has setPrototypeOf trap', async () => {
+      const setPrototypeOfProxyUser = new Proxy({ ...mockUser }, {
+        setPrototypeOf() {
+          return true;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithThrowingGetter);
+      const result = await controller.login(setPrototypeOfProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithThrowingGetter);
+      expect(authService.login).toHaveBeenCalledWith(setPrototypeOfProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with setter that throws', async () => {
-      const userWithThrowingSetter = {
-        email: 'test@example.com',
-        password: 'password123',
-        set invalid(value: any) {
-          throw new Error('Setter error');
+    it('should handle user object with Proxy that has isExtensible trap', async () => {
+      const isExtensibleProxyUser = new Proxy({ ...mockUser }, {
+        isExtensible() {
+          return true;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithThrowingSetter);
+      const result = await controller.login(isExtensibleProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithThrowingSetter);
+      expect(authService.login).toHaveBeenCalledWith(isExtensibleProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with method that throws', async () => {
-      const userWithThrowingMethod = {
-        email: 'test@example.com',
-        password: 'password123',
-        throwError() {
-          throw new Error('Method error');
+    it('should handle user object with Proxy that has preventExtensions trap', async () => {
+      const preventExtensionsProxyUser = new Proxy({ ...mockUser }, {
+        preventExtensions() {
+          return true;
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithThrowingMethod);
+      const result = await controller.login(preventExtensionsProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithThrowingMethod);
+      expect(authService.login).toHaveBeenCalledWith(preventExtensionsProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with async method that throws', async () => {
-      const userWithThrowingAsyncMethod = {
-        email: 'test@example.com',
-        password: 'password123',
-        async throwError() {
-          throw new Error('Async method error');
+    it('should handle user object with Proxy that has getOwnPropertyNames trap', async () => {
+      const getOwnPropertyNamesProxyUser = new Proxy({ ...mockUser }, {
+        getOwnPropertyNames() {
+          return ['email', 'password'];
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login(userWithThrowingAsyncMethod);
+      const result = await controller.login(getOwnPropertyNamesProxyUser);
 
-      expect(authService.login).toHaveBeenCalledWith(userWithThrowingAsyncMethod);
+      expect(authService.login).toHaveBeenCalledWith(getOwnPropertyNamesProxyUser);
       expect(result).toEqual(mockLoginResponse);
     });
 
-    it('should handle user with generator method that throws', async () => {
-      const userWithThrowingGenerator = {
-        email: 'test@example.com',
-        password: 'password123',
-        *throwError() {
-          throw new Error('Generator error');
+    it('should handle user object with Proxy that has getOwnPropertySymbols trap', async () => {
+      const getOwnPropertySymbolsProxyUser = new Proxy({ ...mockUser }, {
+        getOwnPropertySymbols() {
+          return [];
         },
-      };
-
+      });
       mockAuthService.login.mockResolvedValue(mockLoginResponse);
 
-      const result = await controller.login
+      const result = await controller.login(getOwnPropertySymbolsProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(getOwnPropertySymbolsProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has enumerate trap', async () => {
+      const enumerateProxyUser = new Proxy({ ...mockUser }, {
+        enumerate() {
+          return ['email', 'password'];
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(enumerateProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(enumerateProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has apply trap', async () => {
+      const applyProxyUser = new Proxy({ ...mockUser }, {
+        apply() {
+          return mockLoginResponse;
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(applyProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(applyProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has construct trap', async () => {
+      const constructProxyUser = new Proxy({ ...mockUser }, {
+        construct() {
+          return mockLoginResponse;
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(constructProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(constructProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning Promise', async () => {
+      const promiseProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return Promise.resolve(target[prop]);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(promiseProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(promiseProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning async function', async () => {
+      const asyncProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return async () => target[prop];
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(asyncProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(asyncProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning generator', async () => {
+      const generatorProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return function* () { yield target[prop]; };
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(generatorProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(generatorProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning iterator', async () => {
+      const iteratorProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return {
+            [Symbol.iterator]: function* () { yield target[prop]; }
+          };
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(iteratorProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(iteratorProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning async iterator', async () => {
+      const asyncIteratorProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return {
+            [Symbol.asyncIterator]: async function* () { yield target[prop]; }
+          };
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(asyncIteratorProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(asyncIteratorProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning thenable', async () => {
+      const thenableProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return {
+            then(resolve) { resolve(target[prop]); }
+          };
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(thenableProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(thenableProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning class', async () => {
+      const classProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return class { value = target[prop]; };
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(classProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(classProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning Map', async () => {
+      const mapProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new Map([[prop, target[prop]]]);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(mapProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(mapProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning Set', async () => {
+      const setProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new Set([target[prop]]);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(setProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(setProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning WeakMap', async () => {
+      const weakMapProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new WeakMap([[{}, target[prop]]]);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(weakMapProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(weakMapProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning WeakSet', async () => {
+      const weakSetProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new WeakSet([target[prop]]);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(weakSetProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(weakSetProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning ArrayBuffer', async () => {
+      const arrayBufferProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new ArrayBuffer(8);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(arrayBufferProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(arrayBufferProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning DataView', async () => {
+      const dataViewProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new DataView(new ArrayBuffer(8));
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(dataViewProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(dataViewProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning TypedArray', async () => {
+      const typedArrayProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new Uint8Array(8);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(typedArrayProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(typedArrayProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning RegExp', async () => {
+      const regexProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new RegExp(target[prop]);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(regexProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(regexProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning Date', async () => {
+      const dateProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new Date();
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mockLoginResponse);
+
+      const result = await controller.login(dateProxyUser);
+
+      expect(authService.login).toHaveBeenCalledWith(dateProxyUser);
+      expect(result).toEqual(mockLoginResponse);
+    });
+
+    it('should handle user object with Proxy that has get trap returning Error', async () => {
+      const errorProxyUser = new Proxy({ ...mockUser }, {
+        get(target, prop) {
+          return new Error(target[prop]);
+        },
+      });
+      mockAuthService.login.mockResolvedValue(mock

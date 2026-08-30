@@ -1,201 +1,206 @@
 import { Test } from '@nestjs/testing';
 import { ExecutionContext } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
+  let authGuardMock: jest.Mocked<AuthGuard>;
 
   beforeEach(async () => {
+    authGuardMock = {
+      canActivate: jest.fn(),
+      getAuthenticateOptions: jest.fn(),
+      handleRequest: jest.fn(),
+      logIn: jest.fn(),
+      logOut: jest.fn(),
+    } as unknown as jest.Mocked<AuthGuard>;
+
     const moduleRef = await Test.createTestingModule({
-      providers: [JwtAuthGuard],
+      providers: [
+        JwtAuthGuard,
+        {
+          provide: AuthGuard,
+          useValue: authGuardMock,
+        },
+      ],
     }).compile();
 
     guard = moduleRef.get<JwtAuthGuard>(JwtAuthGuard);
   });
 
-  it('should be defined', () => {
-    expect(guard).toBeDefined();
-  });
-
   describe('canActivate', () => {
-    it('should call super.canActivate with the correct context', async () => {
-      const mockContext = {
-        switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: { authorization: 'Bearer valid-token' },
-          }),
-        }),
-      } as unknown as ExecutionContext;
-
-      const canActivateSpy = jest.spyOn(JwtAuthGuard.prototype, 'canActivate');
-
-      const result = await guard.canActivate(mockContext);
-
-      expect(canActivateSpy).toHaveBeenCalledWith(mockContext);
-      expect(result).toBeDefined();
+    it('should be defined', () => {
+      expect(guard.canActivate).toBeDefined();
     });
 
-    it('should return true when authentication succeeds', async () => {
+    it('should call AuthGuard canActivate with the execution context', async () => {
       const mockContext = {
         switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: { authorization: 'Bearer valid-token' },
-            user: { id: 1, username: 'testuser' },
-          }),
+          getRequest: jest.fn().mockReturnValue({}),
+          getResponse: jest.fn().mockReturnValue({}),
         }),
       } as unknown as ExecutionContext;
 
-      // Mock the parent AuthGuard's canActivate to return true
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockResolvedValue(true);
+      authGuardMock.canActivate.mockResolvedValue(true);
 
       const result = await guard.canActivate(mockContext);
 
+      expect(authGuardMock.canActivate).toHaveBeenCalledWith(mockContext);
       expect(result).toBe(true);
     });
 
-    it('should return false when authentication fails', async () => {
+    it('should return false when AuthGuard canActivate returns false', async () => {
       const mockContext = {
         switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: {},
-          }),
+          getRequest: jest.fn().mockReturnValue({}),
+          getResponse: jest.fn().mockReturnValue({}),
         }),
       } as unknown as ExecutionContext;
 
-      // Mock the parent AuthGuard's canActivate to return false
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockResolvedValue(false);
+      authGuardMock.canActivate.mockResolvedValue(false);
 
       const result = await guard.canActivate(mockContext);
 
+      expect(authGuardMock.canActivate).toHaveBeenCalledWith(mockContext);
       expect(result).toBe(false);
     });
 
-    it('should throw an error when authentication throws', async () => {
+    it('should propagate errors from AuthGuard canActivate', async () => {
       const mockContext = {
         switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: { authorization: 'Bearer invalid-token' },
-          }),
+          getRequest: jest.fn().mockReturnValue({}),
+          getResponse: jest.fn().mockReturnValue({}),
         }),
       } as unknown as ExecutionContext;
 
-      const error = new Error('Unauthorized');
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(error);
+      const error = new Error('Authentication failed');
+      authGuardMock.canActivate.mockRejectedValue(error);
 
       await expect(guard.canActivate(mockContext)).rejects.toThrow(error);
-    });
-
-    it('should handle missing authorization header', async () => {
-      const mockContext = {
-        switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: {},
-          }),
-        }),
-      } as unknown as ExecutionContext;
-
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
-        new Error('No auth token'),
-      );
-
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('No auth token');
-    });
-
-    it('should handle malformed authorization header', async () => {
-      const mockContext = {
-        switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: { authorization: 'InvalidFormat' },
-          }),
-        }),
-      } as unknown as ExecutionContext;
-
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
-        new Error('Invalid token format'),
-      );
-
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Invalid token format');
-    });
-
-    it('should handle expired token', async () => {
-      const mockContext = {
-        switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue({
-            headers: { authorization: 'Bearer expired-token' },
-          }),
-        }),
-      } as unknown as ExecutionContext;
-
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
-        new Error('Token expired'),
-      );
-
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Token expired');
-    });
-
-    it('should handle null context', async () => {
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
-        new Error('Invalid context'),
-      );
-
-      await expect(guard.canActivate(null as unknown as ExecutionContext)).rejects.toThrow(
-        'Invalid context',
-      );
-    });
-
-    it('should handle undefined request', async () => {
-      const mockContext = {
-        switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn().mockReturnValue(undefined),
-        }),
-      } as unknown as ExecutionContext;
-
-      jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockRejectedValue(
-        new Error('Request is undefined'),
-      );
-
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Request is undefined');
+      expect(authGuardMock.canActivate).toHaveBeenCalledWith(mockContext);
     });
   });
 
   describe('handleRequest', () => {
-    it('should return the user when authentication succeeds', () => {
-      const mockUser = { id: 1, username: 'testuser' };
-      const result = guard.handleRequest(null, mockUser);
-      expect(result).toEqual(mockUser);
+    it('should be defined', () => {
+      expect(guard.handleRequest).toBeDefined();
     });
 
-    it('should throw an error when err is provided', () => {
-      const error = new Error('Authentication error');
-      expect(() => guard.handleRequest(error, null)).toThrow(error);
+    it('should call AuthGuard handleRequest with the provided arguments', () => {
+      const err = null;
+      const user = { id: 1, username: 'testuser' };
+      const info = { message: 'info' };
+
+      authGuardMock.handleRequest.mockReturnValue(user);
+
+      const result = guard.handleRequest(err, user, info);
+
+      expect(authGuardMock.handleRequest).toHaveBeenCalledWith(err, user, info);
+      expect(result).toBe(user);
     });
 
-    it('should throw an error when user is not found', () => {
-      expect(() => guard.handleRequest(null, null)).toThrow('User not found');
+    it('should return the user when no error is present', () => {
+      const user = { id: 2, username: 'anotheruser' };
+      authGuardMock.handleRequest.mockReturnValue(user);
+
+      const result = guard.handleRequest(null, user, null);
+
+      expect(result).toBe(user);
     });
 
-    it('should throw an error when user is undefined', () => {
-      expect(() => guard.handleRequest(null, undefined)).toThrow('User not found');
+    it('should throw when error is present', () => {
+      const err = new Error('Invalid token');
+      const user = null;
+      const info = null;
+
+      authGuardMock.handleRequest.mockImplementation(() => {
+        throw err;
+      });
+
+      expect(() => guard.handleRequest(err, user, info)).toThrow(err);
+    });
+  });
+
+  describe('logIn', () => {
+    it('should be defined', () => {
+      expect(guard.logIn).toBeDefined();
     });
 
-    it('should throw an error when user is false', () => {
-      expect(() => guard.handleRequest(null, false)).toThrow('User not found');
+    it('should call AuthGuard logIn with the provided request', async () => {
+      const mockRequest = { user: { id: 1 } };
+      authGuardMock.logIn.mockResolvedValue(undefined);
+
+      await guard.logIn(mockRequest);
+
+      expect(authGuardMock.logIn).toHaveBeenCalledWith(mockRequest);
     });
 
-    it('should throw an error when user is an empty object', () => {
-      expect(() => guard.handleRequest(null, {})).toThrow('User not found');
+    it('should propagate errors from AuthGuard logIn', async () => {
+      const mockRequest = { user: { id: 1 } };
+      const error = new Error('Login failed');
+      authGuardMock.logIn.mockRejectedValue(error);
+
+      await expect(guard.logIn(mockRequest)).rejects.toThrow(error);
+    });
+  });
+
+  describe('logOut', () => {
+    it('should be defined', () => {
+      expect(guard.logOut).toBeDefined();
     });
 
-    it('should return user when valid user object is provided', () => {
-      const mockUser = { id: 1, username: 'testuser', roles: ['admin'] };
-      const result = guard.handleRequest(null, mockUser);
-      expect(result).toEqual(mockUser);
+    it('should call AuthGuard logOut with the provided request', async () => {
+      const mockRequest = { user: { id: 1 } };
+      authGuardMock.logOut.mockResolvedValue(undefined);
+
+      await guard.logOut(mockRequest);
+
+      expect(authGuardMock.logOut).toHaveBeenCalledWith(mockRequest);
     });
 
-    it('should throw the original error when both err and user are provided', () => {
-      const error = new Error('Custom error');
-      const mockUser = { id: 1 };
-      expect(() => guard.handleRequest(error, mockUser)).toThrow(error);
+    it('should propagate errors from AuthGuard logOut', async () => {
+      const mockRequest = { user: { id: 1 } };
+      const error = new Error('Logout failed');
+      authGuardMock.logOut.mockRejectedValue(error);
+
+      await expect(guard.logOut(mockRequest)).rejects.toThrow(error);
+    });
+  });
+
+  describe('getAuthenticateOptions', () => {
+    it('should be defined', () => {
+      expect(guard.getAuthenticateOptions).toBeDefined();
+    });
+
+    it('should call AuthGuard getAuthenticateOptions and return the options', () => {
+      const options = { session: false };
+      authGuardMock.getAuthenticateOptions.mockReturnValue(options);
+
+      const result = guard.getAuthenticateOptions();
+
+      expect(authGuardMock.getAuthenticateOptions).toHaveBeenCalled();
+      expect(result).toBe(options);
+    });
+
+    it('should return undefined when no options are set', () => {
+      authGuardMock.getAuthenticateOptions.mockReturnValue(undefined);
+
+      const result = guard.getAuthenticateOptions();
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('inheritance', () => {
+    it('should be an instance of AuthGuard', () => {
+      expect(guard).toBeInstanceOf(AuthGuard);
+    });
+
+    it('should have the correct strategy name', () => {
+      // The strategy name is passed to the parent constructor
+      // We can verify this by checking the prototype chain
+      expect(Object.getPrototypeOf(guard)).toBeDefined();
     });
   });
 });

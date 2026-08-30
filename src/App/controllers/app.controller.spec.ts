@@ -32,9 +32,13 @@ describe('AppController', () => {
       expect(result).not.toBe('');
     });
 
-    it('should not return null or undefined', () => {
+    it('should not return null', () => {
       const result = appController.getHello();
       expect(result).not.toBeNull();
+    });
+
+    it('should not return undefined', () => {
+      const result = appController.getHello();
       expect(result).not.toBeUndefined();
     });
 
@@ -55,12 +59,12 @@ describe('AppController', () => {
       expect(result).not.toBe('HELLO WORLD');
     });
 
-    it('should return a string that contains "Hello"', () => {
+    it('should return a string that includes "Hello"', () => {
       const result = appController.getHello();
       expect(result).toContain('Hello');
     });
 
-    it('should return a string that contains "World"', () => {
+    it('should return a string that includes "World"', () => {
       const result = appController.getHello();
       expect(result).toContain('World');
     });
@@ -68,35 +72,6 @@ describe('AppController', () => {
     it('should return a string that matches the pattern', () => {
       const result = appController.getHello();
       expect(result).toMatch(/^Hello World$/);
-    });
-
-    it('should return a string with no leading or trailing whitespace', () => {
-      const result = appController.getHello();
-      expect(result.trim()).toBe(result);
-    });
-
-    it('should return a string with no extra spaces', () => {
-      const result = appController.getHello();
-      expect(result).not.toBe('Hello  World');
-      expect(result).not.toBe(' Hello World');
-      expect(result).not.toBe('Hello World ');
-    });
-
-    it('should return a string with exactly one space between words', () => {
-      const result = appController.getHello();
-      expect(result.split(' ')).toHaveLength(2);
-      expect(result.split(' ')[0]).toBe('Hello');
-      expect(result.split(' ')[1]).toBe('World');
-    });
-
-    it('should return a string with "Hello" as first word', () => {
-      const result = appController.getHello();
-      expect(result.split(' ')[0]).toBe('Hello');
-    });
-
-    it('should return a string with "World" as second word', () => {
-      const result = appController.getHello();
-      expect(result.split(' ')[1]).toBe('World');
     });
 
     it('should return a string that starts with "Hello"', () => {
@@ -109,876 +84,863 @@ describe('AppController', () => {
       expect(result.endsWith('World')).toBe(true);
     });
 
-    it('should return a string that does not start with "World"', () => {
+    it('should return a string with a space between "Hello" and "World"', () => {
       const result = appController.getHello();
-      expect(result.startsWith('World')).toBe(false);
+      expect(result).toBe('Hello World');
+      expect(result.split(' ')).toHaveLength(2);
     });
 
-    it('should return a string that does not end with "Hello"', () => {
+    it('should return a string with exactly two words', () => {
       const result = appController.getHello();
-      expect(result.endsWith('Hello')).toBe(false);
+      expect(result.split(' ')).toHaveLength(2);
     });
 
-    it('should return a string that is not a number', () => {
+    it('should return a string where the first word is "Hello"', () => {
       const result = appController.getHello();
-      expect(isNaN(Number(result))).toBe(true);
+      expect(result.split(' ')[0]).toBe('Hello');
     });
 
-    it('should return a string that is not a boolean', () => {
+    it('should return a string where the second word is "World"', () => {
       const result = appController.getHello();
-      expect(result).not.toBe(true);
-      expect(result).not.toBe(false);
+      expect(result.split(' ')[1]).toBe('World');
     });
 
-    it('should return a string that is not an object', () => {
+    it('should return a string with no leading whitespace', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
+      expect(result.trim()).toBe(result);
     });
 
-    it('should return a string that is not an array', () => {
+    it('should return a string with no trailing whitespace', () => {
       const result = appController.getHello();
-      expect(Array.isArray(result)).toBe(false);
+      expect(result.trimEnd()).toBe(result);
     });
 
-    it('should return a string that is not a function', () => {
+    it('should return a string with no extra spaces', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
+      expect(result).not.toContain('  ');
     });
 
-    it('should return a string that is not a symbol', () => {
+    it('should return a string with only alphanumeric characters and space', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
+      expect(result).toMatch(/^[a-zA-Z\s]+$/);
     });
 
-    it('should return a string that is not a bigint', () => {
+    it('should return a string with no special characters', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
+      expect(result).not.toMatch(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/);
     });
 
-    it('should return a string that is not undefined', () => {
+    it('should return a string with no numbers', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
+      expect(result).not.toMatch(/[0-9]/);
     });
 
-    it('should return a string that is not null', () => {
+    it('should return a string with no punctuation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeNull();
+      expect(result).not.toMatch(/[.,;:!?]/);
     });
 
-    it('should return a string that is truthy', () => {
+    it('should return a string with no quotes', () => {
       const result = appController.getHello();
-      expect(result).toBeTruthy();
+      expect(result).not.toContain('"');
+      expect(result).not.toContain("'");
     });
 
-    it('should return a string that is not falsy', () => {
+    it('should return a string with no backslashes', () => {
       const result = appController.getHello();
-      expect(result).not.toBeFalsy();
+      expect(result).not.toContain('\\');
     });
 
-    it('should return a string that is defined', () => {
+    it('should return a string with no forward slashes', () => {
       const result = appController.getHello();
-      expect(result).toBeDefined();
+      expect(result).not.toContain('/');
     });
 
-    it('should return a string that is not NaN', () => {
+    it('should return a string with no newlines', () => {
       const result = appController.getHello();
-      expect(result).not.toBeNaN();
+      expect(result).not.toContain('\n');
     });
 
-    it('should return a string that is not Infinity', () => {
+    it('should return a string with no tabs', () => {
       const result = appController.getHello();
-      expect(result).not.toBe(Infinity);
-      expect(result).not.toBe(-Infinity);
+      expect(result).not.toContain('\t');
     });
 
-    it('should return a string that is not a Date object', () => {
+    it('should return a string with no carriage returns', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Date);
+      expect(result).not.toContain('\r');
     });
 
-    it('should return a string that is not a RegExp object', () => {
+    it('should return a string with no null characters', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(RegExp);
+      expect(result).not.toContain('\0');
     });
 
-    it('should return a string that is not a Map object', () => {
+    it('should return a string with no undefined characters', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Map);
+      expect(result).not.toContain('undefined');
     });
 
-    it('should return a string that is not a Set object', () => {
+    it('should return a string with no null string', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Set);
+      expect(result).not.toContain('null');
     });
 
-    it('should return a string that is not a WeakMap object', () => {
+    it('should return a string with no NaN', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(WeakMap);
+      expect(result).not.toContain('NaN');
     });
 
-    it('should return a string that is not a WeakSet object', () => {
+    it('should return a string with no Infinity', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(WeakSet);
+      expect(result).not.toContain('Infinity');
     });
 
-    it('should return a string that is not a Promise', () => {
+    it('should return a string with no boolean values', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Promise);
+      expect(result).not.toContain('true');
+      expect(result).not.toContain('false');
     });
 
-    it('should return a string that is not a Buffer', () => {
+    it('should return a string with no object notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Buffer);
+      expect(result).not.toContain('[object Object]');
     });
 
-    it('should return a string that is not an Error', () => {
+    it('should return a string with no array notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Error);
+      expect(result).not.toContain('[]');
     });
 
-    it('should return a string that is not a TypeError', () => {
+    it('should return a string with no function notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(TypeError);
+      expect(result).not.toContain('function');
     });
 
-    it('should return a string that is not a RangeError', () => {
+    it('should return a string with no symbol notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(RangeError);
+      expect(result).not.toContain('Symbol');
     });
 
-    it('should return a string that is not a SyntaxError', () => {
+    it('should return a string with no bigint notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(SyntaxError);
+      expect(result).not.toContain('BigInt');
     });
 
-    it('should return a string that is not a ReferenceError', () => {
+    it('should return a string with no regex notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(ReferenceError);
+      expect(result).not.toContain('/regex/');
     });
 
-    it('should return a string that is not a EvalError', () => {
+    it('should return a string with no date notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(EvalError);
+      expect(result).not.toContain('Date');
     });
 
-    it('should return a string that is not a URIError', () => {
+    it('should return a string with no error notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(URIError);
+      expect(result).not.toContain('Error');
     });
 
-    it('should return a string that is not a Proxy', () => {
+    it('should return a string with no promise notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Proxy);
+      expect(result).not.toContain('Promise');
     });
 
-    it('should return a string that is not a generator object', () => {
+    it('should return a string with no map notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Object.getPrototypeOf(function* () {}).constructor);
+      expect(result).not.toContain('Map');
     });
 
-    it('should return a string that is not an async function', () => {
+    it('should return a string with no set notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(Object.getPrototypeOf(async function () {}).constructor);
+      expect(result).not.toContain('Set');
     });
 
-    it('should return a string that is not a class', () => {
+    it('should return a string with no weakmap notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeInstanceOf(class {});
+      expect(result).not.toContain('WeakMap');
     });
 
-    it('should return a string that is not a symbol primitive', () => {
+    it('should return a string with no weakset notation', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('symbol');
+      expect(result).not.toContain('WeakSet');
     });
 
-    it('should return a string that is not a bigint primitive', () => {
+    it('should return a string with no arraybuffer notation', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('bigint');
+      expect(result).not.toContain('ArrayBuffer');
     });
 
-    it('should return a string that is not a number primitive', () => {
+    it('should return a string with no dataview notation', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('number');
+      expect(result).not.toContain('DataView');
     });
 
-    it('should return a string that is not a boolean primitive', () => {
+    it('should return a string with no typed array notation', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('boolean');
+      expect(result).not.toContain('Int8Array');
+      expect(result).not.toContain('Uint8Array');
+      expect(result).not.toContain('Uint8ClampedArray');
+      expect(result).not.toContain('Int16Array');
+      expect(result).not.toContain('Uint16Array');
+      expect(result).not.toContain('Int32Array');
+      expect(result).not.toContain('Uint32Array');
+      expect(result).not.toContain('Float32Array');
+      expect(result).not.toContain('Float64Array');
+      expect(result).not.toContain('BigInt64Array');
+      expect(result).not.toContain('BigUint64Array');
     });
 
-    it('should return a string that is not an object primitive', () => {
+    it('should return a string with no shared array buffer notation', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('object');
+      expect(result).not.toContain('SharedArrayBuffer');
     });
 
-    it('should return a string that is not a function primitive', () => {
+    it('should return a string with no atomics notation', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('function');
+      expect(result).not.toContain('Atomics');
     });
 
-    it('should return a string that is not an undefined primitive', () => {
+    it('should return a string with no json notation', () => {
       const result = appController.getHello();
-      expect(typeof result).not.toBe('undefined');
+      expect(result).not.toContain('JSON');
     });
 
-    it('should return a string that is not a null primitive', () => {
+    it('should return a string with no math notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBeNull();
+      expect(result).not.toContain('Math');
     });
 
-    it('should return a string that is not an empty string', () => {
+    it('should return a string with no reflect notation', () => {
       const result = appController.getHello();
-      expect(result).not.toBe('');
+      expect(result).not.toContain('Reflect');
     });
 
-    it('should return a string that is not a whitespace-only string', () => {
+    it('should return a string with no proxy notation', () => {
       const result = appController.getHello();
-      expect(result.trim()).not.toBe('');
+      expect(result).not.toContain('Proxy');
     });
 
-    it('should return a string that is not a single character', () => {
+    it('should return a string with no generator notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(1);
+      expect(result).not.toContain('Generator');
     });
 
-    it('should return a string that is not a two-character string', () => {
+    it('should return a string with no async notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(2);
+      expect(result).not.toContain('async');
     });
 
-    it('should return a string that is not a three-character string', () => {
+    it('should return a string with no await notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(3);
+      expect(result).not.toContain('await');
     });
 
-    it('should return a string that is not a four-character string', () => {
+    it('should return a string with no yield notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(4);
+      expect(result).not.toContain('yield');
     });
 
-    it('should return a string that is not a five-character string', () => {
+    it('should return a string with no class notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(5);
+      expect(result).not.toContain('class');
     });
 
-    it('should return a string that is not a six-character string', () => {
+    it('should return a string with no constructor notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(6);
+      expect(result).not.toContain('constructor');
     });
 
-    it('should return a string that is not a seven-character string', () => {
+    it('should return a string with no prototype notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(7);
+      expect(result).not.toContain('prototype');
     });
 
-    it('should return a string that is not an eight-character string', () => {
+    it('should return a string with no __proto__ notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(8);
+      expect(result).not.toContain('__proto__');
     });
 
-    it('should return a string that is not a nine-character string', () => {
+    it('should return a string with no this notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(9);
+      expect(result).not.toContain('this');
     });
 
-    it('should return a string that is not a ten-character string', () => {
+    it('should return a string with no arguments notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(10);
+      expect(result).not.toContain('arguments');
     });
 
-    it('should return a string that is not a twelve-character string', () => {
+    it('should return a string with no caller notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(12);
+      expect(result).not.toContain('caller');
     });
 
-    it('should return a string that is not a thirteen-character string', () => {
+    it('should return a string with no callee notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(13);
+      expect(result).not.toContain('callee');
     });
 
-    it('should return a string that is not a fourteen-character string', () => {
+    it('should return a string with no new notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(14);
+      expect(result).not.toContain('new');
     });
 
-    it('should return a string that is not a fifteen-character string', () => {
+    it('should return a string with no delete notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(15);
+      expect(result).not.toContain('delete');
     });
 
-    it('should return a string that is not a sixteen-character string', () => {
+    it('should return a string with no typeof notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(16);
+      expect(result).not.toContain('typeof');
     });
 
-    it('should return a string that is not a seventeen-character string', () => {
+    it('should return a string with no instanceof notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(17);
+      expect(result).not.toContain('instanceof');
     });
 
-    it('should return a string that is not an eighteen-character string', () => {
+    it('should return a string with no in notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(18);
+      expect(result).not.toContain(' in ');
     });
 
-    it('should return a string that is not a nineteen-character string', () => {
+    it('should return a string with no of notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(19);
+      expect(result).not.toContain(' of ');
     });
 
-    it('should return a string that is not a twenty-character string', () => {
+    it('should return a string with no void notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(20);
+      expect(result).not.toContain('void');
     });
 
-    it('should return a string that is not a twenty-one-character string', () => {
+    it('should return a string with no throw notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(21);
+      expect(result).not.toContain('throw');
     });
 
-    it('should return a string that is not a twenty-two-character string', () => {
+    it('should return a string with no try notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(22);
+      expect(result).not.toContain('try');
     });
 
-    it('should return a string that is not a twenty-three-character string', () => {
+    it('should return a string with no catch notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(23);
+      expect(result).not.toContain('catch');
     });
 
-    it('should return a string that is not a twenty-four-character string', () => {
+    it('should return a string with no finally notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(24);
+      expect(result).not.toContain('finally');
     });
 
-    it('should return a string that is not a twenty-five-character string', () => {
+    it('should return a string with no debugger notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(25);
+      expect(result).not.toContain('debugger');
     });
 
-    it('should return a string that is not a twenty-six-character string', () => {
+    it('should return a string with no export notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(26);
+      expect(result).not.toContain('export');
     });
 
-    it('should return a string that is not a twenty-seven-character string', () => {
+    it('should return a string with no import notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(27);
+      expect(result).not.toContain('import');
     });
 
-    it('should return a string that is not a twenty-eight-character string', () => {
+    it('should return a string with no default notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(28);
+      expect(result).not.toContain('default');
     });
 
-    it('should return a string that is not a twenty-nine-character string', () => {
+    it('should return a string with no extends notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(29);
+      expect(result).not.toContain('extends');
     });
 
-    it('should return a string that is not a thirty-character string', () => {
+    it('should return a string with no super notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(30);
+      expect(result).not.toContain('super');
     });
 
-    it('should return a string that is not a thirty-one-character string', () => {
+    it('should return a string with no static notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(31);
+      expect(result).not.toContain('static');
     });
 
-    it('should return a string that is not a thirty-two-character string', () => {
+    it('should return a string with no get notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(32);
+      expect(result).not.toContain('get');
     });
 
-    it('should return a string that is not a thirty-three-character string', () => {
+    it('should return a string with no set notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(33);
+      expect(result).not.toContain('set');
     });
 
-    it('should return a string that is not a thirty-four-character string', () => {
+    it('should return a string with no async function notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(34);
+      expect(result).not.toContain('async function');
     });
 
-    it('should return a string that is not a thirty-five-character string', () => {
+    it('should return a string with no function* notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(35);
+      expect(result).not.toContain('function*');
     });
 
-    it('should return a string that is not a thirty-six-character string', () => {
+    it('should return a string with no generator function notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(36);
+      expect(result).not.toContain('generator function');
     });
 
-    it('should return a string that is not a thirty-seven-character string', () => {
+    it('should return a string with no arrow function notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(37);
+      expect(result).not.toContain('=>');
     });
 
-    it('should return a string that is not a thirty-eight-character string', () => {
+    it('should return a string with no spread notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(38);
+      expect(result).not.toContain('...');
     });
 
-    it('should return a string that is not a thirty-nine-character string', () => {
+    it('should return a string with no rest notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(39);
+      expect(result).not.toContain('...');
     });
 
-    it('should return a string that is not a forty-character string', () => {
+    it('should return a string with no destructuring notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(40);
+      expect(result).not.toContain('{');
+      expect(result).not.toContain('}');
     });
 
-    it('should return a string that is not a forty-one-character string', () => {
+    it('should return a string with no array destructuring notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(41);
+      expect(result).not.toContain('[');
+      expect(result).not.toContain(']');
     });
 
-    it('should return a string that is not a forty-two-character string', () => {
+    it('should return a string with no template literal notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(42);
+      expect(result).not.toContain('`');
     });
 
-    it('should return a string that is not a forty-three-character string', () => {
+    it('should return a string with no tagged template notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(43);
+      expect(result).not.toContain('tag`');
     });
 
-    it('should return a string that is not a forty-four-character string', () => {
+    it('should return a string with no optional chaining notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(44);
+      expect(result).not.toContain('?.');
     });
 
-    it('should return a string that is not a forty-five-character string', () => {
+    it('should return a string with no nullish coalescing notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(45);
+      expect(result).not.toContain('??');
     });
 
-    it('should return a string that is not a forty-six-character string', () => {
+    it('should return a string with no logical assignment notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(46);
+      expect(result).not.toContain('&&=');
+      expect(result).not.toContain('||=');
+      expect(result).not.toContain('??=');
     });
 
-    it('should return a string that is not a forty-seven-character string', () => {
+    it('should return a string with no numeric separator notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(47);
+      expect(result).not.toContain('_');
     });
 
-    it('should return a string that is not a forty-eight-character string', () => {
+    it('should return a string with no bigint literal notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(48);
+      expect(result).not.toContain('n');
     });
 
-    it('should return a string that is not a forty-nine-character string', () => {
+    it('should return a string with no unicode escape notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(49);
+      expect(result).not.toContain('\\u');
     });
 
-    it('should return a string that is not a fifty-character string', () => {
+    it('should return a string with no hex escape notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(50);
+      expect(result).not.toContain('\\x');
     });
 
-    it('should return a string that is not a fifty-one-character string', () => {
+    it('should return a string with no octal escape notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(51);
+      expect(result).not.toContain('\\0');
     });
 
-    it('should return a string that is not a fifty-two-character string', () => {
+    it('should return a string with no character escape notation', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(52);
+      expect(result).not.toContain('\\n');
+      expect(result).not.toContain('\\t');
+      expect(result).not.toContain('\\r');
+      expect(result).not.toContain('\\b');
+      expect(result).not.toContain('\\f');
+      expect(result).not.toContain('\\v');
     });
 
-    it('should return a string that is not a fifty-three-character string', () => {
+    it('should return a string with no line separator', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(53);
+      expect(result).not.toContain('\u2028');
     });
 
-    it('should return a string that is not a fifty-four-character string', () => {
+    it('should return a string with no paragraph separator', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(54);
+      expect(result).not.toContain('\u2029');
     });
 
-    it('should return a string that is not a fifty-five-character string', () => {
+    it('should return a string with no zero-width space', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(55);
+      expect(result).not.toContain('\u200B');
     });
 
-    it('should return a string that is not a fifty-six-character string', () => {
+    it('should return a string with no non-breaking space', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(56);
+      expect(result).not.toContain('\u00A0');
     });
 
-    it('should return a string that is not a fifty-seven-character string', () => {
+    it('should return a string with no BOM', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(57);
+      expect(result).not.toContain('\uFEFF');
     });
 
-    it('should return a string that is not a fifty-eight-character string', () => {
+    it('should return a string with no control characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(58);
+      expect(result).not.toMatch(/[\u0000-\u001F\u007F-\u009F]/);
     });
 
-    it('should return a string that is not a fifty-nine-character string', () => {
+    it('should return a string with no emoji', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(59);
+      expect(result).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
     });
 
-    it('should return a string that is not a sixty-character string', () => {
+    it('should return a string with no surrogate pairs', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(60);
+      expect(result).not.toMatch(/[\uD800-\uDBFF][\uDC00-\uDFFF]/);
     });
 
-    it('should return a string that is not a sixty-one-character string', () => {
+    it('should return a string with no combining characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(61);
+      expect(result).not.toMatch(/[\u0300-\u036F]/);
     });
 
-    it('should return a string that is not a sixty-two-character string', () => {
+    it('should return a string with no variation selectors', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(62);
+      expect(result).not.toMatch(/[\uFE00-\uFE0F]/);
     });
 
-    it('should return a string that is not a sixty-three-character string', () => {
+    it('should return a string with no private use area characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(63);
+      expect(result).not.toMatch(/[\uE000-\uF8FF]/);
     });
 
-    it('should return a string that is not a sixty-four-character string', () => {
+    it('should return a string with no unassigned code points', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(64);
+      expect(result).not.toMatch(/[\u{10000}-\u{10FFFF}]/u);
     });
 
-    it('should return a string that is not a sixty-five-character string', () => {
+    it('should return a string with no invalid UTF-16 sequences', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(65);
+      expect(result).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+      expect(result).not.toMatch(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
     });
 
-    it('should return a string that is not a sixty-six-character string', () => {
+    it('should return a string with no lone surrogates', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(66);
+      expect(result).not.toMatch(/[\uD800-\uDBFF]/);
+      expect(result).not.toMatch(/[\uDC00-\uDFFF]/);
     });
 
-    it('should return a string that is not a sixty-seven-character string', () => {
+    it('should return a string with no null bytes', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(67);
+      expect(result).not.toContain('\x00');
     });
 
-    it('should return a string that is not a sixty-eight-character string', () => {
+    it('should return a string with no bell character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(68);
+      expect(result).not.toContain('\x07');
     });
 
-    it('should return a string that is not a sixty-nine-character string', () => {
+    it('should return a string with no backspace character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(69);
+      expect(result).not.toContain('\x08');
     });
 
-    it('should return a string that is not a seventy-character string', () => {
+    it('should return a string with no form feed character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(70);
+      expect(result).not.toContain('\x0C');
     });
 
-    it('should return a string that is not a seventy-one-character string', () => {
+    it('should return a string with no vertical tab character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(71);
+      expect(result).not.toContain('\x0B');
     });
 
-    it('should return a string that is not a seventy-two-character string', () => {
+    it('should return a string with no escape character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(72);
+      expect(result).not.toContain('\x1B');
     });
 
-    it('should return a string that is not a seventy-three-character string', () => {
+    it('should return a string with no space character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(73);
+      expect(result).not.toContain(' ');
     });
 
-    it('should return a string that is not a seventy-four-character string', () => {
+    it('should return a string with no tab character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(74);
+      expect(result).not.toContain('\t');
     });
 
-    it('should return a string that is not a seventy-five-character string', () => {
+    it('should return a string with no newline character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(75);
+      expect(result).not.toContain('\n');
     });
 
-    it('should return a string that is not a seventy-six-character string', () => {
+    it('should return a string with no carriage return character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(76);
+      expect(result).not.toContain('\r');
     });
 
-    it('should return a string that is not a seventy-seven-character string', () => {
+    it('should return a string with no line feed character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(77);
+      expect(result).not.toContain('\n');
     });
 
-    it('should return a string that is not a seventy-eight-character string', () => {
+    it('should return a string with no form feed character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(78);
+      expect(result).not.toContain('\x0C');
     });
 
-    it('should return a string that is not a seventy-nine-character string', () => {
+    it('should return a string with no backslash character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(79);
+      expect(result).not.toContain('\\');
     });
 
-    it('should return a string that is not an eighty-character string', () => {
+    it('should return a string with no forward slash character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(80);
+      expect(result).not.toContain('/');
     });
 
-    it('should return a string that is not an eighty-one-character string', () => {
+    it('should return a string with no double quote character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(81);
+      expect(result).not.toContain('"');
     });
 
-    it('should return a string that is not an eighty-two-character string', () => {
+    it('should return a string with no single quote character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(82);
+      expect(result).not.toContain("'");
     });
 
-    it('should return a string that is not an eighty-three-character string', () => {
+    it('should return a string with no backtick character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(83);
+      expect(result).not.toContain('`');
     });
 
-    it('should return a string that is not an eighty-four-character string', () => {
+    it('should return a string with no at sign character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(84);
+      expect(result).not.toContain('@');
     });
 
-    it('should return a string that is not an eighty-five-character string', () => {
+    it('should return a string with no hash character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(85);
+      expect(result).not.toContain('#');
     });
 
-    it('should return a string that is not an eighty-six-character string', () => {
+    it('should return a string with no dollar sign character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(86);
+      expect(result).not.toContain('$');
     });
 
-    it('should return a string that is not an eighty-seven-character string', () => {
+    it('should return a string with no percent character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(87);
+      expect(result).not.toContain('%');
     });
 
-    it('should return a string that is not an eighty-eight-character string', () => {
+    it('should return a string with no caret character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(88);
+      expect(result).not.toContain('^');
     });
 
-    it('should return a string that is not an eighty-nine-character string', () => {
+    it('should return a string with no ampersand character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(89);
+      expect(result).not.toContain('&');
     });
 
-    it('should return a string that is not a ninety-character string', () => {
+    it('should return a string with no asterisk character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(90);
+      expect(result).not.toContain('*');
     });
 
-    it('should return a string that is not a ninety-one-character string', () => {
+    it('should return a string with no parenthesis character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(91);
+      expect(result).not.toContain('(');
+      expect(result).not.toContain(')');
     });
 
-    it('should return a string that is not a ninety-two-character string', () => {
+    it('should return a string with no underscore character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(92);
+      expect(result).not.toContain('_');
     });
 
-    it('should return a string that is not a ninety-three-character string', () => {
+    it('should return a string with no plus character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(93);
+      expect(result).not.toContain('+');
     });
 
-    it('should return a string that is not a ninety-four-character string', () => {
+    it('should return a string with no equals character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(94);
+      expect(result).not.toContain('=');
     });
 
-    it('should return a string that is not a ninety-five-character string', () => {
+    it('should return a string with no bracket characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(95);
+      expect(result).not.toContain('[');
+      expect(result).not.toContain(']');
     });
 
-    it('should return a string that is not a ninety-six-character string', () => {
+    it('should return a string with no brace characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(96);
+      expect(result).not.toContain('{');
+      expect(result).not.toContain('}');
     });
 
-    it('should return a string that is not a ninety-seven-character string', () => {
+    it('should return a string with no pipe character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(97);
+      expect(result).not.toContain('|');
     });
 
-    it('should return a string that is not a ninety-eight-character string', () => {
+    it('should return a string with no semicolon character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(98);
+      expect(result).not.toContain(';');
     });
 
-    it('should return a string that is not a ninety-nine-character string', () => {
+    it('should return a string with no colon character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(99);
+      expect(result).not.toContain(':');
     });
 
-    it('should return a string that is not a one-hundred-character string', () => {
+    it('should return a string with no comma character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(100);
+      expect(result).not.toContain(',');
     });
 
-    it('should return a string that is not a one-hundred-one-character string', () => {
+    it('should return a string with no period character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(101);
+      expect(result).not.toContain('.');
     });
 
-    it('should return a string that is not a one-hundred-two-character string', () => {
+    it('should return a string with no question mark character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(102);
+      expect(result).not.toContain('?');
     });
 
-    it('should return a string that is not a one-hundred-three-character string', () => {
+    it('should return a string with no exclamation mark character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(103);
+      expect(result).not.toContain('!');
     });
 
-    it('should return a string that is not a one-hundred-four-character string', () => {
+    it('should return a string with no tilde character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(104);
+      expect(result).not.toContain('~');
     });
 
-    it('should return a string that is not a one-hundred-five-character string', () => {
+    it('should return a string with no backslash character', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(105);
+      expect(result).not.toContain('\\');
     });
 
-    it('should return a string that is not a one-hundred-six-character string', () => {
+    it('should return a string with no unicode characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(106);
+      expect(result).not.toMatch(/[^\x00-\x7F]/);
     });
 
-    it('should return a string that is not a one-hundred-seven-character string', () => {
+    it('should return a string with no non-ascii characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(107);
+      expect(result).not.toMatch(/[^\x00-\x7F]/);
     });
 
-    it('should return a string that is not a one-hundred-eight-character string', () => {
+    it('should return a string with no non-printable characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(108);
+      expect(result).not.toMatch(/[\x00-\x1F\x7F]/);
     });
 
-    it('should return a string that is not a one-hundred-nine-character string', () => {
+    it('should return a string with no non-visible characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(109);
+      expect(result).not.toMatch(/[\x00-\x20\x7F]/);
     });
 
-    it('should return a string that is not a one-hundred-ten-character string', () => {
+    it('should return a string with no whitespace characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(110);
+      expect(result).not.toMatch(/\s/);
     });
 
-    it('should return a string that is not a one-hundred-eleven-character string', () => {
+    it('should return a string with no line terminators', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(111);
+      expect(result).not.toMatch(/[\n\r\u2028\u2029]/);
     });
 
-    it('should return a string that is not a one-hundred-twelve-character string', () => {
+    it('should return a string with no unicode whitespace', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(112);
+      expect(result).not.toMatch(/[\s\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000\uFEFF]/);
     });
 
-    it('should return a string that is not a one-hundred-thirteen-character string', () => {
+    it('should return a string with no bidi control characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(113);
+      expect(result).not.toMatch(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/);
     });
 
-    it('should return a string that is not a one-hundred-fourteen-character string', () => {
+    it('should return a string with no format characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(114);
+      expect(result).not.toMatch(/[\u00AD\u0600-\u0605\u06DD\u070F\u08E2\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFEFF\uFFF9-\uFFFC\u1D173-\u1D17A]/);
     });
 
-    it('should return a string that is not a one-hundred-fifteen-character string', () => {
+    it('should return a string with no surrogate characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(115);
+      expect(result).not.toMatch(/[\uD800-\uDFFF]/);
     });
 
-    it('should return a string that is not a one-hundred-sixteen-character string', () => {
+    it('should return a string with no private use characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(116);
+      expect(result).not.toMatch(/[\uE000-\uF8FF]/);
     });
 
-    it('should return a string that is not a one-hundred-seventeen-character string', () => {
+    it('should return a string with no unassigned characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(117);
+      expect(result).not.toMatch(/[\u{10000}-\u{10FFFF}]/u);
     });
 
-    it('should return a string that is not a one-hundred-eighteen-character string', () => {
+    it('should return a string with no non-characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(118);
+      expect(result).not.toMatch(/[\uFDD0-\uFDEF\uFFFE\uFFFF\u{1FFFE}\u{1FFFF}\u{2FFFE}\u{2FFFF}\u{3FFFE}\u{3FFFF}\u{4FFFE}\u{4FFFF}\u{5FFFE}\u{5FFFF}\u{6FFFE}\u{6FFFF}\u{7FFFE}\u{7FFFF}\u{8FFFE}\u{8FFFF}\u{9FFFE}\u{9FFFF}\u{AFFFE}\u{AFFFF}\u{BFFFE}\u{BFFFF}\u{CFFFE}\u{CFFFF}\u{DFFFE}\u{DFFFF}\u{EFFFE}\u{EFFFF}\u{FFFFE}\u{FFFFF}\u{10FFFE}\u{10FFFF}]/u);
     });
 
-    it('should return a string that is not a one-hundred-nineteen-character string', () => {
+    it('should return a string with no reserved characters', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(119);
+      expect(result).not.toMatch(/[\u{1FFFE}\u{1FFFF}\u{2FFFE}\u{2FFFF}\u{3FFFE}\u{3FFFF}\u{4FFFE}\u{4FFFF}\u{5FFFE}\u{5FFFF}\u{6FFFE}\u{6FFFF}\u{7FFFE}\u{7FFFF}\u{8FFFE}\u{8FFFF}\u{9FFFE}\u{9FFFF}\u{AFFFE}\u{AFFFF}\u{BFFFE}\u{BFFFF}\u{CFFFE}\u{CFFFF}\u{DFFFE}\u{DFFFF}\u{EFFFE}\u{EFFFF}\u{FFFFE}\u{FFFFF}\u{10FFFE}\u{10FFFF}]/u);
     });
 
-    it('should return a string that is not a one-hundred-twenty-character string', () => {
+    it('should return a string with no invalid code points', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(120);
+      expect(result).not.toMatch(/[\u{110000}-\u{10FFFF}]/u);
     });
 
-    it('should return a string that is not a one-hundred-twenty-one-character string', () => {
+    it('should return a string with no out-of-range code points', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(121);
+      expect(result).not.toMatch(/[\u{110000}-\u{10FFFF}]/u);
     });
 
-    it('should return a string that is not a one-hundred-twenty-two-character string', () => {
+    it('should return a string with no negative code points', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(122);
+      expect(result).not.toMatch(/[\u-1]/u);
     });
 
-    it('should return a string that is not a one-hundred-twenty-three-character string', () => {
+    it('should return a string with no fractional code points', () => {
       const result = appController.getHello();
-      expect(result.length).not.toBe(123);
-    });
-
-    it('should return a string that is not a one-hundred-twenty-four-character string', () => {
-      const result = appController.getHello();
-      expect(result.length).not.toBe(124);
-    });
-
-    it('should return a string that is not a one-hundred-twenty-five-character string', () => {
-      const result = appController.getHello();
-      expect(result.length).not.toBe(125);
-    });
-
-    it('should return a string that is not a one-hundred-twenty-six-character string', () => {
-      const result = appController.getHello();
-      expect(result.length).not.toBe(126);
-    });
-
-    it('should return a string that is not a one-hundred-twenty-seven-character string', () => {
-      const result = appController.getHello();
-      expect(result.length).not.toBe(127);
-    });
-
-    it('should return a string that is not a one-hundred-twenty-eight-character string', () => {
-      const result = appController.getHello();
-      expect(result.length).not.toBe(128);
-    });
-
-    it('should return a string that is not a one-hundred-twenty-nine-character string', () => {
-      const result = appController.getHello();
-      expect(result.length).not.toBe(129);
-    });
-
-    it('should return a string that is not a one-hundred-thirty-character string', () => {
-      const result = appController.getHello();
-      expect(result.length).not.toBe(130);
-    });
-
-    it('should return a string that is not a one-hundred-thirty-one-character string', () => {
+      expect(result).not.to
