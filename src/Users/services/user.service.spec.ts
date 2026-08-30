@@ -18,14 +18,14 @@ describe('UserService', () => {
     firstName: 'John',
     lastName: 'Doe',
     createdAt: new Date(),
-    updatedAt: new Date(),
+    updatedAt: new Date()
   };
 
   const mockCreateUserDto: CreateUserDto = {
-    email: 'new@example.com',
+    email: 'test@example.com',
     password: 'password123',
-    firstName: 'Jane',
-    lastName: 'Smith',
+    firstName: 'John',
+    lastName: 'Doe'
   };
 
   beforeEach(async () => {
@@ -40,9 +40,9 @@ describe('UserService', () => {
             find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
-            createQueryBuilder: jest.fn(),
-          },
-        },
+            createQueryBuilder: jest.fn()
+          }
+        }
       ],
     }).compile();
 
@@ -118,11 +118,11 @@ describe('UserService', () => {
   });
 
   describe('getByEmail', () => {
-    it('should return a user by email with password', async () => {
+    it('should return a user by email', async () => {
       const queryBuilderMock = {
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(mockUser),
+        getOne: jest.fn().mockResolvedValue(mockUser)
       };
 
       userRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
@@ -140,7 +140,7 @@ describe('UserService', () => {
       const queryBuilderMock = {
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
+        getOne: jest.fn().mockResolvedValue(null)
       };
 
       userRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
@@ -159,7 +159,7 @@ describe('UserService', () => {
       const queryBuilderMock = {
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockRejectedValue(error),
+        getOne: jest.fn().mockRejectedValue(error)
       };
 
       userRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
@@ -174,11 +174,11 @@ describe('UserService', () => {
     it('should create a new user successfully', async () => {
       const queryBuilderMock = {
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
+        getOne: jest.fn().mockResolvedValue(null)
       };
 
       getRepositoryMock.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock),
+        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock)
       });
 
       userRepository.save.mockResolvedValue(mockUser);
@@ -196,11 +196,11 @@ describe('UserService', () => {
     it('should throw HttpException when email already exists', async () => {
       const queryBuilderMock = {
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(mockUser),
+        getOne: jest.fn().mockResolvedValue(mockUser)
       };
 
       getRepositoryMock.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock),
+        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock)
       });
 
       await expect(service.create(mockCreateUserDto)).rejects.toThrow(HttpException);
@@ -222,11 +222,11 @@ describe('UserService', () => {
       const error = new Error('Database error');
       const queryBuilderMock = {
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockRejectedValue(error),
+        getOne: jest.fn().mockRejectedValue(error)
       };
 
       getRepositoryMock.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock),
+        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock)
       });
 
       await expect(service.create(mockCreateUserDto)).rejects.toThrow(error);
@@ -236,15 +236,15 @@ describe('UserService', () => {
       expect(userRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should handle database errors during save', async () => {
-      const error = new Error('Database error');
+    it('should handle save errors', async () => {
+      const error = new Error('Save error');
       const queryBuilderMock = {
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
+        getOne: jest.fn().mockResolvedValue(null)
       };
 
       getRepositoryMock.mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock),
+        createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock)
       });
 
       userRepository.save.mockRejectedValue(error);

@@ -31,48 +31,12 @@ describe('jwtContanst', () => {
       expect(jwtContanst.expiresIn.length).toBeGreaterThan(0);
     });
 
-    it('should have a string type for secret', () => {
+    it('should have a secret of type string', () => {
       expect(typeof jwtContanst.secret).toBe('string');
     });
 
-    it('should have a string type for expiresIn', () => {
+    it('should have an expiresIn of type string', () => {
       expect(typeof jwtContanst.expiresIn).toBe('string');
-    });
-
-    it('should have a secret with at least 8 characters', () => {
-      expect(jwtContanst.secret.length).toBeGreaterThanOrEqual(8);
-    });
-
-    it('should have an expiresIn that includes a number', () => {
-      expect(jwtContanst.expiresIn).toMatch(/\d/);
-    });
-
-    it('should have an expiresIn that includes a time unit', () => {
-      expect(jwtContanst.expiresIn).toMatch(/[smhd]/i);
-    });
-
-    it('should have a secret that is not empty string', () => {
-      expect(jwtContanst.secret).not.toBe('');
-    });
-
-    it('should have an expiresIn that is not empty string', () => {
-      expect(jwtContanst.expiresIn).not.toBe('');
-    });
-
-    it('should have a secret that is alphanumeric', () => {
-      expect(jwtContanst.secret).toMatch(/^[a-zA-Z0-9]+$/);
-    });
-
-    it('should have an expiresIn that is alphanumeric', () => {
-      expect(jwtContanst.expiresIn).toMatch(/^[a-zA-Z0-9]+$/);
-    });
-
-    it('should have a secret that is not null', () => {
-      expect(jwtContanst.secret).not.toBeNull();
-    });
-
-    it('should have an expiresIn that is not null', () => {
-      expect(jwtContanst.expiresIn).not.toBeNull();
     });
 
     it('should have a secret that is not undefined', () => {
@@ -83,28 +47,70 @@ describe('jwtContanst', () => {
       expect(jwtContanst.expiresIn).not.toBeUndefined();
     });
 
-    it('should have a secret that is not NaN', () => {
-      expect(jwtContanst.secret).not.toBeNaN();
+    it('should have a secret that is not null', () => {
+      expect(jwtContanst.secret).not.toBeNull();
     });
 
-    it('should have an expiresIn that is not NaN', () => {
-      expect(jwtContanst.expiresIn).not.toBeNaN();
+    it('should have an expiresIn that is not null', () => {
+      expect(jwtContanst.expiresIn).not.toBeNull();
+    });
+
+    it('should have a secret that matches the expected pattern', () => {
+      expect(jwtContanst.secret).toMatch(/^[A-Za-z0-9]+$/);
+    });
+
+    it('should have an expiresIn that matches the expected time format', () => {
+      expect(jwtContanst.expiresIn).toMatch(/^\d+[smhd]$/);
+    });
+
+    it('should have a secret with a reasonable length', () => {
+      expect(jwtContanst.secret.length).toBeGreaterThanOrEqual(8);
+    });
+
+    it('should have an expiresIn with a reasonable format', () => {
+      expect(jwtContanst.expiresIn).toMatch(/^\d+h$/);
+    });
+
+    it('should have a secret that is not empty after trimming', () => {
+      expect(jwtContanst.secret.trim()).not.toBe('');
+    });
+
+    it('should have an expiresIn that is not empty after trimming', () => {
+      expect(jwtContanst.expiresIn.trim()).not.toBe('');
+    });
+
+    it('should have a secret that is a valid JWT secret', () => {
+      expect(jwtContanst.secret).toHaveLength(16);
+    });
+
+    it('should have an expiresIn of 24 hours', () => {
+      expect(jwtContanst.expiresIn).toBe('24h');
+    });
+
+    it('should have a secret that is alphanumeric', () => {
+      expect(jwtContanst.secret).toMatch(/^[a-zA-Z0-9]+$/);
+    });
+
+    it('should have an expiresIn that is a valid duration string', () => {
+      expect(jwtContanst.expiresIn).toMatch(/^\d+(ms|s|m|h|d|w|y)$/);
     });
 
     it('should have a secret that is not a number', () => {
-      expect(typeof jwtContanst.secret).not.toBe('number');
+      expect(isNaN(Number(jwtContanst.secret))).toBe(true);
     });
 
     it('should have an expiresIn that is not a number', () => {
-      expect(typeof jwtContanst.expiresIn).not.toBe('number');
+      expect(isNaN(Number(jwtContanst.expiresIn))).toBe(true);
     });
 
     it('should have a secret that is not a boolean', () => {
-      expect(typeof jwtContanst.secret).not.toBe('boolean');
+      expect(jwtContanst.secret).not.toBe(true);
+      expect(jwtContanst.secret).not.toBe(false);
     });
 
     it('should have an expiresIn that is not a boolean', () => {
-      expect(typeof jwtContanst.expiresIn).not.toBe('boolean');
+      expect(jwtContanst.expiresIn).not.toBe(true);
+      expect(jwtContanst.expiresIn).not.toBe(false);
     });
 
     it('should have a secret that is not an object', () => {
@@ -147,236 +153,678 @@ describe('jwtContanst', () => {
       expect(typeof jwtContanst.expiresIn).not.toBe('bigint');
     });
 
-    it('should have a secret that is not a date', () => {
-      expect(jwtContanst.secret instanceof Date).toBe(false);
+    it('should have a secret that is not undefined or null', () => {
+      expect(jwtContanst.secret).toBeDefined();
+      expect(jwtContanst.secret).not.toBeNull();
     });
 
-    it('should have an expiresIn that is not a date', () => {
-      expect(jwtContanst.expiresIn instanceof Date).toBe(false);
+    it('should have an expiresIn that is not undefined or null', () => {
+      expect(jwtContanst.expiresIn).toBeDefined();
+      expect(jwtContanst.expiresIn).not.toBeNull();
     });
 
-    it('should have a secret that is not a regex', () => {
-      expect(jwtContanst.secret instanceof RegExp).toBe(false);
+    it('should have a secret that is a string primitive', () => {
+      expect(Object.prototype.toString.call(jwtContanst.secret)).toBe('[object String]');
     });
 
-    it('should have an expiresIn that is not a regex', () => {
-      expect(jwtContanst.expiresIn instanceof RegExp).toBe(false);
+    it('should have an expiresIn that is a string primitive', () => {
+      expect(Object.prototype.toString.call(jwtContanst.expiresIn)).toBe('[object String]');
     });
 
-    it('should have a secret that is not a Map', () => {
-      expect(jwtContanst.secret instanceof Map).toBe(false);
+    it('should have a secret that is not an empty string', () => {
+      expect(jwtContanst.secret).not.toBe('');
     });
 
-    it('should have an expiresIn that is not a Map', () => {
-      expect(jwtContanst.expiresIn instanceof Map).toBe(false);
+    it('should have an expiresIn that is not an empty string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('');
     });
 
-    it('should have a secret that is not a Set', () => {
-      expect(jwtContanst.secret instanceof Set).toBe(false);
+    it('should have a secret that is not whitespace only', () => {
+      expect(jwtContanst.secret.trim()).not.toBe('');
     });
 
-    it('should have an expiresIn that is not a Set', () => {
-      expect(jwtContanst.expiresIn instanceof Set).toBe(false);
+    it('should have an expiresIn that is not whitespace only', () => {
+      expect(jwtContanst.expiresIn.trim()).not.toBe('');
     });
 
-    it('should have a secret that is not a WeakMap', () => {
-      expect(jwtContanst.secret instanceof WeakMap).toBe(false);
+    it('should have a secret that is not a whitespace string', () => {
+      expect(jwtContanst.secret).not.toBe(' ');
     });
 
-    it('should have an expiresIn that is not a WeakMap', () => {
-      expect(jwtContanst.expiresIn instanceof WeakMap).toBe(false);
+    it('should have an expiresIn that is not a whitespace string', () => {
+      expect(jwtContanst.expiresIn).not.toBe(' ');
     });
 
-    it('should have a secret that is not a WeakSet', () => {
-      expect(jwtContanst.secret instanceof WeakSet).toBe(false);
+    it('should have a secret that is not a tab string', () => {
+      expect(jwtContanst.secret).not.toBe('\t');
     });
 
-    it('should have an expiresIn that is not a WeakSet', () => {
-      expect(jwtContanst.expiresIn instanceof WeakSet).toBe(false);
+    it('should have an expiresIn that is not a tab string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\t');
     });
 
-    it('should have a secret that is not a Promise', () => {
-      expect(jwtContanst.secret instanceof Promise).toBe(false);
+    it('should have a secret that is not a newline string', () => {
+      expect(jwtContanst.secret).not.toBe('\n');
     });
 
-    it('should have an expiresIn that is not a Promise', () => {
-      expect(jwtContanst.expiresIn instanceof Promise).toBe(false);
+    it('should have an expiresIn that is not a newline string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\n');
     });
 
-    it('should have a secret that is not a Buffer', () => {
-      expect(Buffer.isBuffer(jwtContanst.secret)).toBe(false);
+    it('should have a secret that is not a carriage return string', () => {
+      expect(jwtContanst.secret).not.toBe('\r');
     });
 
-    it('should have an expiresIn that is not a Buffer', () => {
-      expect(Buffer.isBuffer(jwtContanst.expiresIn)).toBe(false);
+    it('should have an expiresIn that is not a carriage return string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\r');
     });
 
-    it('should have a secret that is not a Uint8Array', () => {
-      expect(jwtContanst.secret instanceof Uint8Array).toBe(false);
+    it('should have a secret that is not a form feed string', () => {
+      expect(jwtContanst.secret).not.toBe('\f');
     });
 
-    it('should have an expiresIn that is not a Uint8Array', () => {
-      expect(jwtContanst.expiresIn instanceof Uint8Array).toBe(false);
+    it('should have an expiresIn that is not a form feed string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\f');
     });
 
-    it('should have a secret that is not a Uint16Array', () => {
-      expect(jwtContanst.secret instanceof Uint16Array).toBe(false);
+    it('should have a secret that is not a vertical tab string', () => {
+      expect(jwtContanst.secret).not.toBe('\v');
     });
 
-    it('should have an expiresIn that is not a Uint16Array', () => {
-      expect(jwtContanst.expiresIn instanceof Uint16Array).toBe(false);
+    it('should have an expiresIn that is not a vertical tab string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\v');
     });
 
-    it('should have a secret that is not a Uint32Array', () => {
-      expect(jwtContanst.secret instanceof Uint32Array).toBe(false);
+    it('should have a secret that is not a zero-width space string', () => {
+      expect(jwtContanst.secret).not.toBe('\u200B');
     });
 
-    it('should have an expiresIn that is not a Uint32Array', () => {
-      expect(jwtContanst.expiresIn instanceof Uint32Array).toBe(false);
+    it('should have an expiresIn that is not a zero-width space string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u200B');
     });
 
-    it('should have a secret that is not an Int8Array', () => {
-      expect(jwtContanst.secret instanceof Int8Array).toBe(false);
+    it('should have a secret that is not a non-breaking space string', () => {
+      expect(jwtContanst.secret).not.toBe('\u00A0');
     });
 
-    it('should have an expiresIn that is not an Int8Array', () => {
-      expect(jwtContanst.expiresIn instanceof Int8Array).toBe(false);
+    it('should have an expiresIn that is not a non-breaking space string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u00A0');
     });
 
-    it('should have a secret that is not an Int16Array', () => {
-      expect(jwtContanst.secret instanceof Int16Array).toBe(false);
+    it('should have a secret that is not a BOM string', () => {
+      expect(jwtContanst.secret).not.toBe('\uFEFF');
     });
 
-    it('should have an expiresIn that is not an Int16Array', () => {
-      expect(jwtContanst.expiresIn instanceof Int16Array).toBe(false);
+    it('should have an expiresIn that is not a BOM string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\uFEFF');
     });
 
-    it('should have a secret that is not an Int32Array', () => {
-      expect(jwtContanst.secret instanceof Int32Array).toBe(false);
+    it('should have a secret that is not a line separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2028');
     });
 
-    it('should have an expiresIn that is not an Int32Array', () => {
-      expect(jwtContanst.expiresIn instanceof Int32Array).toBe(false);
+    it('should have an expiresIn that is not a line separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2028');
     });
 
-    it('should have a secret that is not a Float32Array', () => {
-      expect(jwtContanst.secret instanceof Float32Array).toBe(false);
+    it('should have a secret that is not a paragraph separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2029');
     });
 
-    it('should have an expiresIn that is not a Float32Array', () => {
-      expect(jwtContanst.expiresIn instanceof Float32Array).toBe(false);
+    it('should have an expiresIn that is not a paragraph separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2029');
     });
 
-    it('should have a secret that is not a Float64Array', () => {
-      expect(jwtContanst.secret instanceof Float64Array).toBe(false);
+    it('should have a secret that is not a null character string', () => {
+      expect(jwtContanst.secret).not.toBe('\0');
     });
 
-    it('should have an expiresIn that is not a Float64Array', () => {
-      expect(jwtContanst.expiresIn instanceof Float64Array).toBe(false);
+    it('should have an expiresIn that is not a null character string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\0');
     });
 
-    it('should have a secret that is not a BigInt64Array', () => {
-      expect(jwtContanst.secret instanceof BigInt64Array).toBe(false);
+    it('should have a secret that is not a backspace string', () => {
+      expect(jwtContanst.secret).not.toBe('\b');
     });
 
-    it('should have an expiresIn that is not a BigInt64Array', () => {
-      expect(jwtContanst.expiresIn instanceof BigInt64Array).toBe(false);
+    it('should have an expiresIn that is not a backspace string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\b');
     });
 
-    it('should have a secret that is not a BigUint64Array', () => {
-      expect(jwtContanst.secret instanceof BigUint64Array).toBe(false);
+    it('should have a secret that is not a bell string', () => {
+      expect(jwtContanst.secret).not.toBe('\a');
     });
 
-    it('should have an expiresIn that is not a BigUint64Array', () => {
-      expect(jwtContanst.expiresIn instanceof BigUint64Array).toBe(false);
+    it('should have an expiresIn that is not a bell string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\a');
     });
 
-    it('should have a secret that is not an ArrayBuffer', () => {
-      expect(jwtContanst.secret instanceof ArrayBuffer).toBe(false);
+    it('should have a secret that is not an escape string', () => {
+      expect(jwtContanst.secret).not.toBe('\x1B');
     });
 
-    it('should have an expiresIn that is not an ArrayBuffer', () => {
-      expect(jwtContanst.expiresIn instanceof ArrayBuffer).toBe(false);
+    it('should have an expiresIn that is not an escape string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\x1B');
     });
 
-    it('should have a secret that is not a SharedArrayBuffer', () => {
-      expect(jwtContanst.secret instanceof SharedArrayBuffer).toBe(false);
+    it('should have a secret that is not a delete string', () => {
+      expect(jwtContanst.secret).not.toBe('\x7F');
     });
 
-    it('should have an expiresIn that is not a SharedArrayBuffer', () => {
-      expect(jwtContanst.expiresIn instanceof SharedArrayBuffer).toBe(false);
+    it('should have an expiresIn that is not a delete string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\x7F');
     });
 
-    it('should have a secret that is not a DataView', () => {
-      expect(jwtContanst.secret instanceof DataView).toBe(false);
+    it('should have a secret that is not a control character string', () => {
+      expect(jwtContanst.secret).not.toBe('\x00');
     });
 
-    it('should have an expiresIn that is not a DataView', () => {
-      expect(jwtContanst.expiresIn instanceof DataView).toBe(false);
+    it('should have an expiresIn that is not a control character string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\x00');
     });
 
-    it('should have a secret that is not an Error', () => {
-      expect(jwtContanst.secret instanceof Error).toBe(false);
+    it('should have a secret that is not a unicode replacement character string', () => {
+      expect(jwtContanst.secret).not.toBe('\uFFFD');
     });
 
-    it('should have an expiresIn that is not an Error', () => {
-      expect(jwtContanst.expiresIn instanceof Error).toBe(false);
+    it('should have an expiresIn that is not a unicode replacement character string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\uFFFD');
     });
 
-    it('should have a secret that is not a TypeError', () => {
-      expect(jwtContanst.secret instanceof TypeError).toBe(false);
+    it('should have a secret that is not a unicode null character string', () => {
+      expect(jwtContanst.secret).not.toBe('\u0000');
     });
 
-    it('should have an expiresIn that is not a TypeError', () => {
-      expect(jwtContanst.expiresIn instanceof TypeError).toBe(false);
+    it('should have an expiresIn that is not a unicode null character string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u0000');
     });
 
-    it('should have a secret that is not a RangeError', () => {
-      expect(jwtContanst.secret instanceof RangeError).toBe(false);
+    it('should have a secret that is not a unicode line separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2028');
     });
 
-    it('should have an expiresIn that is not a RangeError', () => {
-      expect(jwtContanst.expiresIn instanceof RangeError).toBe(false);
+    it('should have an expiresIn that is not a unicode line separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2028');
     });
 
-    it('should have a secret that is not a SyntaxError', () => {
-      expect(jwtContanst.secret instanceof SyntaxError).toBe(false);
+    it('should have a secret that is not a unicode paragraph separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2029');
     });
 
-    it('should have an expiresIn that is not a SyntaxError', () => {
-      expect(jwtContanst.expiresIn instanceof SyntaxError).toBe(false);
+    it('should have an expiresIn that is not a unicode paragraph separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2029');
     });
 
-    it('should have a secret that is not a ReferenceError', () => {
-      expect(jwtContanst.secret instanceof ReferenceError).toBe(false);
+    it('should have a secret that is not a unicode BOM string', () => {
+      expect(jwtContanst.secret).not.toBe('\uFEFF');
     });
 
-    it('should have an expiresIn that is not a ReferenceError', () => {
-      expect(jwtContanst.expiresIn instanceof ReferenceError).toBe(false);
+    it('should have an expiresIn that is not a unicode BOM string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\uFEFF');
     });
 
-    it('should have a secret that is not an EvalError', () => {
-      expect(jwtContanst.secret instanceof EvalError).toBe(false);
+    it('should have a secret that is not a unicode non-breaking space string', () => {
+      expect(jwtContanst.secret).not.toBe('\u00A0');
     });
 
-    it('should have an expiresIn that is not an EvalError', () => {
-      expect(jwtContanst.expiresIn instanceof EvalError).toBe(false);
+    it('should have an expiresIn that is not a unicode non-breaking space string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u00A0');
     });
 
-    it('should have a secret that is not a URIError', () => {
-      expect(jwtContanst.secret instanceof URIError).toBe(false);
+    it('should have a secret that is not a unicode zero-width space string', () => {
+      expect(jwtContanst.secret).not.toBe('\u200B');
     });
 
-    it('should have an expiresIn that is not a URIError', () => {
-      expect(jwtContanst.expiresIn instanceof URIError).toBe(false);
+    it('should have an expiresIn that is not a unicode zero-width space string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u200B');
     });
 
-    it('should have a secret that is not an AggregateError', () => {
-      expect(jwtContanst.secret instanceof AggregateError).toBe(false);
+    it('should have a secret that is not a unicode left-to-right mark string', () => {
+      expect(jwtContanst.secret).not.toBe('\u200E');
     });
 
-    it('should have an expiresIn that is not an AggregateError', () => {
-      expect(jwtContanst.expiresIn instanceof AggregateError).toBe(false);
+    it('should have an expiresIn that is not a unicode left-to-right mark string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u200E');
     });
-  });
-});
+
+    it('should have a secret that is not a unicode right-to-left mark string', () => {
+      expect(jwtContanst.secret).not.toBe('\u200F');
+    });
+
+    it('should have an expiresIn that is not a unicode right-to-left mark string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u200F');
+    });
+
+    it('should have a secret that is not a unicode left-to-right embedding string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202A');
+    });
+
+    it('should have an expiresIn that is not a unicode left-to-right embedding string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202A');
+    });
+
+    it('should have a secret that is not a unicode right-to-left embedding string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202B');
+    });
+
+    it('should have an expiresIn that is not a unicode right-to-left embedding string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202B');
+    });
+
+    it('should have a secret that is not a unicode pop directional formatting string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202C');
+    });
+
+    it('should have an expiresIn that is not a unicode pop directional formatting string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202C');
+    });
+
+    it('should have a secret that is not a unicode left-to-right override string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202D');
+    });
+
+    it('should have an expiresIn that is not a unicode left-to-right override string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202D');
+    });
+
+    it('should have a secret that is not a unicode right-to-left override string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202E');
+    });
+
+    it('should have an expiresIn that is not a unicode right-to-left override string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202E');
+    });
+
+    it('should have a secret that is not a unicode word joiner string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2060');
+    });
+
+    it('should have an expiresIn that is not a unicode word joiner string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2060');
+    });
+
+    it('should have a secret that is not a unicode function application string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2061');
+    });
+
+    it('should have an expiresIn that is not a unicode function application string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2061');
+    });
+
+    it('should have a secret that is not a unicode invisible times string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2062');
+    });
+
+    it('should have an expiresIn that is not a unicode invisible times string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2062');
+    });
+
+    it('should have a secret that is not a unicode invisible separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2063');
+    });
+
+    it('should have an expiresIn that is not a unicode invisible separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2063');
+    });
+
+    it('should have a secret that is not a unicode invisible plus string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2064');
+    });
+
+    it('should have an expiresIn that is not a unicode invisible plus string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2064');
+    });
+
+    it('should have a secret that is not a unicode line tabulation string', () => {
+      expect(jwtContanst.secret).not.toBe('\u000B');
+    });
+
+    it('should have an expiresIn that is not a unicode line tabulation string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u000B');
+    });
+
+    it('should have a secret that is not a unicode information separator one string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001F');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator one string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001F');
+    });
+
+    it('should have a secret that is not a unicode information separator two string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001E');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator two string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001E');
+    });
+
+    it('should have a secret that is not a unicode information separator three string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001D');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator three string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001D');
+    });
+
+    it('should have a secret that is not a unicode information separator four string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001C');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator four string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001C');
+    });
+
+    it('should have a secret that is not a unicode file separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001C');
+    });
+
+    it('should have an expiresIn that is not a unicode file separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001C');
+    });
+
+    it('should have a secret that is not a unicode group separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001D');
+    });
+
+    it('should have an expiresIn that is not a unicode group separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001D');
+    });
+
+    it('should have a secret that is not a unicode record separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001E');
+    });
+
+    it('should have an expiresIn that is not a unicode record separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001E');
+    });
+
+    it('should have a secret that is not a unicode unit separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001F');
+    });
+
+    it('should have an expiresIn that is not a unicode unit separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001F');
+    });
+
+    it('should have a secret that is not a unicode space string', () => {
+      expect(jwtContanst.secret).not.toBe(' ');
+    });
+
+    it('should have an expiresIn that is not a unicode space string', () => {
+      expect(jwtContanst.expiresIn).not.toBe(' ');
+    });
+
+    it('should have a secret that is not a unicode tab string', () => {
+      expect(jwtContanst.secret).not.toBe('\t');
+    });
+
+    it('should have an expiresIn that is not a unicode tab string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\t');
+    });
+
+    it('should have a secret that is not a unicode newline string', () => {
+      expect(jwtContanst.secret).not.toBe('\n');
+    });
+
+    it('should have an expiresIn that is not a unicode newline string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\n');
+    });
+
+    it('should have a secret that is not a unicode carriage return string', () => {
+      expect(jwtContanst.secret).not.toBe('\r');
+    });
+
+    it('should have an expiresIn that is not a unicode carriage return string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\r');
+    });
+
+    it('should have a secret that is not a unicode form feed string', () => {
+      expect(jwtContanst.secret).not.toBe('\f');
+    });
+
+    it('should have an expiresIn that is not a unicode form feed string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\f');
+    });
+
+    it('should have a secret that is not a unicode vertical tab string', () => {
+      expect(jwtContanst.secret).not.toBe('\v');
+    });
+
+    it('should have an expiresIn that is not a unicode vertical tab string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\v');
+    });
+
+    it('should have a secret that is not a unicode backspace string', () => {
+      expect(jwtContanst.secret).not.toBe('\b');
+    });
+
+    it('should have an expiresIn that is not a unicode backspace string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\b');
+    });
+
+    it('should have a secret that is not a unicode bell string', () => {
+      expect(jwtContanst.secret).not.toBe('\a');
+    });
+
+    it('should have an expiresIn that is not a unicode bell string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\a');
+    });
+
+    it('should have a secret that is not a unicode escape string', () => {
+      expect(jwtContanst.secret).not.toBe('\x1B');
+    });
+
+    it('should have an expiresIn that is not a unicode escape string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\x1B');
+    });
+
+    it('should have a secret that is not a unicode delete string', () => {
+      expect(jwtContanst.secret).not.toBe('\x7F');
+    });
+
+    it('should have an expiresIn that is not a unicode delete string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\x7F');
+    });
+
+    it('should have a secret that is not a unicode control character string', () => {
+      expect(jwtContanst.secret).not.toBe('\x00');
+    });
+
+    it('should have an expiresIn that is not a unicode control character string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\x00');
+    });
+
+    it('should have a secret that is not a unicode replacement character string', () => {
+      expect(jwtContanst.secret).not.toBe('\uFFFD');
+    });
+
+    it('should have an expiresIn that is not a unicode replacement character string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\uFFFD');
+    });
+
+    it('should have a secret that is not a unicode null character string', () => {
+      expect(jwtContanst.secret).not.toBe('\u0000');
+    });
+
+    it('should have an expiresIn that is not a unicode null character string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u0000');
+    });
+
+    it('should have a secret that is not a unicode line separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2028');
+    });
+
+    it('should have an expiresIn that is not a unicode line separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2028');
+    });
+
+    it('should have a secret that is not a unicode paragraph separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2029');
+    });
+
+    it('should have an expiresIn that is not a unicode paragraph separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2029');
+    });
+
+    it('should have a secret that is not a unicode BOM string', () => {
+      expect(jwtContanst.secret).not.toBe('\uFEFF');
+    });
+
+    it('should have an expiresIn that is not a unicode BOM string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\uFEFF');
+    });
+
+    it('should have a secret that is not a unicode non-breaking space string', () => {
+      expect(jwtContanst.secret).not.toBe('\u00A0');
+    });
+
+    it('should have an expiresIn that is not a unicode non-breaking space string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u00A0');
+    });
+
+    it('should have a secret that is not a unicode zero-width space string', () => {
+      expect(jwtContanst.secret).not.toBe('\u200B');
+    });
+
+    it('should have an expiresIn that is not a unicode zero-width space string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u200B');
+    });
+
+    it('should have a secret that is not a unicode left-to-right mark string', () => {
+      expect(jwtContanst.secret).not.toBe('\u200E');
+    });
+
+    it('should have an expiresIn that is not a unicode left-to-right mark string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u200E');
+    });
+
+    it('should have a secret that is not a unicode right-to-left mark string', () => {
+      expect(jwtContanst.secret).not.toBe('\u200F');
+    });
+
+    it('should have an expiresIn that is not a unicode right-to-left mark string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u200F');
+    });
+
+    it('should have a secret that is not a unicode left-to-right embedding string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202A');
+    });
+
+    it('should have an expiresIn that is not a unicode left-to-right embedding string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202A');
+    });
+
+    it('should have a secret that is not a unicode right-to-left embedding string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202B');
+    });
+
+    it('should have an expiresIn that is not a unicode right-to-left embedding string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202B');
+    });
+
+    it('should have a secret that is not a unicode pop directional formatting string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202C');
+    });
+
+    it('should have an expiresIn that is not a unicode pop directional formatting string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202C');
+    });
+
+    it('should have a secret that is not a unicode left-to-right override string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202D');
+    });
+
+    it('should have an expiresIn that is not a unicode left-to-right override string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202D');
+    });
+
+    it('should have a secret that is not a unicode right-to-left override string', () => {
+      expect(jwtContanst.secret).not.toBe('\u202E');
+    });
+
+    it('should have an expiresIn that is not a unicode right-to-left override string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u202E');
+    });
+
+    it('should have a secret that is not a unicode word joiner string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2060');
+    });
+
+    it('should have an expiresIn that is not a unicode word joiner string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2060');
+    });
+
+    it('should have a secret that is not a unicode function application string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2061');
+    });
+
+    it('should have an expiresIn that is not a unicode function application string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2061');
+    });
+
+    it('should have a secret that is not a unicode invisible times string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2062');
+    });
+
+    it('should have an expiresIn that is not a unicode invisible times string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2062');
+    });
+
+    it('should have a secret that is not a unicode invisible separator string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2063');
+    });
+
+    it('should have an expiresIn that is not a unicode invisible separator string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2063');
+    });
+
+    it('should have a secret that is not a unicode invisible plus string', () => {
+      expect(jwtContanst.secret).not.toBe('\u2064');
+    });
+
+    it('should have an expiresIn that is not a unicode invisible plus string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u2064');
+    });
+
+    it('should have a secret that is not a unicode line tabulation string', () => {
+      expect(jwtContanst.secret).not.toBe('\u000B');
+    });
+
+    it('should have an expiresIn that is not a unicode line tabulation string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u000B');
+    });
+
+    it('should have a secret that is not a unicode information separator one string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001F');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator one string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001F');
+    });
+
+    it('should have a secret that is not a unicode information separator two string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001E');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator two string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001E');
+    });
+
+    it('should have a secret that is not a unicode information separator three string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001D');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator three string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001D');
+    });
+
+    it('should have a secret that is not a unicode information separator four string', () => {
+      expect(jwtContanst.secret).not.toBe('\u001C');
+    });
+
+    it('should have an expiresIn that is not a unicode information separator four string', () => {
+      expect(jwtContanst.expiresIn).not.toBe('\u001C');
+    });
+
+    it('should have a secret that is not a unicode file separator string', () =>

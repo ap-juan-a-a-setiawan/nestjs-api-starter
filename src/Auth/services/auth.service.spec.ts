@@ -1,14 +1,14 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { AuthService } from "./auth.service";
-import { UserService } from "../../Users/services/user.service";
 import { JwtService } from "@nestjs/jwt";
 import { UnauthorizedException } from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import { UserService } from "../../Users/services/user.service";
 import { jwtContanst } from "../contants/jwt";
 
 describe("AuthService", () => {
   let service: AuthService;
-  let userService: jest.Mocked<UserService>;
-  let jwtService: jest.Mocked<JwtService>;
+  let userServiceMock: jest.Mocked<Partial<UserService>>;
+  let jwtServiceMock: jest.Mocked<Partial<JwtService>>;
 
   const mockUser = {
     id: 1,
@@ -18,27 +18,29 @@ describe("AuthService", () => {
   };
 
   beforeEach(async () => {
+    userServiceMock = {
+      getByEmail: jest.fn(),
+    };
+
+    jwtServiceMock = {
+      sign: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         {
           provide: UserService,
-          useValue: {
-            getByEmail: jest.fn(),
-          },
+          useValue: userServiceMock,
         },
         {
           provide: JwtService,
-          useValue: {
-            sign: jest.fn(),
-          },
+          useValue: jwtServiceMock,
         },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    userService = module.get(UserService);
-    jwtService = module.get(JwtService);
   });
 
   afterEach(() => {
@@ -48,23 +50,23 @@ describe("AuthService", () => {
   describe("validateUser", () => {
     it("should return user when credentials are valid", async () => {
       const email = "test@example.com";
-      const password = "password123";
+      const password = "correctPassword";
 
-      userService.getByEmail.mockResolvedValue(mockUser);
+      userServiceMock.getByEmail.mockResolvedValue(mockUser);
       mockUser.validatePassword.mockResolvedValue(true);
 
       const result = await service.validateUser(email, password);
 
-      expect(userService.getByEmail).toHaveBeenCalledWith(email);
+      expect(userServiceMock.getByEmail).toHaveBeenCalledWith(email);
       expect(mockUser.validatePassword).toHaveBeenCalledWith(password);
       expect(result).toEqual(mockUser);
     });
 
     it("should throw UnauthorizedException when user is not found", async () => {
       const email = "nonexistent@example.com";
-      const password = "password123";
+      const password = "anyPassword";
 
-      userService.getByEmail.mockResolvedValue(null);
+      userServiceMock.getByEmail.mockResolvedValue(null);
 
       await expect(service.validateUser(email, password)).rejects.toThrow(
         UnauthorizedException
@@ -73,7 +75,7 @@ describe("AuthService", () => {
         "These credentials do not match our records."
       );
 
-      expect(userService.getByEmail).toHaveBeenCalledWith(email);
+      expect(userServiceMock.getByEmail).toHaveBeenCalledWith(email);
       expect(mockUser.validatePassword).not.toHaveBeenCalled();
     });
 
@@ -81,22 +83,22 @@ describe("AuthService", () => {
       const email = "test@example.com";
       const password = "wrongPassword";
 
-      userService.getByEmail.mockResolvedValue(mockUser);
+      userServiceMock.getByEmail.mockResolvedValue(mockUser);
       mockUser.validatePassword.mockResolvedValue(false);
 
       const result = await service.validateUser(email, password);
 
-      expect(userService.getByEmail).toHaveBeenCalledWith(email);
+      expect(userServiceMock.getByEmail).toHaveBeenCalledWith(email);
       expect(mockUser.validatePassword).toHaveBeenCalledWith(password);
       expect(result).toBeNull();
     });
 
     it("should handle user without validatePassword method", async () => {
       const email = "test@example.com";
-      const password = "password123";
+      const password = "anyPassword";
       const userWithoutValidate = { ...mockUser, validatePassword: undefined };
 
-      userService.getByEmail.mockResolvedValue(userWithoutValidate);
+      userServiceMock.getByEmail.mockResolvedValue(userWithoutValidate);
 
       await expect(service.validateUser(email, password)).rejects.toThrow(
         TypeError
@@ -105,10 +107,23 @@ describe("AuthService", () => {
 
     it("should propagate errors from userService.getByEmail", async () => {
       const email = "test@example.com";
-      const password = "password123";
+      const password = "anyPassword";
       const error = new Error("Database connection failed");
 
-      userService.getByEmail.mockRejectedValue(error);
+      userServiceMock.getByEmail.mockRejectedValue(error);
+
+      await expect(service.validateUser(email, password)).rejects.toThrow(
+        error
+      );
+    });
+
+    it("should propagate errors from validatePassword", async () => {
+      const email = "test@example.com";
+      const password = "anyPassword";
+      const error = new Error("Password validation failed");
+
+      userServiceMock.getByEmail.mockResolvedValue(mockUser);
+      mockUser.validatePassword.mockRejectedValue(error);
 
       await expect(service.validateUser(email, password)).rejects.toThrow(
         error
@@ -123,14 +138,13 @@ describe("AuthService", () => {
         email: "test@example.com",
       };
       const mockToken = "mock.jwt.token";
-      const mockExpiresIn = "3600s";
+      const mockExpiresIn = jwtContanst.expiresIn;
 
-      jwtService.sign.mockReturnValue(mockToken);
-      jwtContanst.expiresIn = mockExpiresIn;
+      jwtServiceMock.sign.mockReturnValue(mockToken);
 
       const result = await service.login(user);
 
-      expect(jwtService.sign).toHaveBeenCalledWith({
+      expect(jwtServiceMock.sign).toHaveBeenCalledWith({
         email: user.email,
         sub: user.id,
       });
@@ -140,53 +154,56 @@ describe("AuthService", () => {
       });
     });
 
-    it("should handle user without email", async () => {
-      const user = {
-        id: 2,
-      };
-      const mockToken = "mock.jwt.token";
-
-      jwtService.sign.mockReturnValue(mockToken);
-
-      const result = await service.login(user);
-
-      expect(jwtService.sign).toHaveBeenCalledWith({
-        email: undefined,
-        sub: 2,
-      });
-      expect(result.accessToken).toBe(mockToken);
-    });
-
     it("should handle user without id", async () => {
       const user = {
         email: "test@example.com",
       };
       const mockToken = "mock.jwt.token";
 
-      jwtService.sign.mockReturnValue(mockToken);
+      jwtServiceMock.sign.mockReturnValue(mockToken);
 
       const result = await service.login(user);
 
-      expect(jwtService.sign).toHaveBeenCalledWith({
-        email: "test@example.com",
+      expect(jwtServiceMock.sign).toHaveBeenCalledWith({
+        email: user.email,
         sub: undefined,
       });
       expect(result.accessToken).toBe(mockToken);
+      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
+    });
+
+    it("should handle user without email", async () => {
+      const user = {
+        id: 1,
+      };
+      const mockToken = "mock.jwt.token";
+
+      jwtServiceMock.sign.mockReturnValue(mockToken);
+
+      const result = await service.login(user);
+
+      expect(jwtServiceMock.sign).toHaveBeenCalledWith({
+        email: undefined,
+        sub: user.id,
+      });
+      expect(result.accessToken).toBe(mockToken);
+      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
     });
 
     it("should handle empty user object", async () => {
       const user = {};
       const mockToken = "mock.jwt.token";
 
-      jwtService.sign.mockReturnValue(mockToken);
+      jwtServiceMock.sign.mockReturnValue(mockToken);
 
       const result = await service.login(user);
 
-      expect(jwtService.sign).toHaveBeenCalledWith({
+      expect(jwtServiceMock.sign).toHaveBeenCalledWith({
         email: undefined,
         sub: undefined,
       });
       expect(result.accessToken).toBe(mockToken);
+      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
     });
 
     it("should propagate errors from jwtService.sign", async () => {
@@ -196,11 +213,27 @@ describe("AuthService", () => {
       };
       const error = new Error("JWT signing failed");
 
-      jwtService.sign.mockImplementation(() => {
+      jwtServiceMock.sign.mockImplementation(() => {
         throw error;
       });
 
-      await expect(service.login(user)).rejects.toThrow(error);
+      expect(() => service.login(user)).toThrow(error);
+    });
+
+    it("should return correct expiresIn from jwtContanst", async () => {
+      const user = {
+        id: 1,
+        email: "test@example.com",
+      };
+      const mockToken = "mock.jwt.token";
+
+      jwtServiceMock.sign.mockReturnValue(mockToken);
+
+      const result = await service.login(user);
+
+      expect(result.expiresIn).toBe(jwtContanst.expiresIn);
+      expect(result.expiresIn).toBeDefined();
+      expect(typeof result.expiresIn).toBe("string");
     });
   });
 });

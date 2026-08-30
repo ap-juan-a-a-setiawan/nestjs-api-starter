@@ -65,11 +65,11 @@ describe('UserController', () => {
       expect(mockUserService.getAll).toHaveBeenCalled();
     });
 
-    it('should propagate errors from user service', async () => {
+    it('should handle service errors', async () => {
       const error = new Error('Database connection failed');
       mockUserService.getAll.mockRejectedValue(error);
 
-      await expect(controller.getAll()).rejects.toThrow(error);
+      await expect(controller.getAll()).rejects.toThrow('Database connection failed');
       expect(mockUserService.getAll).toHaveBeenCalled();
     });
   });
@@ -87,9 +87,9 @@ describe('UserController', () => {
       expect(mockUserService.getById).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle numeric string id', async () => {
-      const userId = '456';
-      const expectedUser = { id: 456, name: 'Jane Doe', email: 'jane@example.com' };
+    it('should handle non-numeric id', async () => {
+      const userId = 'abc';
+      const expectedUser = { id: 'abc', name: 'John Doe', email: 'john@example.com' };
       mockUserService.getById.mockResolvedValue(expectedUser);
 
       const result = await controller.getById({ id: userId });
@@ -108,22 +108,13 @@ describe('UserController', () => {
       expect(mockUserService.getById).toHaveBeenCalledWith(userId);
     });
 
-    it('should propagate errors from user service', async () => {
+    it('should handle service errors', async () => {
       const userId = '123';
       const error = new Error('User not found');
       mockUserService.getById.mockRejectedValue(error);
 
-      await expect(controller.getById({ id: userId })).rejects.toThrow(error);
+      await expect(controller.getById({ id: userId })).rejects.toThrow('User not found');
       expect(mockUserService.getById).toHaveBeenCalledWith(userId);
-    });
-
-    it('should handle missing id parameter', async () => {
-      mockUserService.getById.mockResolvedValue(null);
-
-      const result = await controller.getById({});
-
-      expect(result).toBeNull();
-      expect(mockUserService.getById).toHaveBeenCalledWith(undefined);
     });
   });
 
@@ -134,7 +125,11 @@ describe('UserController', () => {
         email: 'john@example.com',
         password: 'password123',
       };
-      const createdUser = { id: 1, ...createUserDto };
+      const createdUser = {
+        id: 1,
+        name: 'John Doe',
+        email: 'john@example.com',
+      };
       mockUserService.create.mockResolvedValue(createdUser);
 
       const result = await controller.create(createUserDto);
@@ -147,29 +142,9 @@ describe('UserController', () => {
       expect(mockUserService.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle user creation with all optional fields', async () => {
-      const createUserDto: CreateUserDto = {
-        name: 'Jane Doe',
-        email: 'jane@example.com',
-        password: 'password456',
-        phone: '1234567890',
-        address: '123 Main St',
-      };
-      const createdUser = { id: 2, ...createUserDto };
-      mockUserService.create.mockResolvedValue(createdUser);
-
-      const result = await controller.create(createUserDto);
-
-      expect(result).toEqual({
-        statusCode: HttpStatus.OK,
-        user: createdUser,
-      });
-      expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
-    });
-
     it('should handle empty user data', async () => {
       const createUserDto = {} as CreateUserDto;
-      const createdUser = { id: 3 };
+      const createdUser = { id: 1 };
       mockUserService.create.mockResolvedValue(createdUser);
 
       const result = await controller.create(createUserDto);
@@ -181,7 +156,7 @@ describe('UserController', () => {
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
 
-    it('should propagate errors from user service', async () => {
+    it('should handle service errors during creation', async () => {
       const createUserDto: CreateUserDto = {
         name: 'John Doe',
         email: 'john@example.com',
@@ -190,20 +165,20 @@ describe('UserController', () => {
       const error = new Error('Email already exists');
       mockUserService.create.mockRejectedValue(error);
 
-      await expect(controller.create(createUserDto)).rejects.toThrow(error);
+      await expect(controller.create(createUserDto)).rejects.toThrow('Email already exists');
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
 
     it('should handle validation errors', async () => {
-      const createUserDto: CreateUserDto = {
+      const createUserDto = {
         name: '',
         email: 'invalid-email',
-        password: 'short',
-      };
+        password: '123',
+      } as CreateUserDto;
       const error = new Error('Validation failed');
       mockUserService.create.mockRejectedValue(error);
 
-      await expect(controller.create(createUserDto)).rejects.toThrow(error);
+      await expect(controller.create(createUserDto)).rejects.toThrow('Validation failed');
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
     });
   });

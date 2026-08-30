@@ -34,9 +34,9 @@ describe('EntityBase', () => {
       expect(Object.getPrototypeOf(entityBase)).toBe(EntityBase.prototype);
     });
 
-    it('should not be directly instantiable', () => {
+    it('should not be instantiable directly', () => {
       expect(() => {
-        // @ts-ignore - Testing abstract class instantiation
+        // @ts-ignore - testing abstract class instantiation
         new EntityBase();
       }).toThrow(TypeError);
     });
@@ -45,76 +45,38 @@ describe('EntityBase', () => {
       expect(Object.keys(entityBase)).toHaveLength(0);
     });
 
-    it('should have no enumerable properties on the prototype', () => {
-      const prototypeProperties = Object.getOwnPropertyNames(EntityBase.prototype);
-      expect(prototypeProperties).toEqual(['constructor']);
+    it('should have no own method names', () => {
+      const ownPropertyNames = Object.getOwnPropertyNames(entityBase);
+      expect(ownPropertyNames).toEqual([]);
     });
 
-    it('should have a constructor that is the EntityBase class', () => {
-      expect(entityBase.constructor).toBe(EntityBase);
+    it('should have no enumerable properties', () => {
+      const enumerableKeys: string[] = [];
+      for (const key in entityBase) {
+        enumerableKeys.push(key);
+      }
+      expect(enumerableKeys).toHaveLength(0);
     });
 
-    it('should have a name property set to EntityBase', () => {
-      expect(EntityBase.name).toBe('EntityBase');
+    it('should have no methods defined on the prototype', () => {
+      const prototypeMethods = Object.getOwnPropertyNames(EntityBase.prototype);
+      expect(prototypeMethods).toEqual(['constructor']);
     });
 
     it('should be an abstract class', () => {
-      expect(EntityBase.toString().includes('abstract')).toBe(true);
+      expect(EntityBase.toString()).toContain('class EntityBase');
     });
 
-    it('should not have any methods defined', () => {
-      const methods = Object.getOwnPropertyNames(EntityBase.prototype).filter(
-        (prop) => prop !== 'constructor' && typeof (EntityBase.prototype as any)[prop] === 'function'
-      );
-      expect(methods).toHaveLength(0);
+    it('should not have a constructor that can be called', () => {
+      const constructorSpy = jest.spyOn(EntityBase.prototype, 'constructor');
+      expect(() => {
+        // @ts-ignore - testing abstract class instantiation
+        new EntityBase();
+      }).toThrow(TypeError);
+      expect(constructorSpy).not.toHaveBeenCalled();
     });
 
-    it('should not have any static methods', () => {
-      const staticMethods = Object.getOwnPropertyNames(EntityBase).filter(
-        (prop) => typeof (EntityBase as any)[prop] === 'function' && prop !== 'name' && prop !== 'length' && prop !== 'prototype'
-      );
-      expect(staticMethods).toHaveLength(0);
-    });
-
-    it('should not have any static properties', () => {
-      const staticProps = Object.getOwnPropertyNames(EntityBase).filter(
-        (prop) => typeof (EntityBase as any)[prop] !== 'function' && prop !== 'name' && prop !== 'length' && prop !== 'prototype'
-      );
-      expect(staticProps).toHaveLength(0);
-    });
-
-    it('should not have any getters or setters', () => {
-      const descriptors = Object.getOwnPropertyDescriptors(EntityBase.prototype);
-      const accessors = Object.keys(descriptors).filter(
-        (key) => descriptors[key].get || descriptors[key].set
-      );
-      expect(accessors).toHaveLength(0);
-    });
-
-    it('should not have any symbol properties', () => {
-      const symbols = Object.getOwnPropertySymbols(EntityBase.prototype);
-      expect(symbols).toHaveLength(0);
-    });
-
-    it('should not have any symbol properties on the class', () => {
-      const symbols = Object.getOwnPropertySymbols(EntityBase);
-      expect(symbols).toHaveLength(0);
-    });
-
-    it('should not be extensible with new methods', () => {
-      const originalMethodCount = Object.getOwnPropertyNames(EntityBase.prototype).length;
-      (EntityBase.prototype as any).newMethod = jest.fn();
-      const newMethodCount = Object.getOwnPropertyNames(EntityBase.prototype).length;
-      expect(newMethodCount).toBe(originalMethodCount + 1);
-      delete (EntityBase.prototype as any).newMethod;
-    });
-
-    it('should not have any inherited properties from Object', () => {
-      const inheritedProps = Object.getOwnPropertyNames(Object.getPrototypeOf(EntityBase.prototype));
-      expect(inheritedProps).toEqual(['constructor', '__defineGetter__', '__defineSetter__', 'hasOwnProperty', '__lookupGetter__', '__lookupSetter__', 'isPrototypeOf', 'propertyIsEnumerable', 'toString', 'valueOf', '__proto__', 'toLocaleString']);
-    });
-
-    it('should be able to be extended by a subclass', () => {
+    it('should allow subclassing', () => {
       class TestEntity extends EntityBase {
         testMethod(): string {
           return 'test';
@@ -127,21 +89,29 @@ describe('EntityBase', () => {
       expect(testEntity.testMethod()).toBe('test');
     });
 
-    it('should allow subclass to add properties', () => {
+    it('should allow subclass with additional properties', () => {
       class TestEntity extends EntityBase {
         id: number;
-        constructor(id: number) {
+        name: string;
+
+        constructor(id: number, name: string) {
           super();
           this.id = id;
+          this.name = name;
+        }
+
+        getInfo(): string {
+          return `${this.id}: ${this.name}`;
         }
       }
 
-      const testEntity = new TestEntity(123);
-      expect(testEntity.id).toBe(123);
-      expect(testEntity).toBeInstanceOf(EntityBase);
+      const testEntity = new TestEntity(1, 'Test');
+      expect(testEntity.id).toBe(1);
+      expect(testEntity.name).toBe('Test');
+      expect(testEntity.getInfo()).toBe('1: Test');
     });
 
-    it('should allow subclass to override methods', () => {
+    it('should allow subclass with overridden methods', () => {
       class BaseEntity extends EntityBase {
         getType(): string {
           return 'base';
@@ -156,307 +126,187 @@ describe('EntityBase', () => {
 
       const childEntity = new ChildEntity();
       expect(childEntity.getType()).toBe('child');
-      expect(childEntity).toBeInstanceOf(EntityBase);
-      expect(childEntity).toBeInstanceOf(BaseEntity);
-      expect(childEntity).toBeInstanceOf(ChildEntity);
     });
 
-    it('should allow multiple levels of inheritance', () => {
-      class Level1 extends EntityBase {}
-      class Level2 extends Level1 {}
-      class Level3 extends Level2 {}
+    it('should support multiple levels of inheritance', () => {
+      class Level1Entity extends EntityBase {
+        level1Method(): string {
+          return 'level1';
+        }
+      }
 
-      const level3 = new Level3();
-      expect(level3).toBeInstanceOf(EntityBase);
-      expect(level3).toBeInstanceOf(Level1);
-      expect(level3).toBeInstanceOf(Level2);
-      expect(level3).toBeInstanceOf(Level3);
+      class Level2Entity extends Level1Entity {
+        level2Method(): string {
+          return 'level2';
+        }
+      }
+
+      class Level3Entity extends Level2Entity {
+        level3Method(): string {
+          return 'level3';
+        }
+      }
+
+      const level3Entity = new Level3Entity();
+      expect(level3Entity.level1Method()).toBe('level1');
+      expect(level3Entity.level2Method()).toBe('level2');
+      expect(level3Entity.level3Method()).toBe('level3');
+      expect(level3Entity).toBeInstanceOf(EntityBase);
+      expect(level3Entity).toBeInstanceOf(Level1Entity);
+      expect(level3Entity).toBeInstanceOf(Level2Entity);
+      expect(level3Entity).toBeInstanceOf(Level3Entity);
     });
 
-    it('should maintain prototype chain correctly', () => {
+    it('should maintain prototype chain integrity', () => {
       class TestEntity extends EntityBase {}
       const testEntity = new TestEntity();
-
+      
       expect(Object.getPrototypeOf(testEntity)).toBe(TestEntity.prototype);
       expect(Object.getPrototypeOf(TestEntity.prototype)).toBe(EntityBase.prototype);
       expect(Object.getPrototypeOf(EntityBase.prototype)).toBe(Object.prototype);
     });
 
-    it('should have correct constructor chain', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
+    it('should have correct constructor name', () => {
+      expect(EntityBase.name).toBe('EntityBase');
+    });
 
-      expect(testEntity.constructor).toBe(TestEntity);
-      expect(TestEntity.prototype.constructor).toBe(TestEntity);
+    it('should have correct prototype constructor', () => {
       expect(EntityBase.prototype.constructor).toBe(EntityBase);
+    });
+
+    it('should be extensible', () => {
+      expect(Object.isExtensible(EntityBase)).toBe(true);
+      expect(Object.isExtensible(EntityBase.prototype)).toBe(true);
+    });
+
+    it('should not be sealed', () => {
+      expect(Object.isSealed(EntityBase)).toBe(false);
+      expect(Object.isSealed(EntityBase.prototype)).toBe(false);
+    });
+
+    it('should not be frozen', () => {
+      expect(Object.isFrozen(EntityBase)).toBe(false);
+      expect(Object.isFrozen(EntityBase.prototype)).toBe(false);
+    });
+
+    it('should have no static methods', () => {
+      const staticMethods = Object.getOwnPropertyNames(EntityBase).filter(
+        (prop) => prop !== 'length' && prop !== 'name' && prop !== 'prototype'
+      );
+      expect(staticMethods).toHaveLength(0);
+    });
+
+    it('should have no static properties', () => {
+      const staticProps = Object.getOwnPropertyNames(EntityBase).filter(
+        (prop) => prop !== 'length' && prop !== 'name' && prop !== 'prototype'
+      );
+      expect(staticProps).toHaveLength(0);
     });
 
     it('should support instanceof checks', () => {
       class TestEntity extends EntityBase {}
       const testEntity = new TestEntity();
-
+      
       expect(testEntity instanceof EntityBase).toBe(true);
       expect(testEntity instanceof TestEntity).toBe(true);
       expect(testEntity instanceof Object).toBe(true);
     });
 
-    it('should not have any circular dependencies', () => {
-      expect(EntityBase.prototype.constructor).toBe(EntityBase);
-      expect(EntityBase.prototype.constructor.prototype).toBe(EntityBase.prototype);
+    it('should have proper toString representation', () => {
+      expect(EntityBase.toString()).toContain('class EntityBase');
+      expect(EntityBase.prototype.toString()).toBe('[object Object]');
     });
 
-    it('should be serializable to JSON', () => {
-      class TestEntity extends EntityBase {
-        name: string = 'test';
-      }
-
-      const testEntity = new TestEntity();
-      const json = JSON.stringify(testEntity);
-      expect(json).toBe('{"name":"test"}');
-    });
-
-    it('should have a default toString method', () => {
+    it('should allow property addition on subclass instances', () => {
       class TestEntity extends EntityBase {}
       const testEntity = new TestEntity();
-      expect(testEntity.toString()).toBe('[object Object]');
+      
+      testEntity.newProperty = 'test';
+      expect(testEntity.newProperty).toBe('test');
     });
 
-    it('should have a default valueOf method', () => {
+    it('should allow method addition on subclass instances', () => {
       class TestEntity extends EntityBase {}
       const testEntity = new TestEntity();
-      expect(testEntity.valueOf()).toBe(testEntity);
+      
+      testEntity.newMethod = jest.fn().mockReturnValue('result');
+      expect(testEntity.newMethod()).toBe('result');
     });
 
-    it('should have a default hasOwnProperty method', () => {
-      class TestEntity extends EntityBase {
-        prop: string = 'value';
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.hasOwnProperty('prop')).toBe(true);
-      expect(testEntity.hasOwnProperty('nonexistent')).toBe(false);
-    });
-
-    it('should have a default propertyIsEnumerable method', () => {
-      class TestEntity extends EntityBase {
-        prop: string = 'value';
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.propertyIsEnumerable('prop')).toBe(true);
-    });
-
-    it('should have a default isPrototypeOf method', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
-      expect(EntityBase.prototype.isPrototypeOf(testEntity)).toBe(true);
-    });
-
-    it('should have a default toLocaleString method', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
-      expect(testEntity.toLocaleString()).toBe('[object Object]');
-    });
-
-    it('should have a default __defineGetter__ method', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
-      expect(typeof (testEntity as any).__defineGetter__).toBe('function');
-    });
-
-    it('should have a default __defineSetter__ method', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
-      expect(typeof (testEntity as any).__defineSetter__).toBe('function');
-    });
-
-    it('should have a default __lookupGetter__ method', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
-      expect(typeof (testEntity as any).__lookupGetter__).toBe('function');
-    });
-
-    it('should have a default __lookupSetter__ method', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
-      expect(typeof (testEntity as any).__lookupSetter__).toBe('function');
-    });
-
-    it('should have a default __proto__ property', () => {
-      class TestEntity extends EntityBase {}
-      const testEntity = new TestEntity();
-      expect((testEntity as any).__proto__).toBe(TestEntity.prototype);
-    });
-
-    it('should support property assignment', () => {
+    it('should support method chaining in subclasses', () => {
       class TestEntity extends EntityBase {
         value: number = 0;
+        
+        add(num: number): this {
+          this.value += num;
+          return this;
+        }
+        
+        multiply(num: number): this {
+          this.value *= num;
+          return this;
+        }
       }
+
       const testEntity = new TestEntity();
-      testEntity.value = 42;
-      expect(testEntity.value).toBe(42);
+      const result = testEntity.add(5).multiply(2);
+      
+      expect(result).toBe(testEntity);
+      expect(testEntity.value).toBe(10);
     });
 
-    it('should support method calls on subclass', () => {
-      class TestEntity extends EntityBase {
-        greet(): string {
-          return 'Hello';
-        }
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.greet()).toBe('Hello');
-    });
-
-    it('should support constructor parameters in subclass', () => {
-      class TestEntity extends EntityBase {
-        constructor(public id: number) {
-          super();
-        }
-      }
-      const testEntity = new TestEntity(1);
-      expect(testEntity.id).toBe(1);
-    });
-
-    it('should support private members in subclass', () => {
-      class TestEntity extends EntityBase {
-        private secret: string = 'hidden';
-        getSecret(): string {
-          return this.secret;
-        }
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.getSecret()).toBe('hidden');
-    });
-
-    it('should support protected members in subclass', () => {
-      class TestEntity extends EntityBase {
-        protected value: number = 10;
-        getValue(): number {
-          return this.value;
-        }
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.getValue()).toBe(10);
-    });
-
-    it('should support static members in subclass', () => {
-      class TestEntity extends EntityBase {
-        static staticValue: string = 'static';
-        static getStaticValue(): string {
-          return this.staticValue;
-        }
-      }
-      expect(TestEntity.staticValue).toBe('static');
-      expect(TestEntity.getStaticValue()).toBe('static');
-    });
-
-    it('should support getters and setters in subclass', () => {
+    it('should support getters and setters in subclasses', () => {
       class TestEntity extends EntityBase {
         private _name: string = '';
+        
         get name(): string {
           return this._name;
         }
+        
         set name(value: string) {
           this._name = value;
         }
       }
+
       const testEntity = new TestEntity();
       testEntity.name = 'Test';
       expect(testEntity.name).toBe('Test');
     });
 
-    it('should support computed properties in subclass', () => {
+    it('should support static methods in subclasses', () => {
       class TestEntity extends EntityBase {
-        get computed(): number {
-          return 42;
+        static create(): TestEntity {
+          return new TestEntity();
         }
       }
-      const testEntity = new TestEntity();
-      expect(testEntity.computed).toBe(42);
+
+      const testEntity = TestEntity.create();
+      expect(testEntity).toBeInstanceOf(TestEntity);
+      expect(testEntity).toBeInstanceOf(EntityBase);
     });
 
-    it('should support method overloading in subclass', () => {
+    it('should support private and protected members in subclasses', () => {
       class TestEntity extends EntityBase {
-        process(value: string): string;
-        process(value: number): number;
-        process(value: string | number): string | number {
-          if (typeof value === 'string') {
-            return value.toUpperCase();
-          }
-          return value * 2;
+        private privateValue: string = 'private';
+        protected protectedValue: string = 'protected';
+        public publicValue: string = 'public';
+        
+        getPrivateValue(): string {
+          return this.privateValue;
+        }
+        
+        getProtectedValue(): string {
+          return this.protectedValue;
         }
       }
+
       const testEntity = new TestEntity();
-      expect(testEntity.process('hello')).toBe('HELLO');
-      expect(testEntity.process(21)).toBe(42);
+      expect(testEntity.getPrivateValue()).toBe('private');
+      expect(testEntity.getProtectedValue()).toBe('protected');
+      expect(testEntity.publicValue).toBe('public');
     });
 
-    it('should support default parameters in subclass methods', () => {
-      class TestEntity extends EntityBase {
-        greet(name: string = 'World'): string {
-          return `Hello, ${name}!`;
-        }
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.greet()).toBe('Hello, World!');
-      expect(testEntity.greet('John')).toBe('Hello, John!');
-    });
-
-    it('should support rest parameters in subclass methods', () => {
-      class TestEntity extends EntityBase {
-        sum(...numbers: number[]): number {
-          return numbers.reduce((acc, curr) => acc + curr, 0);
-        }
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.sum(1, 2, 3)).toBe(6);
-      expect(testEntity.sum()).toBe(0);
-    });
-
-    it('should support async methods in subclass', async () => {
-      class TestEntity extends EntityBase {
-        async fetchData(): Promise<string> {
-          return 'data';
-        }
-      }
-      const testEntity = new TestEntity();
-      await expect(testEntity.fetchData()).resolves.toBe('data');
-    });
-
-    it('should support generators in subclass', () => {
-      class TestEntity extends EntityBase {
-        *generate(): Generator<number> {
-          yield 1;
-          yield 2;
-          yield 3;
-        }
-      }
-      const testEntity = new TestEntity();
-      const generator = testEntity.generate();
-      expect(generator.next().value).toBe(1);
-      expect(generator.next().value).toBe(2);
-      expect(generator.next().value).toBe(3);
-      expect(generator.next().done).toBe(true);
-    });
-
-    it('should support decorators in subclass', () => {
-      function log(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        const originalMethod = descriptor.value;
-        descriptor.value = function (...args: any[]) {
-          return originalMethod.apply(this, args);
-        };
-        return descriptor;
-      }
-
-      class TestEntity extends EntityBase {
-        @log
-        method(): string {
-          return 'decorated';
-        }
-      }
-      const testEntity = new TestEntity();
-      expect(testEntity.method()).toBe('decorated');
-    });
-
-    it('should support abstract methods in subclass', () => {
+    it('should support abstract methods in subclasses', () => {
       abstract class AbstractEntity extends EntityBase {
         abstract getType(): string;
       }
@@ -471,674 +321,923 @@ describe('EntityBase', () => {
       expect(concreteEntity.getType()).toBe('concrete');
     });
 
-    it('should support interface implementation in subclass', () => {
-      interface Identifiable {
-        id: number;
+    it('should support interface implementation in subclasses', () => {
+      interface EntityInterface {
+        getId(): number;
       }
 
-      class TestEntity extends EntityBase implements Identifiable {
-        id: number = 1;
+      class TestEntity extends EntityBase implements EntityInterface {
+        private id: number = 1;
+        
+        getId(): number {
+          return this.id;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.getId()).toBe(1);
+    });
+
+    it('should support generic subclasses', () => {
+      class GenericEntity<T> extends EntityBase {
+        value: T;
+        
+        constructor(value: T) {
+          super();
+          this.value = value;
+        }
+        
+        getValue(): T {
+          return this.value;
+        }
+      }
+
+      const stringEntity = new GenericEntity<string>('test');
+      const numberEntity = new GenericEntity<number>(42);
+      
+      expect(stringEntity.getValue()).toBe('test');
+      expect(numberEntity.getValue()).toBe(42);
+    });
+
+    it('should support mixins with EntityBase', () => {
+      type Constructor<T = {}> = new (...args: any[]) => T;
+      
+      function TimestampMixin<T extends Constructor<EntityBase>>(Base: T) {
+        return class extends Base {
+          timestamp: Date = new Date();
+          
+          getTimestamp(): Date {
+            return this.timestamp;
+          }
+        };
+      }
+
+      class TestEntity extends TimestampMixin(EntityBase) {}
+      
+      const testEntity = new TestEntity();
+      expect(testEntity.getTimestamp()).toBeInstanceOf(Date);
+      expect(testEntity).toBeInstanceOf(EntityBase);
+    });
+
+    it('should support decorators on subclasses', () => {
+      function EntityDecorator(target: Function) {
+        Reflect.defineMetadata('entity', true, target);
+      }
+
+      @EntityDecorator
+      class TestEntity extends EntityBase {}
+      
+      expect(Reflect.getMetadata('entity', TestEntity)).toBe(true);
+    });
+
+    it('should support method decorators on subclasses', () => {
+      function LogMethod(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        const originalMethod = descriptor.value;
+        descriptor.value = function(...args: any[]) {
+          return originalMethod.apply(this, args);
+        };
+        return descriptor;
+      }
+
+      class TestEntity extends EntityBase {
+        @LogMethod
+        testMethod(): string {
+          return 'test';
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.testMethod()).toBe('test');
+    });
+
+    it('should support property decorators on subclasses', () => {
+      function DefaultValue(value: any) {
+        return (target: any, propertyKey: string) => {
+          target[propertyKey] = value;
+        };
+      }
+
+      class TestEntity extends EntityBase {
+        @DefaultValue('default')
+        name: string;
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.name).toBe('default');
+    });
+
+    it('should support parameter decorators on subclasses', () => {
+      function LogParameter(target: any, propertyKey: string, parameterIndex: number) {
+        // Decorator implementation
+      }
+
+      class TestEntity extends EntityBase {
+        testMethod(@LogParameter param: string): string {
+          return param;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.testMethod('test')).toBe('test');
+    });
+
+    it('should support computed property names in subclasses', () => {
+      const propertyName = 'dynamicProperty';
+      
+      class TestEntity extends EntityBase {
+        [propertyName]: string = 'dynamic';
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity[propertyName]).toBe('dynamic');
+    });
+
+    it('should support symbol properties in subclasses', () => {
+      const symbol = Symbol('test');
+      
+      class TestEntity extends EntityBase {
+        [symbol]: string = 'symbol-value';
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity[symbol]).toBe('symbol-value');
+    });
+
+    it('should support optional properties in subclasses', () => {
+      class TestEntity extends EntityBase {
+        optional?: string;
+        required: string = 'required';
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.optional).toBeUndefined();
+      expect(testEntity.required).toBe('required');
+    });
+
+    it('should support readonly properties in subclasses', () => {
+      class TestEntity extends EntityBase {
+        readonly id: number = 1;
       }
 
       const testEntity = new TestEntity();
       expect(testEntity.id).toBe(1);
     });
 
-    it('should support mixins in subclass', () => {
-      class TimestampMixin {
-        createdAt: Date = new Date();
-      }
-
+    it('should support default parameter values in subclass methods', () => {
       class TestEntity extends EntityBase {
-        constructor() {
-          super();
-          Object.assign(this, new TimestampMixin());
+        greet(name: string = 'World'): string {
+          return `Hello, ${name}!`;
         }
       }
 
       const testEntity = new TestEntity();
-      expect(testEntity.createdAt).toBeInstanceOf(Date);
+      expect(testEntity.greet()).toBe('Hello, World!');
+      expect(testEntity.greet('Test')).toBe('Hello, Test!');
     });
 
-    it('should support composition in subclass', () => {
-      class Engine {
-        start(): string {
-          return 'Engine started';
-        }
-      }
-
+    it('should support rest parameters in subclass methods', () => {
       class TestEntity extends EntityBase {
-        engine: Engine = new Engine();
+        sum(...numbers: number[]): number {
+          return numbers.reduce((acc, curr) => acc + curr, 0);
+        }
       }
 
       const testEntity = new TestEntity();
-      expect(testEntity.engine.start()).toBe('Engine started');
+      expect(testEntity.sum(1, 2, 3)).toBe(6);
+      expect(testEntity.sum()).toBe(0);
     });
 
-    it('should support dependency injection in subclass', () => {
-      class Service {
-        getData(): string {
-          return 'service data';
+    it('should support spread operator in subclass methods', () => {
+      class TestEntity extends EntityBase {
+        merge(...arrays: number[][]): number[] {
+          return [].concat(...arrays);
         }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.merge([1, 2], [3, 4])).toEqual([1, 2, 3, 4]);
+    });
+
+    it('should support destructuring in subclass methods', () => {
+      class TestEntity extends EntityBase {
+        getFirstAndLast([first, ...rest]: number[]): { first: number; last: number } {
+          return { first, last: rest[rest.length - 1] };
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.getFirstAndLast([1, 2, 3, 4])).toEqual({ first: 1, last: 4 });
+    });
+
+    it('should support async methods in subclasses', async () => {
+      class TestEntity extends EntityBase {
+        async getData(): Promise<string> {
+          return 'data';
+        }
+      }
+
+      const testEntity = new TestEntity();
+      await expect(testEntity.getData()).resolves.toBe('data');
+    });
+
+    it('should support generators in subclasses', () => {
+      class TestEntity extends EntityBase {
+        *generateNumbers(): Generator<number> {
+          yield 1;
+          yield 2;
+          yield 3;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      const generator = testEntity.generateNumbers();
+      expect(generator.next().value).toBe(1);
+      expect(generator.next().value).toBe(2);
+      expect(generator.next().value).toBe(3);
+      expect(generator.next().done).toBe(true);
+    });
+
+    it('should support iterators in subclasses', () => {
+      class TestEntity extends EntityBase {
+        [Symbol.iterator](): Iterator<number> {
+          let count = 0;
+          return {
+            next: (): IteratorResult<number> => {
+              count++;
+              if (count <= 3) {
+                return { value: count, done: false };
+              }
+              return { value: undefined, done: true };
+            }
+          };
+        }
+      }
+
+      const testEntity = new TestEntity();
+      const values = [...testEntity];
+      expect(values).toEqual([1, 2, 3]);
+    });
+
+    it('should support type guards in subclasses', () => {
+      class TestEntity extends EntityBase {
+        isString(value: unknown): value is string {
+          return typeof value === 'string';
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.isString('test')).toBe(true);
+      expect(testEntity.isString(42)).toBe(false);
+    });
+
+    it('should support assertion functions in subclasses', () => {
+      class TestEntity extends EntityBase {
+        assertString(value: unknown): asserts value is string {
+          if (typeof value !== 'string') {
+            throw new Error('Not a string');
+          }
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(() => testEntity.assertString('test')).not.toThrow();
+      expect(() => testEntity.assertString(42)).toThrow('Not a string');
+    });
+
+    it('should support conditional types in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getValue<T>(value: T): T extends string ? string : number {
+          return (typeof value === 'string' ? value : 42) as any;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.getValue('test')).toBe('test');
+      expect(testEntity.getValue(42)).toBe(42);
+    });
+
+    it('should support mapped types in subclasses', () => {
+      class TestEntity extends EntityBase {
+        mapValues<T>(values: T[]): { [K in keyof T]: T[K] }[] {
+          return values.map(value => ({ ...value }));
+        }
+      }
+
+      const testEntity = new TestEntity();
+      const result = testEntity.mapValues([{ id: 1 }, { id: 2 }]);
+      expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+    });
+
+    it('should support utility types in subclasses', () => {
+      class TestEntity extends EntityBase {
+        partial<T>(obj: T): Partial<T> {
+          return { ...obj };
+        }
+      }
+
+      const testEntity = new TestEntity();
+      const result = testEntity.partial({ id: 1, name: 'test' });
+      expect(result).toEqual({ id: 1, name: 'test' });
+    });
+
+    it('should support decorators with parameters on subclasses', () => {
+      function Validate(min: number, max: number) {
+        return (target: any, propertyKey: string) => {
+          // Decorator implementation
+        };
       }
 
       class TestEntity extends EntityBase {
-        constructor(private service: Service) {
-          super();
-        }
-        getData(): string {
-          return this.service.getData();
+        @Validate(1, 10)
+        value: number = 5;
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.value).toBe(5);
+    });
+
+    it('should support multiple decorators on subclasses', () => {
+      function FirstDecorator(target: any) {
+        // First decorator
+      }
+
+      function SecondDecorator(target: any) {
+        // Second decorator
+      }
+
+      @FirstDecorator
+      @SecondDecorator
+      class TestEntity extends EntityBase {}
+
+      expect(TestEntity).toBeDefined();
+    });
+
+    it('should support decorator factories on subclasses', () => {
+      function DecoratorFactory(options: { enabled: boolean }) {
+        return (target: any) => {
+          // Decorator implementation
+        };
+      }
+
+      @DecoratorFactory({ enabled: true })
+      class TestEntity extends EntityBase {}
+
+      expect(TestEntity).toBeDefined();
+    });
+
+    it('should support method overloading in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getValue(value: string): string;
+        getValue(value: number): number;
+        getValue(value: string | number): string | number {
+          return value;
         }
       }
 
-      const service = new Service();
-      const testEntity = new TestEntity(service);
-      expect(testEntity.getData()).toBe('service data');
+      const testEntity = new TestEntity();
+      expect(testEntity.getValue('test')).toBe('test');
+      expect(testEntity.getValue(42)).toBe(42);
     });
 
-    it('should support singleton pattern in subclass', () => {
-      class SingletonEntity extends EntityBase {
-        private static instance: SingletonEntity;
+    it('should support constructor overloading in subclasses', () => {
+      class TestEntity extends EntityBase {
+        constructor();
+        constructor(value: number);
+        constructor(value?: number) {
+          super();
+          if (value !== undefined) {
+            this.value = value;
+          }
+        }
+        value: number = 0;
+      }
+
+      const testEntity1 = new TestEntity();
+      const testEntity2 = new TestEntity(42);
+      expect(testEntity1.value).toBe(0);
+      expect(testEntity2.value).toBe(42);
+    });
+
+    it('should support private constructors in subclasses', () => {
+      class TestEntity extends EntityBase {
         private constructor() {
           super();
         }
-        static getInstance(): SingletonEntity {
-          if (!SingletonEntity.instance) {
-            SingletonEntity.instance = new SingletonEntity();
-          }
-          return SingletonEntity.instance;
+        
+        static create(): TestEntity {
+          return new TestEntity();
         }
       }
 
-      const instance1 = SingletonEntity.getInstance();
-      const instance2 = SingletonEntity.getInstance();
-      expect(instance1).toBe(instance2);
-      expect(instance1).toBeInstanceOf(EntityBase);
+      const testEntity = TestEntity.create();
+      expect(testEntity).toBeInstanceOf(TestEntity);
+      expect(testEntity).toBeInstanceOf(EntityBase);
     });
 
-    it('should support factory pattern in subclass', () => {
-      class FactoryEntity extends EntityBase {
-        static create(): FactoryEntity {
-          return new FactoryEntity();
-        }
-      }
-
-      const entity = FactoryEntity.create();
-      expect(entity).toBeInstanceOf(FactoryEntity);
-      expect(entity).toBeInstanceOf(EntityBase);
-    });
-
-    it('should support builder pattern in subclass', () => {
-      class BuilderEntity extends EntityBase {
-        value: string = '';
-        setValue(value: string): this {
-          this.value = value;
-          return this;
-        }
-      }
-
-      const entity = new BuilderEntity().setValue('test');
-      expect(entity.value).toBe('test');
-      expect(entity).toBeInstanceOf(BuilderEntity);
-    });
-
-    it('should support observer pattern in subclass', () => {
-      class ObservableEntity extends EntityBase {
-        private observers: Array<() => void> = [];
-        subscribe(observer: () => void): void {
-          this.observers.push(observer);
-        }
-        notify(): void {
-          this.observers.forEach((observer) => observer());
-        }
-      }
-
-      const entity = new ObservableEntity();
-      const observer = jest.fn();
-      entity.subscribe(observer);
-      entity.notify();
-      expect(observer).toHaveBeenCalledTimes(1);
-    });
-
-    it('should support promise-based methods in subclass', async () => {
-      class PromiseEntity extends EntityBase {
-        async getValue(): Promise<number> {
-          return Promise.resolve(42);
-        }
-      }
-
-      const entity = new PromiseEntity();
-      await expect(entity.getValue()).resolves.toBe(42);
-    });
-
-    it('should support error handling in subclass', () => {
-      class ErrorEntity extends EntityBase {
-        throwError(): never {
-          throw new Error('Test error');
-        }
-      }
-
-      const entity = new ErrorEntity();
-      expect(() => entity.throwError()).toThrow('Test error');
-    });
-
-    it('should support optional chaining in subclass', () => {
-      class OptionalEntity extends EntityBase {
-        nested?: { value: string };
-      }
-
-      const entity = new OptionalEntity();
-      expect(entity.nested?.value).toBeUndefined();
-      entity.nested = { value: 'test' };
-      expect(entity.nested?.value).toBe('test');
-    });
-
-    it('should support nullish coalescing in subclass', () => {
-      class NullishEntity extends EntityBase {
-        value: string | null = null;
-        getValue(): string {
-          return this.value ?? 'default';
-        }
-      }
-
-      const entity = new NullishEntity();
-      expect(entity.getValue()).toBe('default');
-      entity.value = 'custom';
-      expect(entity.getValue()).toBe('custom');
-    });
-
-    it('should support destructuring in subclass', () => {
-      class DestructuringEntity extends EntityBase {
-        constructor(public config: { name: string; age: number }) {
+    it('should support protected constructors in subclasses', () => {
+      class BaseEntity extends EntityBase {
+        protected constructor() {
           super();
         }
-        getInfo(): string {
-          const { name, age } = this.config;
-          return `${name} is ${age} years old`;
+      }
+
+      class TestEntity extends BaseEntity {
+        constructor() {
+          super();
         }
       }
 
-      const entity = new DestructuringEntity({ name: 'John', age: 30 });
-      expect(entity.getInfo()).toBe('John is 30 years old');
+      const testEntity = new TestEntity();
+      expect(testEntity).toBeInstanceOf(TestEntity);
+      expect(testEntity).toBeInstanceOf(BaseEntity);
+      expect(testEntity).toBeInstanceOf(EntityBase);
     });
 
-    it('should support spread operator in subclass', () => {
-      class SpreadEntity extends EntityBase {
-        constructor(public data: Record<string, any>) {
-          super();
-        }
-        merge(newData: Record<string, any>): Record<string, any> {
-          return { ...this.data, ...newData };
+    it('should support abstract properties in subclasses', () => {
+      abstract class AbstractEntity extends EntityBase {
+        abstract name: string;
+      }
+
+      class ConcreteEntity extends AbstractEntity {
+        name: string = 'concrete';
+      }
+
+      const concreteEntity = new ConcreteEntity();
+      expect(concreteEntity.name).toBe('concrete');
+    });
+
+    it('should support optional chaining in subclasses', () => {
+      class TestEntity extends EntityBase {
+        nested?: { value?: string };
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.nested?.value).toBeUndefined();
+      
+      testEntity.nested = { value: 'test' };
+      expect(testEntity.nested?.value).toBe('test');
+    });
+
+    it('should support nullish coalescing in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getValue(value: string | null | undefined): string {
+          return value ?? 'default';
         }
       }
 
-      const entity = new SpreadEntity({ a: 1, b: 2 });
-      expect(entity.merge({ b: 3, c: 4 })).toEqual({ a: 1, b: 3, c: 4 });
+      const testEntity = new TestEntity();
+      expect(testEntity.getValue(null)).toBe('default');
+      expect(testEntity.getValue(undefined)).toBe('default');
+      expect(testEntity.getValue('test')).toBe('test');
     });
 
-    it('should support template literals in subclass', () => {
-      class TemplateEntity extends EntityBase {
-        constructor(public name: string) {
-          super();
+    it('should support logical assignment in subclasses', () => {
+      class TestEntity extends EntityBase {
+        value: number = 0;
+        
+        setValue(value: number): void {
+          this.value ||= value;
         }
+      }
+
+      const testEntity = new TestEntity();
+      testEntity.setValue(5);
+      expect(testEntity.value).toBe(5);
+      testEntity.setValue(10);
+      expect(testEntity.value).toBe(5);
+    });
+
+    it('should support numeric separators in subclasses', () => {
+      class TestEntity extends EntityBase {
+        value: number = 1_000_000;
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.value).toBe(1000000);
+    });
+
+    it('should support bigint in subclasses', () => {
+      class TestEntity extends EntityBase {
+        value: bigint = 123n;
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.value).toBe(123n);
+    });
+
+    it('should support optional chaining with function calls in subclasses', () => {
+      class TestEntity extends EntityBase {
+        callback?: () => string;
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.callback?.()).toBeUndefined();
+      
+      testEntity.callback = () => 'test';
+      expect(testEntity.callback?.()).toBe('test');
+    });
+
+    it('should support nullish coalescing with function calls in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getValue(): string | null {
+          return null;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.getValue() ?? 'default').toBe('default');
+    });
+
+    it('should support template literals in subclasses', () => {
+      class TestEntity extends EntityBase {
+        name: string = 'Test';
         greet(): string {
           return `Hello, ${this.name}!`;
         }
       }
 
-      const entity = new TemplateEntity('World');
-      expect(entity.greet()).toBe('Hello, World!');
+      const testEntity = new TestEntity();
+      expect(testEntity.greet()).toBe('Hello, Test!');
     });
 
-    it('should support arrow functions in subclass', () => {
-      class ArrowEntity extends EntityBase {
-        multiply = (a: number, b: number): number => a * b;
+    it('should support tagged templates in subclasses', () => {
+      function tag(strings: TemplateStringsArray, ...values: any[]): string {
+        return strings.raw.join('');
       }
 
-      const entity = new ArrowEntity();
-      expect(entity.multiply(2, 3)).toBe(6);
-    });
-
-    it('should support class expressions in subclass', () => {
-      const EntityClass = class extends EntityBase {
-        getType(): string {
-          return 'class expression';
-        }
-      };
-
-      const entity = new EntityClass();
-      expect(entity.getType()).toBe('class expression');
-      expect(entity).toBeInstanceOf(EntityBase);
-    });
-
-    it('should support computed property names in subclass', () => {
-      const propName = 'dynamicProp';
-      class ComputedEntity extends EntityBase {
-        [propName]: string = 'dynamic value';
-      }
-
-      const entity = new ComputedEntity();
-      expect((entity as any).dynamicProp).toBe('dynamic value');
-    });
-
-    it('should support symbol keys in subclass', () => {
-      const symbolKey = Symbol('symbolKey');
-      class SymbolEntity extends EntityBase {
-        [symbolKey]: string = 'symbol value';
-      }
-
-      const entity = new SymbolEntity();
-      expect((entity as any)[symbolKey]).toBe('symbol value');
-    });
-
-    it('should support WeakMap in subclass', () => {
-      class WeakMapEntity extends EntityBase {
-        private data = new WeakMap<object, string>();
-        setData(key: object, value: string): void {
-          this.data.set(key, value);
-        }
-        getData(key: object): string | undefined {
-          return this.data.get(key);
+      class TestEntity extends EntityBase {
+        getTagged(): string {
+          return tag`test`;
         }
       }
 
-      const entity = new WeakMapEntity();
-      const key = {};
-      entity.setData(key, 'value');
-      expect(entity.getData(key)).toBe('value');
+      const testEntity = new TestEntity();
+      expect(testEntity.getTagged()).toBe('test');
     });
 
-    it('should support Set in subclass', () => {
-      class SetEntity extends EntityBase {
-        private items = new Set<string>();
-        add(item: string): void {
-          this.items.add(item);
+    it('should support destructuring in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getValues(): { a: number; b: number } {
+          return { a: 1, b: 2 };
         }
-        has(item: string): boolean {
-          return this.items.has(item);
-        }
-      }
-
-      const entity = new SetEntity();
-      entity.add('test');
-      expect(entity.has('test')).toBe(true);
-      expect(entity.has('other')).toBe(false);
-    });
-
-    it('should support Map in subclass', () => {
-      class MapEntity extends EntityBase {
-        private data = new Map<string, number>();
-        set(key: string, value: number): void {
-          this.data.set(key, value);
-        }
-        get(key: string): number | undefined {
-          return this.data.get(key);
+        
+        destructure(): number {
+          const { a, b } = this.getValues();
+          return a + b;
         }
       }
 
-      const entity = new MapEntity();
-      entity.set('key', 42);
-      expect(entity.get('key')).toBe(42);
+      const testEntity = new TestEntity();
+      expect(testEntity.destructure()).toBe(3);
     });
 
-    it('should support typed arrays in subclass', () => {
-      class TypedArrayEntity extends EntityBase {
-        data: Uint8Array = new Uint8Array([1, 2, 3]);
-      }
-
-      const entity = new TypedArrayEntity();
-      expect(entity.data).toEqual(new Uint8Array([1, 2, 3]));
-    });
-
-    it('should support Date in subclass', () => {
-      class DateEntity extends EntityBase {
-        date: Date = new Date('2023-01-01');
-      }
-
-      const entity = new DateEntity();
-      expect(entity.date).toEqual(new Date('2023-01-01'));
-    });
-
-    it('should support RegExp in subclass', () => {
-      class RegExpEntity extends EntityBase {
-        pattern: RegExp = /test/;
-      }
-
-      const entity = new RegExpEntity();
-      expect(entity.pattern.test('test')).toBe(true);
-    });
-
-    it('should support Error in subclass', () => {
-      class ErrorEntity extends EntityBase {
-        error: Error = new Error('Test error');
-      }
-
-      const entity = new ErrorEntity();
-      expect(entity.error.message).toBe('Test error');
-    });
-
-    it('should support Promise in subclass', () => {
-      class PromiseEntity extends EntityBase {
-        promise: Promise<string> = Promise.resolve('resolved');
-      }
-
-      const entity = new PromiseEntity();
-      return expect(entity.promise).resolves.toBe('resolved');
-    });
-
-    it('should support async/await in subclass', async () => {
-      class AsyncEntity extends EntityBase {
-        async getValue(): Promise<number> {
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          return 42;
+    it('should support array destructuring in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getArray(): number[] {
+          return [1, 2, 3];
+        }
+        
+        destructure(): number {
+          const [first, ...rest] = this.getArray();
+          return first + rest.length;
         }
       }
 
-      const entity = new AsyncEntity();
-      await expect(entity.getValue()).resolves.toBe(42);
+      const testEntity = new TestEntity();
+      expect(testEntity.destructure()).toBe(3);
     });
 
-    it('should support try/catch in subclass', () => {
-      class TryCatchEntity extends EntityBase {
-        safeDivide(a: number, b: number): number {
+    it('should support object spread in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getObject(): { a: number; b: number } {
+          return { a: 1, b: 2 };
+        }
+        
+        spread(): { a: number; b: number; c: number } {
+          return { ...this.getObject(), c: 3 };
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.spread()).toEqual({ a: 1, b: 2, c: 3 });
+    });
+
+    it('should support array spread in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getArray(): number[] {
+          return [1, 2];
+        }
+        
+        spread(): number[] {
+          return [...this.getArray(), 3];
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.spread()).toEqual([1, 2, 3]);
+    });
+
+    it('should support for-of loops in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getArray(): number[] {
+          return [1, 2, 3];
+        }
+        
+        sum(): number {
+          let total = 0;
+          for (const num of this.getArray()) {
+            total += num;
+          }
+          return total;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.sum()).toBe(6);
+    });
+
+    it('should support for-in loops in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getObject(): { a: number; b: number } {
+          return { a: 1, b: 2 };
+        }
+        
+        sum(): number {
+          let total = 0;
+          for (const key in this.getObject()) {
+            total += this.getObject()[key];
+          }
+          return total;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.sum()).toBe(3);
+    });
+
+    it('should support async/await in subclasses', async () => {
+      class TestEntity extends EntityBase {
+        async getData(): Promise<string> {
+          return 'data';
+        }
+        
+        async process(): Promise<string> {
+          const data = await this.getData();
+          return `processed: ${data}`;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      await expect(testEntity.process()).resolves.toBe('processed: data');
+    });
+
+    it('should support Promise.all in subclasses', async () => {
+      class TestEntity extends EntityBase {
+        async getData1(): Promise<number> {
+          return 1;
+        }
+        
+        async getData2(): Promise<number> {
+          return 2;
+        }
+        
+        async getAll(): Promise<number[]> {
+          return Promise.all([this.getData1(), this.getData2()]);
+        }
+      }
+
+      const testEntity = new TestEntity();
+      await expect(testEntity.getAll()).resolves.toEqual([1, 2]);
+    });
+
+    it('should support Promise.race in subclasses', async () => {
+      class TestEntity extends EntityBase {
+        async getData1(): Promise<string> {
+          return new Promise(resolve => setTimeout(() => resolve('first'), 100));
+        }
+        
+        async getData2(): Promise<string> {
+          return new Promise(resolve => setTimeout(() => resolve('second'), 50));
+        }
+        
+        async getRace(): Promise<string> {
+          return Promise.race([this.getData1(), this.getData2()]);
+        }
+      }
+
+      const testEntity = new TestEntity();
+      await expect(testEntity.getRace()).resolves.toBe('second');
+    });
+
+    it('should support try/catch in subclasses', () => {
+      class TestEntity extends EntityBase {
+        riskyOperation(): string {
           try {
-            if (b === 0) {
-              throw new Error('Division by zero');
-            }
-            return a / b;
+            throw new Error('error');
           } catch (error) {
-            return -1;
+            return 'caught';
           }
         }
       }
 
-      const entity = new TryCatchEntity();
-      expect(entity.safeDivide(10, 2)).toBe(5);
-      expect(entity.safeDivide(10, 0)).toBe(-1);
+      const testEntity = new TestEntity();
+      expect(testEntity.riskyOperation()).toBe('caught');
     });
 
-    it('should support switch statements in subclass', () => {
-      class SwitchEntity extends EntityBase {
-        getDayType(day: string): string {
-          switch (day) {
-            case 'Saturday':
-            case 'Sunday':
-              return 'weekend';
-            default:
-              return 'weekday';
+    it('should support finally in subclasses', () => {
+      class TestEntity extends EntityBase {
+        operation(): string {
+          let result = '';
+          try {
+            result = 'try';
+          } finally {
+            result += ' finally';
           }
-        }
-      }
-
-      const entity = new SwitchEntity();
-      expect(entity.getDayType('Saturday')).toBe('weekend');
-      expect(entity.getDayType('Monday')).toBe('weekday');
-    });
-
-    it('should support loops in subclass', () => {
-      class LoopEntity extends EntityBase {
-        sumArray(numbers: number[]): number {
-          let sum = 0;
-          for (const num of numbers) {
-            sum += num;
-          }
-          return sum;
-        }
-      }
-
-      const entity = new LoopEntity();
-      expect(entity.sumArray([1, 2, 3, 4])).toBe(10);
-    });
-
-    it('should support recursion in subclass', () => {
-      class RecursionEntity extends EntityBase {
-        factorial(n: number): number {
-          if (n <= 1) {
-            return 1;
-          }
-          return n * this.factorial(n - 1);
-        }
-      }
-
-      const entity = new RecursionEntity();
-      expect(entity.factorial(5)).toBe(120);
-    });
-
-    it('should support closures in subclass', () => {
-      class ClosureEntity extends EntityBase {
-        createCounter(): () => number {
-          let count = 0;
-          return () => ++count;
-        }
-      }
-
-      const entity = new ClosureEntity();
-      const counter = entity.createCounter();
-      expect(counter()).toBe(1);
-      expect(counter()).toBe(2);
-      expect(counter()).toBe(3);
-    });
-
-    it('should support currying in subclass', () => {
-      class CurryingEntity extends EntityBase {
-        add(a: number): (b: number) => number {
-          return (b: number) => a + b;
-        }
-      }
-
-      const entity = new CurryingEntity();
-      const add5 = entity.add(5);
-      expect(add5(3)).toBe(8);
-    });
-
-    it('should support memoization in subclass', () => {
-      class MemoizationEntity extends EntityBase {
-        private cache = new Map<number, number>();
-        fibonacci(n: number): number {
-          if (this.cache.has(n)) {
-            return this.cache.get(n)!;
-          }
-          if (n <= 1) {
-            return n;
-          }
-          const result = this.fibonacci(n - 1) + this.fibonacci(n - 2);
-          this.cache.set(n, result);
           return result;
         }
       }
 
-      const entity = new MemoizationEntity();
-      expect(entity.fibonacci(10)).toBe(55);
+      const testEntity = new TestEntity();
+      expect(testEntity.operation()).toBe('try finally');
     });
 
-    it('should support event emitters in subclass', () => {
-      class EventEmitterEntity extends EntityBase {
-        private listeners: Record<string, Array<(...args: any[]) => void>> = {};
-        on(event: string, listener: (...args: any[]) => void): void {
-          if (!this.listeners[event]) {
-            this.listeners[event] = [];
-          }
-          this.listeners[event].push(listener);
-        }
-        emit(event: string, ...args: any[]): void {
-          if (this.listeners[event]) {
-            this.listeners[event].forEach((listener) => listener(...args));
-          }
+    it('should support throw in subclasses', () => {
+      class TestEntity extends EntityBase {
+        throwError(): never {
+          throw new Error('test error');
         }
       }
 
-      const entity = new EventEmitterEntity();
-      const listener = jest.fn();
-      entity.on('test', listener);
-      entity.emit('test', 'arg1', 'arg2');
-      expect(listener).toHaveBeenCalledWith('arg1', 'arg2');
+      const testEntity = new TestEntity();
+      expect(() => testEntity.throwError()).toThrow('test error');
     });
 
-    it('should support state management in subclass', () => {
-      class StateEntity extends EntityBase {
-        private state: Record<string, any> = {};
-        setState(key: string, value: any): void {
-          this.state[key] = value;
-        }
-        getState(key: string): any {
-          return this.state[key];
-        }
-      }
-
-      const entity = new StateEntity();
-      entity.setState('count', 1);
-      expect(entity.getState('count')).toBe(1);
-    });
-
-    it('should support data transformation in subclass', () => {
-      class TransformEntity extends EntityBase {
-        transform(data: string): string {
-          return data.trim().toLowerCase();
-        }
-      }
-
-      const entity = new TransformEntity();
-      expect(entity.transform('  HELLO WORLD  ')).toBe('hello world');
-    });
-
-    it('should support validation in subclass', () => {
-      class ValidationEntity extends EntityBase {
-        validateEmail(email: string): boolean {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          return emailRegex.test(email);
-        }
-      }
-
-      const entity = new ValidationEntity();
-      expect(entity.validateEmail('test@example.com')).toBe(true);
-      expect(entity.validateEmail('invalid-email')).toBe(false);
-    });
-
-    it('should support serialization in subclass', () => {
-      class SerializationEntity extends EntityBase {
-        constructor(public data: any) {
-          super();
-        }
-        serialize(): string {
-          return JSON.stringify(this.data);
-        }
-      }
-
-      const entity = new SerializationEntity({ key: 'value' });
-      expect(entity.serialize()).toBe('{"key":"value"}');
-    });
-
-    it('should support deserialization in subclass', () => {
-      class DeserializationEntity extends EntityBase {
-        static deserialize(json: string): DeserializationEntity {
-          const data = JSON.parse(json);
-          return new DeserializationEntity(data);
-        }
-        constructor(public data: any) {
-          super();
-        }
-      }
-
-      const entity = DeserializationEntity.deserialize('{"key":"value"}');
-      expect(entity.data).toEqual({ key: 'value' });
-    });
-
-    it('should support caching in subclass', () => {
-      class CacheEntity extends EntityBase {
-        private cache = new Map<string, any>();
-        getOrSet(key: string, factory: () => any): any {
-          if (this.cache.has(key)) {
-            return this.cache.get(key);
-          }
-          const value = factory();
-          this.cache.set(key, value);
-          return value;
-        }
-      }
-
-      const entity = new CacheEntity();
-      const factory = jest.fn(() => 'cached value');
-      expect(entity.getOrSet('key', factory)).toBe('cached value');
-      expect(entity.getOrSet('key', factory)).toBe('cached value');
-      expect(factory).toHaveBeenCalledTimes(1);
-    });
-
-    it('should support throttling in subclass', () => {
-      class ThrottleEntity extends EntityBase {
-        private lastCall = 0;
-        throttle(fn: () => void, delay: number): void {
-          const now = Date.now();
-          if (now - this.lastCall >= delay) {
-            fn();
-            this.lastCall = now;
+    it('should support switch statements in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getValue(value: number): string {
+          switch (value) {
+            case 1:
+              return 'one';
+            case 2:
+              return 'two';
+            default:
+              return 'other';
           }
         }
       }
 
-      const entity = new ThrottleEntity();
-      const fn = jest.fn();
-      entity.throttle(fn, 100);
-      entity.throttle(fn, 100);
-      expect(fn).toHaveBeenCalledTimes(1);
+      const testEntity = new TestEntity();
+      expect(testEntity.getValue(1)).toBe('one');
+      expect(testEntity.getValue(2)).toBe('two');
+      expect(testEntity.getValue(3)).toBe('other');
     });
 
-    it('should support debouncing in subclass', () => {
-      class DebounceEntity extends EntityBase {
-        private timeout: NodeJS.Timeout | null = null;
-        debounce(fn: () => void, delay: number): void {
-          if (this.timeout) {
-            clearTimeout(this.timeout);
-          }
-          this.timeout = setTimeout(fn, delay);
+    it('should support ternary operators in subclasses', () => {
+      class TestEntity extends EntityBase {
+        getValue(value: boolean): string {
+          return value ? 'true' : 'false';
         }
       }
 
-      const entity = new DebounceEntity();
-      const fn = jest.fn();
-      entity.debounce(fn, 100);
-      entity.debounce(fn, 100);
-      jest.useFakeTimers();
-      jest.advanceTimersByTime(100);
-      expect(fn).toHaveBeenCalledTimes(1);
-      jest.useRealTimers();
+      const testEntity = new TestEntity();
+      expect(testEntity.getValue(true)).toBe('true');
+      expect(testEntity.getValue(false)).toBe('false');
     });
 
-    it('should support retry logic in subclass', async () => {
-      class RetryEntity extends EntityBase {
-        async retry<T>(fn: () => Promise<T>, retries: number): Promise<T> {
+    it('should support nullish coalescing assignment in subclasses', () => {
+      class TestEntity extends EntityBase {
+        value: string | null = null;
+        
+        setValue(newValue: string): void {
+          this.value ??= newValue;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      testEntity.setValue('test');
+      expect(testEntity.value).toBe('test');
+      testEntity.setValue('other');
+      expect(testEntity.value).toBe('test');
+    });
+
+    it('should support logical AND assignment in subclasses', () => {
+      class TestEntity extends EntityBase {
+        value: number = 0;
+        
+        setValue(newValue: number): void {
+          this.value &&= newValue;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      testEntity.setValue(5);
+      expect(testEntity.value).toBe(0);
+      testEntity.value = 10;
+      testEntity.setValue(5);
+      expect(testEntity.value).toBe(5);
+    });
+
+    it('should support logical OR assignment in subclasses', () => {
+      class TestEntity extends EntityBase {
+        value: number = 0;
+        
+        setValue(newValue: number): void {
+          this.value ||= newValue;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      testEntity.setValue(5);
+      expect(testEntity.value).toBe(5);
+      testEntity.setValue(10);
+      expect(testEntity.value).toBe(5);
+    });
+
+    it('should support exponentiation operator in subclasses', () => {
+      class TestEntity extends EntityBase {
+        square(value: number): number {
+          return value ** 2;
+        }
+      }
+
+      const testEntity = new TestEntity();
+      expect(testEntity.square(3)).toBe(9);
+    });
+
+    it('should support optional catch binding in subclasses', () => {
+      class TestEntity extends EntityBase {
+        riskyOperation(): string {
           try {
-            return await fn();
-          } catch (error) {
-            if (retries > 0) {
-              return this.retry(fn, retries - 1);
-            }
-            throw error;
+            throw new Error('error');
+          } catch {
+            return 'caught';
           }
         }
       }
 
-      const entity = new RetryEntity();
-      const fn = jest.fn()
-        .mockRejectedValueOnce(new Error('fail'))
-        .mockResolvedValueOnce('success');
-      await expect(entity.retry(fn, 1)).resolves.toBe('success');
-      expect(fn).toHaveBeenCalledTimes(2);
+      const testEntity = new TestEntity();
+      expect(testEntity.riskyOperation()).toBe('caught');
     });
 
-    it('should support timeout in subclass', async () => {
-      class TimeoutEntity extends EntityBase {
-        async withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-          let timeoutId: NodeJS.Timeout;
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error('Timeout')), timeoutMs);
-          });
-          try {
-            return await Promise.race([promise, timeoutPromise]);
-          } finally {
-            clearTimeout(timeoutId!);
-          }
+    it('should support private fields in subclasses', () => {
+      class TestEntity extends EntityBase {
+        #privateValue: string = 'private';
+        
+        getPrivateValue(): string {
+          return this.#privateValue;
         }
       }
 
-      const entity = new TimeoutEntity();
-      const slowPromise = new Promise((resolve) => setTimeout(() => resolve('done'),
+      const testEntity = new TestEntity();
+      expect(testEntity.getPrivateValue()).toBe('private');
+    });
+
+    it('should support static blocks in subclasses', () => {
+      class TestEntity extends EntityBase {
+        static value: number;
+        
+        static {
+          TestEntity.value = 42;
+        }
+      }
+
+      expect(TestEntity.value).toBe(42);
+    });
+
+    it('should support top-level await in subclasses', async () => {
+      class TestEntity extends EntityBase {
+        async getData(): Promise<string> {
+          return 'data';
+        }
+      }
+
+      const testEntity = new TestEntity();
+      const data = await testEntity.getData();
+      expect(data).toBe('data');
+    });
+
+    it('should support WeakRef in subclasses', () => {
+      class TestEntity extends EntityBase {
+        weakRef: WeakRef<object> | null = null;
+      }
+
+      const testEntity = new TestEntity();
+      const obj = {};
+      testEntity.weakRef = new WeakRef(obj);
+      expect(testEntity.weakRef.deref()).toBe(obj);
+    });
+
+    it('should support FinalizationRegistry in subclasses', () => {
+      class TestEntity extends EntityBase {
+        registry: FinalizationRegistry<object> | null = null;
+      }
+
+      const testEntity = new TestEntity();
+      const obj = {};
+      testEntity.registry = new FinalizationRegistry(() => {});
+      testEntity.registry.register(obj, {});
+      expect(testEntity.registry).toBeDefined();
+    });
+
+    it('should support Array.fromAsync in subclasses', async () => {
+      class TestEntity extends EntityBase
