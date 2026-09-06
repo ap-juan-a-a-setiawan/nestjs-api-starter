@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './controllers/app.controller';
 import { UsersModule } from '../Users/users.module';
+import { BarangModule } from '../Barang/barang.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { configService } from './services/config.service';
 import { AuthModule } from '../Auth/auth.module';
@@ -8,6 +9,7 @@ import { AuthModule } from '../Auth/auth.module';
 @Module({
   imports: [
     UsersModule,
+    BarangModule,
     AuthModule,
     TypeOrmModule.forRoot(configService.getTypeOrmConfig())
   ],
