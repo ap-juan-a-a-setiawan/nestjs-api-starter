@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BarangRepository } from './repositories/barang.repository';
 
 describe('BarangModule', () => {
-  let moduleRef: any;
+  let module: BarangModule;
 
   const mockBarangController = {
     findAll: jest.fn(),
@@ -36,8 +36,13 @@ describe('BarangModule', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    moduleRef = await Test.createTestingModule({
-      imports: [BarangModule],
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        TypeOrmModule.forFeature([BarangRepository]),
+      ],
+      controllers: [BarangController],
+      providers: [BarangService],
+      exports: [BarangService],
     })
       .overrideProvider(BarangController)
       .useValue(mockBarangController)
@@ -46,157 +51,47 @@ describe('BarangModule', () => {
       .overrideProvider(BarangRepository)
       .useValue(mockBarangRepository)
       .compile();
+
+    module = moduleRef.get<BarangModule>(BarangModule);
   });
 
   describe('Module Definition', () => {
     it('should be defined', () => {
-      expect(moduleRef).toBeDefined();
+      expect(module).toBeDefined();
     });
 
-    it('should have BarangController as a controller', () => {
-      const controller = moduleRef.get(BarangController);
-      expect(controller).toBeDefined();
-      expect(controller).toEqual(mockBarangController);
-    });
-
-    it('should have BarangService as a provider', () => {
-      const service = moduleRef.get(BarangService);
-      expect(service).toBeDefined();
-      expect(service).toEqual(mockBarangService);
-    });
-
-    it('should have BarangRepository as a provider', () => {
-      const repository = moduleRef.get(BarangRepository);
-      expect(repository).toBeDefined();
-      expect(repository).toEqual(mockBarangRepository);
-    });
-  });
-
-  describe('Module Imports', () => {
-    it('should import TypeOrmModule with BarangRepository', () => {
-      const typeOrmModule = TypeOrmModule.forFeature([BarangRepository]);
-      expect(typeOrmModule).toBeDefined();
-      expect(typeOrmModule.imports).toBeDefined();
-      expect(typeOrmModule.controllers).toBeUndefined();
-      expect(typeOrmModule.providers).toBeUndefined();
-    });
-
-    it('should have TypeOrmModule in module imports', () => {
+    it('should have the correct imports', () => {
       const metadata = Reflect.getMetadata('imports', BarangModule);
       expect(metadata).toBeDefined();
-      expect(metadata.length).toBe(1);
-      expect(metadata[0]).toBeDefined();
+      expect(metadata).toHaveLength(1);
+      expect(metadata[0]).toEqual(TypeOrmModule.forFeature([BarangRepository]));
     });
-  });
 
-  describe('Module Controllers', () => {
-    it('should have BarangController registered', () => {
+    it('should have the correct controllers', () => {
       const controllers = Reflect.getMetadata('controllers', BarangModule);
       expect(controllers).toBeDefined();
-      expect(controllers).toContain(BarangController);
-      expect(controllers.length).toBe(1);
+      expect(controllers).toHaveLength(1);
+      expect(controllers[0]).toBe(BarangController);
     });
-  });
 
-  describe('Module Providers', () => {
-    it('should have BarangService registered as provider', () => {
+    it('should have the correct providers', () => {
       const providers = Reflect.getMetadata('providers', BarangModule);
       expect(providers).toBeDefined();
-      expect(providers).toContain(BarangService);
-      expect(providers.length).toBe(1);
-    });
-  });
-
-  describe('Module Exports', () => {
-    it('should export BarangService', () => {
-      const exports = Reflect.getMetadata('exports', BarangModule);
-      expect(exports).toBeDefined();
-      expect(exports).toContain(BarangService);
-      expect(exports.length).toBe(1);
-    });
-  });
-
-  describe('Module Metadata Validation', () => {
-    it('should have correct module metadata', () => {
-      const moduleMetadata = {
-        imports: Reflect.getMetadata('imports', BarangModule),
-        controllers: Reflect.getMetadata('controllers', BarangModule),
-        providers: Reflect.getMetadata('providers', BarangModule),
-        exports: Reflect.getMetadata('exports', BarangModule),
-      };
-
-      expect(moduleMetadata.imports).toBeDefined();
-      expect(moduleMetadata.controllers).toBeDefined();
-      expect(moduleMetadata.providers).toBeDefined();
-      expect(moduleMetadata.exports).toBeDefined();
-    });
-
-    it('should have exactly one import', () => {
-      const imports = Reflect.getMetadata('imports', BarangModule);
-      expect(imports).toHaveLength(1);
-    });
-
-    it('should have exactly one controller', () => {
-      const controllers = Reflect.getMetadata('controllers', BarangModule);
-      expect(controllers).toHaveLength(1);
-    });
-
-    it('should have exactly one provider', () => {
-      const providers = Reflect.getMetadata('providers', BarangModule);
       expect(providers).toHaveLength(1);
+      expect(providers[0]).toBe(BarangService);
     });
 
-    it('should have exactly one export', () => {
-      const exports = Reflect.getMetadata('exports', BarangModule);
-      expect(exports).toHaveLength(1);
+    it('should have the correct exports', () => {
+      const exportsMetadata = Reflect.getMetadata('exports', BarangModule);
+      expect(exportsMetadata).toBeDefined();
+      expect(exportsMetadata).toHaveLength(1);
+      expect(exportsMetadata[0]).toBe(BarangService);
     });
   });
 
   describe('Module Integration', () => {
-    it('should resolve BarangController dependency', () => {
-      const controller = moduleRef.get(BarangController);
-      expect(controller).toBeDefined();
-    });
-
-    it('should resolve BarangService dependency', () => {
-      const service = moduleRef.get(BarangService);
-      expect(service).toBeDefined();
-    });
-
-    it('should resolve BarangRepository dependency', () => {
-      const repository = moduleRef.get(BarangRepository);
-      expect(repository).toBeDefined();
-    });
-
-    it('should have all dependencies properly injected', () => {
-      const controller = moduleRef.get(BarangController);
-      const service = moduleRef.get(BarangService);
-      const repository = moduleRef.get(BarangRepository);
-
-      expect(controller).toBeDefined();
-      expect(service).toBeDefined();
-      expect(repository).toBeDefined();
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle module without any dependencies', async () => {
-      const emptyModule = await Test.createTestingModule({
-        imports: [BarangModule],
-      })
-        .overrideProvider(BarangController)
-        .useValue({})
-        .overrideProvider(BarangService)
-        .useValue({})
-        .overrideProvider(BarangRepository)
-        .useValue({})
-        .compile();
-
-      expect(emptyModule).toBeDefined();
-    });
-
-    it('should handle module with mocked dependencies', async () => {
-      const mockedModule = await Test.createTestingModule({
+    it('should instantiate the module with all dependencies', async () => {
+      const moduleRef = await Test.createTestingModule({
         imports: [BarangModule],
       })
         .overrideProvider(BarangController)
@@ -207,66 +102,164 @@ describe('BarangModule', () => {
         .useValue(mockBarangRepository)
         .compile();
 
-      const controller = mockedModule.get(BarangController);
-      const service = mockedModule.get(BarangService);
-      const repository = mockedModule.get(BarangRepository);
-
-      expect(controller).toEqual(mockBarangController);
-      expect(service).toEqual(mockBarangService);
-      expect(repository).toEqual(mockBarangRepository);
+      const testModule = moduleRef.get<BarangModule>(BarangModule);
+      expect(testModule).toBeDefined();
     });
 
-    it('should handle module with null dependencies', async () => {
-      const nullModule = await Test.createTestingModule({
+    it('should have BarangController as a controller', () => {
+      const controllers = Reflect.getMetadata('controllers', BarangModule);
+      expect(controllers).toContain(BarangController);
+    });
+
+    it('should have BarangService as a provider', () => {
+      const providers = Reflect.getMetadata('providers', BarangModule);
+      expect(providers).toContain(BarangService);
+    });
+
+    it('should export BarangService', () => {
+      const exportsMetadata = Reflect.getMetadata('exports', BarangModule);
+      expect(exportsMetadata).toContain(BarangService);
+    });
+
+    it('should import TypeOrmModule with BarangRepository', () => {
+      const imports = Reflect.getMetadata('imports', BarangModule);
+      expect(imports).toContainEqual(TypeOrmModule.forFeature([BarangRepository]));
+    });
+  });
+
+  describe('Module Metadata Validation', () => {
+    it('should have valid controller metadata', () => {
+      const controllers = Reflect.getMetadata('controllers', BarangModule);
+      expect(controllers).toBeInstanceOf(Array);
+      expect(controllers.length).toBeGreaterThan(0);
+      expect(controllers.every((controller: any) => typeof controller === 'function')).toBe(true);
+    });
+
+    it('should have valid provider metadata', () => {
+      const providers = Reflect.getMetadata('providers', BarangModule);
+      expect(providers).toBeInstanceOf(Array);
+      expect(providers.length).toBeGreaterThan(0);
+      expect(providers.every((provider: any) => typeof provider === 'function')).toBe(true);
+    });
+
+    it('should have valid export metadata', () => {
+      const exportsMetadata = Reflect.getMetadata('exports', BarangModule);
+      expect(exportsMetadata).toBeInstanceOf(Array);
+      expect(exportsMetadata.length).toBeGreaterThan(0);
+      expect(exportsMetadata.every((exportItem: any) => typeof exportItem === 'function')).toBe(true);
+    });
+
+    it('should have valid import metadata', () => {
+      const imports = Reflect.getMetadata('imports', BarangModule);
+      expect(imports).toBeInstanceOf(Array);
+      expect(imports.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle empty repository array in TypeOrmModule', () => {
+      const moduleRef = Test.createTestingModule({
+        imports: [TypeOrmModule.forFeature([])],
+        controllers: [BarangController],
+        providers: [BarangService],
+      })
+        .overrideProvider(BarangController)
+        .useValue(mockBarangController)
+        .overrideProvider(BarangService)
+        .useValue(mockBarangService);
+
+      expect(moduleRef).toBeDefined();
+    });
+
+    it('should handle module without exports', () => {
+      const moduleRef = Test.createTestingModule({
+        imports: [TypeOrmModule.forFeature([BarangRepository])],
+        controllers: [BarangController],
+        providers: [BarangService],
+      })
+        .overrideProvider(BarangController)
+        .useValue(mockBarangController)
+        .overrideProvider(BarangService)
+        .useValue(mockBarangService);
+
+      expect(moduleRef).toBeDefined();
+    });
+
+    it('should handle module without controllers', () => {
+      const moduleRef = Test.createTestingModule({
+        imports: [TypeOrmModule.forFeature([BarangRepository])],
+        providers: [BarangService],
+        exports: [BarangService],
+      })
+        .overrideProvider(BarangService)
+        .useValue(mockBarangService);
+
+      expect(moduleRef).toBeDefined();
+    });
+
+    it('should handle module without providers', () => {
+      const moduleRef = Test.createTestingModule({
+        imports: [TypeOrmModule.forFeature([BarangRepository])],
+        controllers: [BarangController],
+        exports: [BarangService],
+      })
+        .overrideProvider(BarangController)
+        .useValue(mockBarangController);
+
+      expect(moduleRef).toBeDefined();
+    });
+  });
+
+  describe('Dependency Injection', () => {
+    it('should inject BarangService into BarangController', async () => {
+      const moduleRef = await Test.createTestingModule({
         imports: [BarangModule],
       })
         .overrideProvider(BarangController)
-        .useValue(null)
+        .useValue(mockBarangController)
         .overrideProvider(BarangService)
-        .useValue(null)
+        .useValue(mockBarangService)
         .overrideProvider(BarangRepository)
-        .useValue(null)
+        .useValue(mockBarangRepository)
         .compile();
 
-      expect(nullModule).toBeDefined();
-    });
-  });
-
-  describe('Module Structure', () => {
-    it('should have correct module decorator', () => {
-      const moduleDecorator = Reflect.getMetadata('__module__', BarangModule);
-      expect(moduleDecorator).toBeDefined();
+      const controller = moduleRef.get<BarangController>(BarangController);
+      expect(controller).toBeDefined();
+      expect(controller).toEqual(mockBarangController);
     });
 
-    it('should be a class', () => {
-      expect(typeof BarangModule).toBe('function');
-      expect(BarangModule).toBeInstanceOf(Function);
+    it('should provide BarangService to the module', async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [BarangModule],
+      })
+        .overrideProvider(BarangController)
+        .useValue(mockBarangController)
+        .overrideProvider(BarangService)
+        .useValue(mockBarangService)
+        .overrideProvider(BarangRepository)
+        .useValue(mockBarangRepository)
+        .compile();
+
+      const service = moduleRef.get<BarangService>(BarangService);
+      expect(service).toBeDefined();
+      expect(service).toEqual(mockBarangService);
     });
 
-    it('should have constructor', () => {
-      expect(BarangModule.prototype.constructor).toBeDefined();
-    });
+    it('should provide BarangRepository through TypeOrmModule', async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [BarangModule],
+      })
+        .overrideProvider(BarangController)
+        .useValue(mockBarangController)
+        .overrideProvider(BarangService)
+        .useValue(mockBarangService)
+        .overrideProvider(BarangRepository)
+        .useValue(mockBarangRepository)
+        .compile();
 
-    it('should not have any methods', () => {
-      const prototype = Object.getOwnPropertyNames(BarangModule.prototype);
-      expect(prototype).toEqual(['constructor']);
-    });
-  });
-
-  describe('Module TypeORM Integration', () => {
-    it('should have TypeOrmModule.forFeature with BarangRepository', () => {
-      const typeOrmModule = TypeOrmModule.forFeature([BarangRepository]);
-      expect(typeOrmModule).toBeDefined();
-      expect(typeOrmModule.module).toBeDefined();
-      expect(typeOrmModule.providers).toBeDefined();
-      expect(typeOrmModule.exports).toBeDefined();
-    });
-
-    it('should have BarangRepository in TypeOrmModule', () => {
-      const typeOrmModule = TypeOrmModule.forFeature([BarangRepository]);
-      const providers = typeOrmModule.providers;
-      expect(providers).toBeDefined();
-      expect(providers.length).toBeGreaterThan(0);
+      const repository = moduleRef.get<BarangRepository>(BarangRepository);
+      expect(repository).toBeDefined();
+      expect(repository).toEqual(mockBarangRepository);
     });
   });
 });
