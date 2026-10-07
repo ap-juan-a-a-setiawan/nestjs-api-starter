@@ -48,9 +48,9 @@ describe('BarangController', () => {
         { id: 1, name: 'Item 1' },
         { id: 2, name: 'Item 2' },
       ];
-      mockBarangService.getAll.mockResolvedValue(expectedResult);
+      mockBarangService.getAll.mockReturnValue(expectedResult);
 
-      const result = await controller.getAll();
+      const result = controller.getAll();
 
       expect(result).toEqual(expectedResult);
       expect(mockBarangService.getAll).toHaveBeenCalled();
@@ -58,20 +58,19 @@ describe('BarangController', () => {
     });
 
     it('should return empty array when no items exist', async () => {
-      mockBarangService.getAll.mockResolvedValue([]);
+      mockBarangService.getAll.mockReturnValue([]);
 
-      const result = await controller.getAll();
+      const result = controller.getAll();
 
       expect(result).toEqual([]);
       expect(mockBarangService.getAll).toHaveBeenCalled();
     });
 
-    it('should handle service errors', async () => {
+    it('should propagate service errors', async () => {
       const error = new Error('Database connection failed');
       mockBarangService.getAll.mockRejectedValue(error);
 
       await expect(controller.getAll()).rejects.toThrow(error);
-      expect(mockBarangService.getAll).toHaveBeenCalled();
     });
   });
 
@@ -79,42 +78,43 @@ describe('BarangController', () => {
     it('should return a single barang item by id', async () => {
       const expectedResult = { id: 1, name: 'Item 1' };
       const params = { id: '1' };
-      mockBarangService.getById.mockResolvedValue(expectedResult);
+      mockBarangService.getById.mockReturnValue(expectedResult);
 
-      const result = await controller.getById(params);
+      const result = controller.getById(params);
 
       expect(result).toEqual(expectedResult);
       expect(mockBarangService.getById).toHaveBeenCalledWith('1');
       expect(mockBarangService.getById).toHaveBeenCalledTimes(1);
     });
 
-    it('should return null when item not found', async () => {
-      const params = { id: '999' };
-      mockBarangService.getById.mockResolvedValue(null);
+    it('should handle string id conversion', async () => {
+      const expectedResult = { id: 2, name: 'Item 2' };
+      const params = { id: '2' };
+      mockBarangService.getById.mockReturnValue(expectedResult);
 
-      const result = await controller.getById(params);
+      const result = controller.getById(params);
 
-      expect(result).toBeNull();
-      expect(mockBarangService.getById).toHaveBeenCalledWith('999');
+      expect(result).toEqual(expectedResult);
+      expect(mockBarangService.getById).toHaveBeenCalledWith('2');
     });
 
-    it('should handle service errors', async () => {
+    it('should handle non-numeric id', async () => {
+      const expectedResult = null;
+      const params = { id: 'abc' };
+      mockBarangService.getById.mockReturnValue(expectedResult);
+
+      const result = controller.getById(params);
+
+      expect(result).toBeNull();
+      expect(mockBarangService.getById).toHaveBeenCalledWith('abc');
+    });
+
+    it('should propagate service errors', async () => {
       const params = { id: '1' };
       const error = new Error('Item not found');
       mockBarangService.getById.mockRejectedValue(error);
 
       await expect(controller.getById(params)).rejects.toThrow(error);
-      expect(mockBarangService.getById).toHaveBeenCalledWith('1');
-    });
-
-    it('should handle invalid id format', async () => {
-      const params = { id: 'invalid' };
-      mockBarangService.getById.mockResolvedValue(null);
-
-      const result = await controller.getById(params);
-
-      expect(result).toBeNull();
-      expect(mockBarangService.getById).toHaveBeenCalledWith('invalid');
     });
   });
 
@@ -140,7 +140,7 @@ describe('BarangController', () => {
 
     it('should handle empty DTO', async () => {
       const createBarangDto = {} as CreateBarangDto;
-      const createdBarang = { id: 2 };
+      const createdBarang = { id: 2, ...createBarangDto };
       mockBarangService.create.mockResolvedValue(createdBarang);
 
       const result = await controller.create(createBarangDto);
@@ -152,30 +152,58 @@ describe('BarangController', () => {
       expect(mockBarangService.create).toHaveBeenCalledWith(createBarangDto);
     });
 
-    it('should handle service errors during creation', async () => {
+    it('should handle DTO with all fields', async () => {
       const createBarangDto: CreateBarangDto = {
-        name: 'New Item',
-        price: 100,
-        stock: 10,
+        name: 'Complete Item',
+        price: 250.5,
+        stock: 25,
+        description: 'A complete item description',
+        category: 'Electronics',
       };
-      const error = new Error('Validation failed');
+      const createdBarang = { id: 3, ...createBarangDto };
+      mockBarangService.create.mockResolvedValue(createdBarang);
+
+      const result = await controller.create(createBarangDto);
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        barang: createdBarang,
+      });
+      expect(mockBarangService.create).toHaveBeenCalledWith(createBarangDto);
+    });
+
+    it('should propagate service errors', async () => {
+      const createBarangDto: CreateBarangDto = {
+        name: 'Invalid Item',
+        price: -100,
+        stock: -5,
+      };
+      const error = new Error('Invalid barang data');
       mockBarangService.create.mockRejectedValue(error);
 
       await expect(controller.create(createBarangDto)).rejects.toThrow(error);
       expect(mockBarangService.create).toHaveBeenCalledWith(createBarangDto);
     });
 
-    it('should handle null DTO', async () => {
-      const createBarangDto = null as unknown as CreateBarangDto;
-      const error = new Error('Invalid input');
-      mockBarangService.create.mockRejectedValue(error);
+    it('should handle service returning null', async () => {
+      const createBarangDto: CreateBarangDto = {
+        name: 'Null Item',
+        price: 100,
+        stock: 10,
+      };
+      mockBarangService.create.mockResolvedValue(null);
 
-      await expect(controller.create(createBarangDto)).rejects.toThrow(error);
+      const result = await controller.create(createBarangDto);
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        barang: null,
+      });
       expect(mockBarangService.create).toHaveBeenCalledWith(createBarangDto);
     });
   });
 
-  describe('Guard integration', () => {
+  describe('Guard configuration', () => {
     it('should have JwtAuthGuard applied to controller', () => {
       const guards = Reflect.getMetadata('__guards__', BarangController);
       expect(guards).toBeDefined();

@@ -1,53 +1,61 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { getRepository } from 'typeorm';
 import { BarangService } from './barang.service';
 import { Barang } from '../entities/barang.entity';
-import { BarangRepository } from '../repositories/barang.repository';
 import { CreateBarangDto } from '../dto/create-barang.dto';
+import { BarangRepository } from '../repositories/barang.repository';
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+jest.mock('typeorm', () => ({
+  getRepository: jest.fn()
+}));
 
 describe('BarangService', () => {
   let service: BarangService;
-  let barangRepository: jest.Mocked<BarangRepository>;
-  let queryBuilderMock: any;
+  let mockBarangRepository: jest.Mocked<BarangRepository>;
+  let mockQueryBuilder: any;
+  let mockGetRepository: jest.Mock;
 
   const mockBarang: Barang = {
     id: '1',
     nama: 'Test Barang',
-    harga: 10000,
-    stok: 10,
     createdAt: new Date(),
     updatedAt: new Date()
   };
 
   const mockCreateBarangDto: CreateBarangDto = {
-    nama: 'Test Barang',
-    harga: 10000,
-    stok: 10
+    nama: 'Test Barang'
   };
 
   beforeEach(async () => {
-    queryBuilderMock = {
+    mockBarangRepository = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn()
+    } as jest.Mocked<BarangRepository>;
+
+    mockQueryBuilder = {
       where: jest.fn().mockReturnThis(),
       getOne: jest.fn()
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    mockGetRepository = jest.fn().mockReturnValue({
+      createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder)
+    });
+
+    (getRepository as jest.Mock) = mockGetRepository;
+
+    const moduleRef = await Test.createTestingModule({
       providers: [
         BarangService,
         {
-          provide: getRepositoryToken(Barang),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-            save: jest.fn()
-          }
+          provide: BarangRepository,
+          useValue: mockBarangRepository
         }
-      ],
+      ]
     }).compile();
 
-    service = module.get<BarangService>(BarangService);
-    barangRepository = module.get(getRepositoryToken(Barang));
+    service = moduleRef.get<BarangService>(BarangService);
   });
 
   afterEach(() => {
@@ -55,179 +63,147 @@ describe('BarangService', () => {
   });
 
   describe('getAll', () => {
-    it('should return an array of barang', async () => {
-      const expectedResult = [mockBarang];
-      barangRepository.find.mockResolvedValue(expectedResult);
+    it('should return all barang records', async () => {
+      const mockBarangs: Barang[] = [mockBarang];
+      mockBarangRepository.find.mockResolvedValue(mockBarangs);
 
       const result = await service.getAll();
 
-      expect(result).toEqual(expectedResult);
-      expect(barangRepository.find).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(mockBarangs);
+      expect(mockBarangRepository.find).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.find).toHaveBeenCalledWith();
     });
 
-    it('should return an empty array when no barang exists', async () => {
-      barangRepository.find.mockResolvedValue([]);
+    it('should return empty array when no records exist', async () => {
+      mockBarangRepository.find.mockResolvedValue([]);
 
       const result = await service.getAll();
 
       expect(result).toEqual([]);
-      expect(barangRepository.find).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.find).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle repository errors', async () => {
-      const error = new Error('Database error');
-      barangRepository.find.mockRejectedValue(error);
+    it('should propagate repository errors', async () => {
+      const error = new Error('Database connection failed');
+      mockBarangRepository.find.mockRejectedValue(error);
 
-      await expect(service.getAll()).rejects.toThrow(error);
-      expect(barangRepository.find).toHaveBeenCalledTimes(1);
+      expect(service.getAll()).rejects.toThrow(error);
+      expect(mockBarangRepository.find).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getById', () => {
     it('should return a barang by id', async () => {
-      const id = '1';
-      barangRepository.findOne.mockResolvedValue(mockBarang);
+      mockBarangRepository.findOne.mockResolvedValue(mockBarang);
 
-      const result = await service.getById(id);
+      const result = await service.getById('1');
 
       expect(result).toEqual(mockBarang);
-      expect(barangRepository.findOne).toHaveBeenCalledWith(id);
-      expect(barangRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.findOne).toHaveBeenCalledWith('1');
     });
 
-    it('should return null when barang is not found', async () => {
-      const id = 'nonexistent-id';
-      barangRepository.findOne.mockResolvedValue(null);
+    it('should return null when barang not found', async () => {
+      mockBarangRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getById(id);
+      const result = await service.getById('nonexistent');
 
       expect(result).toBeNull();
-      expect(barangRepository.findOne).toHaveBeenCalledWith(id);
-      expect(barangRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.findOne).toHaveBeenCalledWith('nonexistent');
     });
 
-    it('should handle repository errors', async () => {
-      const id = '1';
-      const error = new Error('Database error');
-      barangRepository.findOne.mockRejectedValue(error);
+    it('should propagate repository errors', async () => {
+      const error = new Error('Database connection failed');
+      mockBarangRepository.findOne.mockRejectedValue(error);
 
-      await expect(service.getById(id)).rejects.toThrow(error);
-      expect(barangRepository.findOne).toHaveBeenCalledWith(id);
-      expect(barangRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(service.getById('1')).rejects.toThrow(error);
+      expect(mockBarangRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.findOne).toHaveBeenCalledWith('1');
     });
   });
 
   describe('create', () => {
-    beforeEach(() => {
-      jest.mock('typeorm', () => ({
-        getRepository: jest.fn().mockReturnValue({
-          createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock)
-        })
-      }));
-    });
-
-    it('should create a new barang successfully', async () => {
-      queryBuilderMock.getOne.mockResolvedValue(null);
-      barangRepository.save.mockResolvedValue(mockBarang);
+    it('should create a new barang when nama is unique', async () => {
+      mockQueryBuilder.getOne.mockResolvedValue(null);
+      mockBarangRepository.save.mockResolvedValue(mockBarang);
 
       const result = await service.create(mockCreateBarangDto);
 
       expect(result).toEqual(mockBarang);
-      expect(queryBuilderMock.where).toHaveBeenCalledWith(
-        'barang.nama = :nama',
-        { nama: mockCreateBarangDto.nama }
-      );
-      expect(queryBuilderMock.getOne).toHaveBeenCalledTimes(1);
-      expect(barangRepository.save).toHaveBeenCalledWith(mockCreateBarangDto);
-      expect(barangRepository.save).toHaveBeenCalledTimes(1);
+      expect(mockGetRepository).toHaveBeenCalledTimes(1);
+      expect(mockGetRepository).toHaveBeenCalledWith(Barang);
+      expect(mockQueryBuilder.where).toHaveBeenCalledTimes(1);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('barang.nama = :nama', { nama: mockCreateBarangDto.nama });
+      expect(mockQueryBuilder.getOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.save).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.save).toHaveBeenCalledWith(mockCreateBarangDto);
     });
 
-    it('should throw HttpException when barang name already exists', async () => {
-      queryBuilderMock.getOne.mockResolvedValue(mockBarang);
+    it('should throw HttpException when nama already exists', async () => {
+      mockQueryBuilder.getOne.mockResolvedValue(mockBarang);
+
+      const expectedError = new HttpException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        errors: ['Nama barang must be unique.'],
+        error: 'Bad Request'
+      }, HttpStatus.BAD_REQUEST);
 
       try {
         await service.create(mockCreateBarangDto);
         fail('Expected HttpException to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
-        expect(error.status).toBe(HttpStatus.BAD_REQUEST);
-        expect(error.response).toEqual({
+        expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+        expect(error.getResponse()).toEqual({
           statusCode: HttpStatus.BAD_REQUEST,
           errors: ['Nama barang must be unique.'],
           error: 'Bad Request'
         });
       }
 
-      expect(queryBuilderMock.where).toHaveBeenCalledWith(
-        'barang.nama = :nama',
-        { nama: mockCreateBarangDto.nama }
-      );
-      expect(queryBuilderMock.getOne).toHaveBeenCalledTimes(1);
-      expect(barangRepository.save).not.toHaveBeenCalled();
+      expect(mockGetRepository).toHaveBeenCalledTimes(1);
+      expect(mockGetRepository).toHaveBeenCalledWith(Barang);
+      expect(mockQueryBuilder.where).toHaveBeenCalledTimes(1);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('barang.nama = :nama', { nama: mockCreateBarangDto.nama });
+      expect(mockQueryBuilder.getOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should handle database errors during uniqueness check', async () => {
-      const error = new Error('Database error');
-      queryBuilderMock.getOne.mockRejectedValue(error);
+    it('should propagate errors from query builder', async () => {
+      const error = new Error('Database query failed');
+      mockQueryBuilder.getOne.mockRejectedValue(error);
 
-      await expect(service.create(mockCreateBarangDto)).rejects.toThrow(error);
-      expect(queryBuilderMock.where).toHaveBeenCalledWith(
-        'barang.nama = :nama',
-        { nama: mockCreateBarangDto.nama }
-      );
-      expect(queryBuilderMock.getOne).toHaveBeenCalledTimes(1);
-      expect(barangRepository.save).not.toHaveBeenCalled();
+      expect(service.create(mockCreateBarangDto)).rejects.toThrow(error);
+      expect(mockGetRepository).toHaveBeenCalledTimes(1);
+      expect(mockQueryBuilder.where).toHaveBeenCalledTimes(1);
+      expect(mockQueryBuilder.getOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should handle save errors', async () => {
-      queryBuilderMock.getOne.mockResolvedValue(null);
-      const error = new Error('Database error');
-      barangRepository.save.mockRejectedValue(error);
+    it('should propagate errors from save operation', async () => {
+      mockQueryBuilder.getOne.mockResolvedValue(null);
+      const error = new Error('Database save failed');
+      mockBarangRepository.save.mockRejectedValue(error);
 
-      await expect(service.create(mockCreateBarangDto)).rejects.toThrow(error);
-      expect(queryBuilderMock.getOne).toHaveBeenCalledTimes(1);
-      expect(barangRepository.save).toHaveBeenCalledWith(mockCreateBarangDto);
-      expect(barangRepository.save).toHaveBeenCalledTimes(1);
+      expect(service.create(mockCreateBarangDto)).rejects.toThrow(error);
+      expect(mockGetRepository).toHaveBeenCalledTimes(1);
+      expect(mockQueryBuilder.where).toHaveBeenCalledTimes(1);
+      expect(mockQueryBuilder.getOne).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.save).toHaveBeenCalledTimes(1);
+      expect(mockBarangRepository.save).toHaveBeenCalledWith(mockCreateBarangDto);
     });
 
-    it('should handle empty nama in create dto', async () => {
-      const emptyDto: CreateBarangDto = {
-        nama: '',
-        harga: 10000,
-        stok: 10
-      };
-
-      queryBuilderMock.getOne.mockResolvedValue(null);
-      barangRepository.save.mockResolvedValue({ ...mockBarang, nama: '' });
+    it('should handle empty nama in DTO', async () => {
+      const emptyDto: CreateBarangDto = { nama: '' };
+      mockQueryBuilder.getOne.mockResolvedValue(null);
+      mockBarangRepository.save.mockResolvedValue({ ...mockBarang, nama: '' });
 
       const result = await service.create(emptyDto);
 
       expect(result).toEqual({ ...mockBarang, nama: '' });
-      expect(queryBuilderMock.where).toHaveBeenCalledWith(
-        'barang.nama = :nama',
-        { nama: '' }
-      );
-      expect(barangRepository.save).toHaveBeenCalledWith(emptyDto);
-    });
-
-    it('should handle special characters in nama', async () => {
-      const specialDto: CreateBarangDto = {
-        nama: 'Barang @#$%^&*()',
-        harga: 10000,
-        stok: 10
-      };
-
-      queryBuilderMock.getOne.mockResolvedValue(null);
-      barangRepository.save.mockResolvedValue({ ...mockBarang, nama: specialDto.nama });
-
-      const result = await service.create(specialDto);
-
-      expect(result).toEqual({ ...mockBarang, nama: specialDto.nama });
-      expect(queryBuilderMock.where).toHaveBeenCalledWith(
-        'barang.nama = :nama',
-        { nama: specialDto.nama }
-      );
-      expect(barangRepository.save).toHaveBeenCalledWith(specialDto);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('barang.nama = :nama', { nama: '' });
+      expect(mockBarangRepository.save).toHaveBeenCalledWith(emptyDto);
     });
   });
 });

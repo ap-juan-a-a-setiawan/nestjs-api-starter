@@ -35,6 +35,11 @@ export class BarangService {
       }, HttpStatus.BAD_REQUEST);
     }
 
-    return this.barangRepository.save(data);
+    const entity = {
+      ...data,
+      ...(data.harga !== undefined ? { harga: String(data.harga) } : {}),
+    };
+
+    return this.barangRepository.save(entity);
   }
 }
